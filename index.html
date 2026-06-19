@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alpha Odyssey · Hamptons Ops Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B2330;
+    --navy-2:#0F2E3D;
+    --panel:#123344;
+    --panel-2:#163C4F;
+    --line:#244C5E;
+    --line-soft:#1d4153;
+    --brass:#C8924A;
+    --brass-bright:#E0AB63;
+    --teal:#3E8C84;
+    --teal-bright:#5FB3A9;
+    --coral:#E2654A;
+    --oyster:#F4EEE2;
+    --sand:#C9BBA0;
+    --muted:#90A8B4;
+    --muted-2:#6E8A97;
+    --ok:#5FB3A9;
+    --radius:14px;
+    --shadow:0 14px 40px -22px rgba(0,0,0,.7);
+    --display:"Fraunces",Georgia,serif;
+    --body:"Inter",system-ui,-apple-system,sans-serif;
+    --mono:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(62,140,132,.16), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(200,146,74,.10), transparent 55%),
+      var(--navy);
+    color:var(--oyster);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:inherit}
+  ::selection{background:var(--brass);color:var(--navy)}
+
+  /* ---------- Layout shell ---------- */
+  .shell{display:flex;min-height:100vh}
+  .rail{
+    width:248px;flex-shrink:0;position:sticky;top:0;height:100vh;
+    background:linear-gradient(180deg,var(--navy-2),#0a2029);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    z-index:30;
+  }
+  .brand{padding:22px 22px 18px;border-bottom:1px solid var(--line-soft)}
+  .brand .anchor{font-size:13px;letter-spacing:.28em;text-transform:uppercase;
+    font-family:var(--mono);color:var(--brass);display:flex;align-items:center;gap:8px}
+  .brand h1{font-family:var(--display);font-weight:600;font-size:24px;line-height:1.05;
+    margin:10px 0 2px;color:var(--oyster);font-optical-sizing:auto}
+  .brand .sub{font-size:12px;color:var(--muted);letter-spacing:.02em}
+
+  .nav{padding:14px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+  .nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--muted-2);padding:14px 12px 6px}
+  .nav-item{
+    display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    background:none;border:0;cursor:pointer;color:var(--muted);
+    font-family:var(--body);font-size:14.5px;font-weight:500;
+    padding:10px 12px;border-radius:10px;transition:.16s;position:relative;
+  }
+  .nav-item .ico{width:18px;height:18px;flex-shrink:0;opacity:.85}
+  .nav-item:hover{background:var(--panel);color:var(--oyster)}
+  .nav-item.active{background:var(--panel-2);color:var(--oyster)}
+  .nav-item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
+    background:var(--brass);border-radius:0 3px 3px 0}
+  .nav-item .ext{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--muted-2)}
+  .rail-foot{padding:14px 18px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted-2);
+    font-family:var(--mono);letter-spacing:.04em}
+
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{
+    display:none;align-items:center;gap:12px;padding:12px 16px;
+    border-bottom:1px solid var(--line);background:rgba(11,35,48,.9);
+    backdrop-filter:blur(8px);position:sticky;top:0;z-index:25;
+  }
+  .topbar .anchor{font-family:var(--mono);color:var(--brass);letter-spacing:.2em;font-size:12px}
+  .burger{margin-left:auto;background:var(--panel);border:1px solid var(--line);color:var(--oyster);
+    border-radius:9px;padding:8px 11px;cursor:pointer;font-size:15px;line-height:1}
+
+  .view{padding:34px 40px 70px;max-width:1180px;width:100%;margin:0 auto;animation:rise .4s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- Headings ---------- */
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--brass)}
+  .page-title{font-family:var(--display);font-weight:600;font-size:38px;line-height:1.02;margin:8px 0 6px;
+    letter-spacing:-.01em;font-optical-sizing:auto}
+  .page-lead{color:var(--muted);max-width:62ch;font-size:15px}
+
+  /* ---------- Voyage strip (signature) ---------- */
+  .voyage{margin:26px 0 30px}
+  .voyage-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .voyage-head .tline{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+  .voyage-head .tline b{color:var(--brass-bright)}
+  .ports{position:relative;display:grid;grid-template-columns:repeat(9,1fr);gap:10px}
+  .ports::before{content:"";position:absolute;left:0;right:0;top:54px;height:2px;
+    background:linear-gradient(90deg,transparent,var(--line),var(--line),transparent)}
+  .port{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:12px 11px 13px;display:flex;flex-direction:column;gap:9px;min-width:0;transition:.18s}
+  .port:hover{border-color:var(--teal);transform:translateY(-2px)}
+  .port .wk{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--muted-2)}
+  .port .theme{font-family:var(--display);font-weight:600;font-size:15px;line-height:1.08;min-height:2.2em}
+  .port .dates{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .port .meter{height:6px;border-radius:6px;background:#0c2531;overflow:hidden;margin-top:2px}
+  .port .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--teal-bright));border-radius:6px}
+  .port .row{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .port .kids{font-family:var(--mono);font-size:12px;color:var(--oyster)}
+  .port .kids b{color:var(--brass-bright)}
+  .port .need{font-family:var(--mono);font-size:10px;color:var(--muted-2)}
+  .port.next{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset, 0 16px 30px -20px var(--brass)}
+  .port.next .dot{position:absolute;top:-6px;right:-6px;width:13px;height:13px;border-radius:50%;
+    background:var(--brass);box-shadow:0 0 0 4px rgba(200,146,74,.22)}
+  .port .flag{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--coral);text-transform:uppercase}
+
+  /* ---------- Stat tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:8px 0 30px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;position:relative;overflow:hidden}
+  .tile::after{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--brass);opacity:.7}
+  .tile.t-teal::after{background:var(--teal)}
+  .tile.t-coral::after{background:var(--coral)}
+  .tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .tile .v{font-family:var(--display);font-weight:600;font-size:30px;line-height:1;margin:9px 0 3px}
+  .tile .d{font-size:12px;color:var(--muted)}
+
+  /* ---------- Cards / sections ---------- */
+  .section-title{font-family:var(--display);font-weight:600;font-size:22px;margin:34px 0 14px;display:flex;align-items:center;gap:10px}
+  .section-title .num{font-family:var(--mono);font-size:12px;color:var(--brass);border:1px solid var(--line);
+    border-radius:6px;padding:3px 7px}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card h3{margin:0 0 4px;font-family:var(--display);font-weight:600;font-size:17px}
+  .card p{margin:0;color:var(--muted);font-size:13.5px}
+
+  .linkcard{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px;transition:.18s}
+  .linkcard:hover{border-color:var(--brass);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .linkcard .tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-bright)}
+  .linkcard h3{margin:8px 0 4px;font-family:var(--display);font-weight:600;font-size:18px}
+  .linkcard .lc-desc{margin:0;color:var(--muted);font-size:13.5px}
+  .linkcard .go{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--brass-bright)}
+
+  /* ---------- Rhythm chips ---------- */
+  .rhythm{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);
+    border-radius:30px;padding:7px 13px;color:var(--oyster)}
+  .arrow{color:var(--brass);font-family:var(--mono)}
+
+  /* ---------- Tables ---------- */
+  .tablewrap{border:1px solid var(--line);border-radius:var(--radius);overflow:auto;background:var(--navy-2)}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  thead th{position:sticky;top:0;background:#0d2a37;text-align:left;font-family:var(--mono);
+    font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:rgba(62,140,132,.07)}
+  .role-cell{font-weight:600;color:var(--oyster);position:sticky;left:0;background:var(--navy-2);white-space:nowrap}
+  tbody tr:hover .role-cell{background:#10303f}
+  th.role-cell{background:#0d2a37}
+  .col-now{background:rgba(200,146,74,.10)!important}
+  th.col-now{background:#16344099}
+  .tbd{color:var(--coral);font-family:var(--mono);font-size:12px}
+  .blank{color:var(--muted-2)}
+  .pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:20px;
+    border:1px solid var(--line);color:var(--muted)}
+  .pill.ok{color:var(--ok);border-color:rgba(95,179,169,.4)}
+  .pill.open{color:var(--coral);border-color:rgba(226,101,74,.4)}
+  .note-row{color:var(--muted);font-size:12px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 2px 0;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .swatch{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* ---------- Sub tabs ---------- */
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 18px;border-bottom:1px solid var(--line);padding-bottom:0}
+  .subtab{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;
+    font-family:var(--body);font-weight:500;font-size:14px;padding:9px 13px;border-radius:8px 8px 0 0;transition:.15s}
+  .subtab:hover{color:var(--oyster);background:var(--panel)}
+  .subtab.active{color:var(--brass-bright);border-bottom-color:var(--brass)}
+  .subpanel{display:none}
+  .subpanel.active{display:block;animation:rise .3s ease}
+
+  .meta-line{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 14px;display:flex;gap:18px;flex-wrap:wrap}
+  .meta-line b{color:var(--brass-bright)}
+
+  /* ---------- Attendance ---------- */
+  .att-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:18px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  select,input[type=date]{background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
+    border-radius:9px;padding:9px 12px;font-family:var(--body);font-size:14px;min-width:160px}
+  select:focus,input:focus{outline:2px solid var(--brass);outline-offset:1px}
+  .btn{background:var(--brass);color:var(--navy);border:0;border-radius:9px;padding:10px 15px;cursor:pointer;
+    font-family:var(--body);font-weight:600;font-size:13.5px;transition:.15s}
+  .btn:hover{background:var(--brass-bright)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--oyster)}
+  .btn.ghost:hover{border-color:var(--brass);background:var(--panel)}
+  .att-stats{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+  .ministat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center;min-width:82px}
+  .ministat .n{font-family:var(--display);font-weight:600;font-size:22px;line-height:1}
+  .ministat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .ministat.p .n{color:var(--ok)} .ministat.l-late .n{color:var(--brass-bright)} .ministat.a .n{color:var(--coral)}
+
+  .student-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
+  .student-row:last-child{border-bottom:0}
+  .student-row:hover{background:rgba(62,140,132,.06)}
+  .avatar{width:34px;height:34px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--brass-bright);flex-shrink:0}
+  .student-row .nm{font-weight:600;font-size:14.5px}
+  .student-row .gr{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .seg{display:flex;gap:0;margin-left:auto;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex-shrink:0}
+  .seg button{background:var(--navy-2);border:0;color:var(--muted);cursor:pointer;font-family:var(--mono);
+    font-size:11.5px;padding:8px 12px;transition:.12s;border-left:1px solid var(--line)}
+  .seg button:first-child{border-left:0}
+  .seg button:hover{color:var(--oyster)}
+  .seg button.sel-p{background:var(--ok);color:#06241f}
+  .seg button.sel-l{background:var(--brass);color:var(--navy)}
+  .seg button.sel-a{background:var(--coral);color:#2a0c06}
+  .saved-note{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:12px}
+
+  /* ---------- Workstreams ---------- */
+  .ws-filter{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+  .fbtn{background:var(--navy-2);border:1px solid var(--line);color:var(--muted);border-radius:30px;
+    padding:7px 14px;cursor:pointer;font-family:var(--mono);font-size:12px;transition:.15s}
+  .fbtn:hover{color:var(--oyster);border-color:var(--teal)}
+  .fbtn.active{background:var(--brass);color:var(--navy);border-color:var(--brass);font-weight:700}
+  .ws-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px 18px;display:flex;flex-direction:column;gap:9px}
+  .ws-card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .ws-card h3{margin:0;font-family:var(--display);font-weight:600;font-size:17px}
+  .ws-card .dri{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--navy);
+    background:var(--sand);border-radius:20px;padding:4px 10px;white-space:nowrap;font-weight:700}
+  .ws-card .scope{color:var(--muted);font-size:13px}
+  .ws-card .links{display:flex;flex-wrap:wrap;gap:6px}
+  .ws-card .lk{font-family:var(--mono);font-size:11px;color:var(--teal-bright);border:1px solid var(--line-soft);
+    border-radius:7px;padding:4px 9px}
+  .ws-card .metric{font-family:var(--mono);font-size:11px;color:var(--brass-bright);margin-top:2px}
+  .ws-card .metric::before{content:"◆ ";color:var(--brass)}
+
+  /* ---------- Embed ---------- */
+  .embed-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .embed-frame{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--navy-2);
+    height:72vh;min-height:520px;position:relative}
+  .embed-frame iframe{width:100%;height:100%;border:0;display:block}
+  .embed-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;text-align:center;padding:30px;color:var(--muted);font-size:13px}
+
+  .callout{background:linear-gradient(180deg,var(--panel),var(--navy-2));border:1px solid var(--line);
+    border-left:3px solid var(--brass);border-radius:12px;padding:14px 16px;font-size:13.5px;color:var(--muted)}
+  .callout b{color:var(--oyster)}
+
+  /* ---------- Editable cells (Tech Onboarding) ---------- */
+  .cell-input,.cell-select{background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
+    border-radius:7px;padding:6px 8px;font-family:var(--body);font-size:12.5px;width:100%;min-width:92px}
+  .cell-input:focus,.cell-select:focus{outline:1.5px solid var(--brass);outline-offset:0}
+  #tech-table td{min-width:96px}
+
+  /* ---------- Weekly Supplies ---------- */
+  .supply-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
+  .supply-row:last-child{border-bottom:0}
+  .supply-row:hover{background:rgba(62,140,132,.06)}
+  .supply-row.done .sname{text-decoration:line-through;color:var(--muted-2)}
+  .cbox{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);background:var(--navy-2);
+    cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:13px;font-weight:700}
+  .cbox.on{background:var(--ok);border-color:var(--ok)}
+  .sname{flex:1;font-size:14px}
+  .sqty{width:90px;flex:none}
+  .del{background:none;border:0;color:var(--muted-2);cursor:pointer;font-size:18px;line-height:1;padding:2px 7px;border-radius:6px}
+  .del:hover{color:var(--coral);background:var(--panel)}
+  .add-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:16px}
+
+  /* ---------- References ---------- */
+  .refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:4px}
+  .ref{display:flex;align-items:center;gap:10px;text-decoration:none;background:var(--navy-2);
+    border:1px solid var(--line);border-radius:10px;padding:12px 13px;transition:.15s}
+  .ref:hover{border-color:var(--brass);background:var(--panel);transform:translateY(-1px)}
+  .ref .ri{font-size:15px}
+  .ref .rt{font-size:13.5px;font-weight:600;color:var(--oyster)}
+  .ref .ro{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--muted-2)}
+  .note-guide{font-family:var(--mono);font-size:11px;color:var(--teal-bright);cursor:pointer}
+  .note-guide:hover{color:var(--brass-bright)}
+
+  /* ---------- Auth gate ---------- */
+  body.locked .shell{display:none}
+  #gate{display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;padding:24px;
+    background:radial-gradient(1000px 600px at 70% -10%,rgba(62,140,132,.18),transparent 60%),
+      radial-gradient(800px 500px at -10% 110%,rgba(200,146,74,.12),transparent 55%),var(--navy)}
+  body.locked #gate{display:flex}
+  .gate-card{width:100%;max-width:430px;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    padding:34px 30px;box-shadow:var(--shadow)}
+  .gate-card .anchor{font-family:var(--mono);color:var(--brass);letter-spacing:.26em;text-transform:uppercase;font-size:12px;display:flex;gap:8px;align-items:center}
+  .gate-card h1{font-family:var(--display);font-weight:600;font-size:31px;margin:12px 0 6px}
+  .gate-card .gp{color:var(--muted);font-size:14px;margin:0 0 22px}
+  .gate-card .gp b{color:var(--oyster)}
+  .gate-card label{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px}
+  .gate-card input{width:100%;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
+    border-radius:10px;padding:12px 14px;font-size:15px;font-family:var(--body);margin-bottom:14px}
+  .gate-card input:focus{outline:2px solid var(--brass);outline-offset:1px}
+  .gate-card .btn{width:100%;justify-content:center;padding:13px;font-size:15px;display:block}
+  .gate-msg{font-size:13px;min-height:18px}
+  .gate-msg.err{color:var(--coral)} .gate-msg.ok{color:var(--ok)}
+  .gate-foot{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--muted-2)}
+  .demo-banner{margin-top:18px;background:var(--navy-2);border:1px dashed var(--line);border-radius:10px;
+    padding:11px 13px;font-size:11.5px;color:var(--muted);line-height:1.5}
+
+  /* signed-in footer */
+  .me{display:flex;align-items:center;gap:9px;font-size:12px}
+  .me .mail{font-family:var(--mono);color:var(--oyster);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  .me .out{margin-left:auto;background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+    padding:5px 9px;font-size:11px;cursor:pointer;font-family:var(--mono)}
+  .me .out:hover{border-color:var(--coral);color:var(--coral)}
+
+  /* admin-only nav */
+  .admin-only{display:none!important}
+  body.is-admin .nav-label.admin-only{display:block!important}
+  body.is-admin .nav-item.admin-only{display:flex!important}
+  .seg button.on{background:var(--brass);color:var(--navy)}
+
+  /* ---------- Level summary ---------- */
+  .levels{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:4px 0 22px}
+  .lvl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center}
+  .lvl.total{border-color:var(--brass);background:linear-gradient(180deg,var(--panel),var(--navy-2))}
+  .lvl .ln{font-family:var(--display);font-weight:600;font-size:23px;line-height:1}
+  .lvl .ll{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass-bright);margin-top:6px}
+  .lvl .lr{font-family:var(--mono);font-size:9.5px;color:var(--muted-2);margin-top:2px}
+  .lvl .lp{font-family:var(--mono);font-size:10px;color:var(--ok);margin-top:5px}
+
+  /* level badge + health */
+  .lvlbadge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;border:1px solid var(--line);
+    border-radius:20px;padding:2px 7px;color:var(--muted);margin-left:8px}
+  .health-toggle{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    padding:8px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:auto}
+  .health-toggle:hover{border-color:var(--teal);color:var(--oyster)}
+  .health-toggle.flag{border-color:var(--coral);color:var(--coral)}
+  .student-block .seg{margin-left:12px}
+  .health-panel{display:none;padding:4px 14px 16px 60px;background:rgba(226,101,74,.05)}
+  .health-panel.open{display:block}
+  .health-panel .hgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .health-panel label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+  .allergy-chip{font-family:var(--mono);font-size:10.5px;background:rgba(226,101,74,.14);color:var(--coral);
+    border:1px solid rgba(226,101,74,.4);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
+  .student-block{border-bottom:1px solid var(--line-soft)}
+  .student-block:last-child{border-bottom:0}
+  .student-block .student-row{border-bottom:0}
+
+  @media (max-width:980px){
+    .ports{grid-template-columns:repeat(3,1fr)}
+    .ports::before{display:none}
+    .port .theme{min-height:auto}
+  }
+  @media (max-width:760px){
+    .rail{position:fixed;left:0;top:0;transform:translateX(-100%);transition:.25s;box-shadow:var(--shadow)}
+    .rail.open{transform:none}
+    .topbar{display:flex}
+    .view{padding:22px 18px 60px}
+    .page-title{font-size:30px}
+    .ports{grid-template-columns:repeat(2,1fr)}
+    .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;display:none}
+    .scrim.show{display:block}
+  }
+  @media (max-width:760px){
+    .levels{grid-template-columns:repeat(3,1fr)}
+    .health-panel{padding-left:14px}
+    .health-panel .hgrid{grid-template-columns:1fr}
+    .student-block .seg{margin-left:0}
+    .health-toggle{margin-left:0}
+  }
+</style>
+</head>
+<body class="locked">
+<div id="gate">
+  <div class="gate-card">
+    <div class="anchor">⚓ Alpha Odyssey</div>
+    <h1>Hamptons Hub</h1>
+    <p class="gp">Staff access only. Sign in with your <b>@alpha.school</b> or <b>@trilogy.com</b> email.</p>
+    <label for="gate-email">Work email</label>
+    <input id="gate-email" type="email" autocomplete="email" placeholder="you@alpha.school" />
+    <button class="btn" id="gate-go">Continue</button>
+    <p class="gate-msg" id="gate-msg"></p>
+    <div class="gate-foot">Access is managed by Zara Raheem.</div>
+    <div class="demo-banner" id="demo-banner">Preview access control — sign-in is checked in this browser. For protected access across devices (magic-link login + shared allow-list), connect Supabase per the deploy guide.</div>
+  </div>
+</div>
+<div class="shell">
+  <!-- ============ RAIL ============ -->
+  <aside class="rail" id="rail">
+    <div class="brand">
+      <div class="anchor">⚓ Alpha Odyssey</div>
+      <h1>Hamptons<br>Ops Console</h1>
+      <div class="sub">Summer 2026 · 9 weeks · East End</div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-label">Command</div>
+      <button class="nav-item active" data-tab="dashboard"><span class="ico">🧭</span>Dashboard</button>
+      <button class="nav-item" data-tab="staffing"><span class="ico">⚓</span>Staffing</button>
+      <button class="nav-item" data-tab="attendance"><span class="ico">📋</span>Attendance</button>
+      <div class="nav-label">Logistics</div>
+      <button class="nav-item" data-tab="tech"><span class="ico">💻</span>Tech Onboarding</button>
+      <button class="nav-item" data-tab="weekly"><span class="ico">🧺</span>Weekly Supplies</button>
+      <button class="nav-item" data-tab="supplies"><span class="ico">📦</span>Supplies &amp; Packing<span class="ext">live ↗</span></button>
+      <div class="nav-label">Reference</div>
+      <button class="nav-item" data-tab="workstreams"><span class="ico">🗂️</span>Workstreams</button>
+      <button class="nav-item" data-tab="guide"><span class="ico">📖</span>Guide Hub<span class="ext">live ↗</span></button>
+      <div class="nav-label admin-only">Admin</div>
+      <button class="nav-item admin-only" data-tab="access"><span class="ico">🔑</span>Access</button>
+    </nav>
+    <div class="rail-foot">
+      <div class="me"><span class="mail" id="me-mail">—</span><button class="out" id="signout">Sign out</button></div>
+      <div style="margin-top:9px">248 Blank Ln · Water Mill</div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <span class="anchor">⚓ ALPHA ODYSSEY</span>
+      <button class="burger" id="burger" aria-label="Menu">☰</button>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section class="view" id="view-dashboard">
+      <div class="eyebrow">Bridge · Summer 2026</div>
+      <h1 class="page-title">The nine-week voyage</h1>
+      <p class="page-lead">One console for every crew running Alpha Summer in the Hamptons — saltwater, sawdust, and shout-outs. Track who's working, who's present, what to order, and who owns what.</p>
+
+      <div class="voyage">
+        <div class="voyage-head">
+          <div class="eyebrow">Ports of call</div>
+          <div class="tline" id="countdown">—</div>
+        </div>
+        <div class="ports" id="ports"></div>
+      </div>
+
+      <div class="tiles" id="tiles"></div>
+
+      <div class="section-title"><span class="num">↳</span>Jump to</div>
+      <div class="grid g3">
+        <a class="linkcard" data-jump="staffing"><div class="tag">Roster</div><h3>Staffing &amp; Housing</h3><p class="lc-desc">Weekly crew, bed assignments, constraints.</p><div class="go">Open tab →</div></a>
+        <a class="linkcard" data-jump="attendance"><div class="tag">Daily</div><h3>Attendance</h3><p class="lc-desc">Check students in, export the day's roll.</p><div class="go">Open tab →</div></a>
+        <a class="linkcard" data-jump="guide"><div class="tag">Curriculum</div><h3>Guide Hub</h3><p class="lc-desc">Daily field guides for all nine themed weeks.</p><div class="go">Open tab →</div></a>
+      </div>
+
+      <div class="section-title"><span class="num">i</span>The daily rhythm</div>
+      <div class="rhythm">
+        <span class="chip">Drop-off</span><span class="arrow">→</span>
+        <span class="chip">Core Skills</span><span class="arrow">→</span>
+        <span class="chip">Lunch</span><span class="arrow">→</span>
+        <span class="chip">Physical Adventure</span><span class="arrow">→</span>
+        <span class="chip">Workshop</span><span class="arrow">→</span>
+        <span class="chip">Shout-Outs</span><span class="arrow">→</span>
+        <span class="chip">Out at 4:00</span>
+      </div>
+      <div class="callout" style="margin-top:18px">
+        <b>Pool window</b> — Mon–Thu 9:30 AM–1:30 PM · Fri 9:30 AM–12:00 PM. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
+      </div>
+    </section>
+
+    <!-- ===== STAFFING ===== -->
+    <section class="view" id="view-staffing" hidden>
+      <div class="eyebrow">Crew · DRI: Emily (staffing) · Ops: Robbie</div>
+      <h1 class="page-title">Staffing &amp; housing</h1>
+      <p class="page-lead">Ratio is 1 guide per 6 kids (the lead counts in the ratio). Housing holds 5 beds baseline, 7 at surge, at 248 Blank Ln, Water Mill.</p>
+
+      <div class="subtabs" id="staff-subtabs">
+        <button class="subtab active" data-sub="roster">Weekly Roster</button>
+        <button class="subtab" data-sub="housing">Housing</button>
+        <button class="subtab" data-sub="staff">Staff Roster</button>
+        <button class="subtab" data-sub="ops">Ops Coverage</button>
+        <button class="subtab" data-sub="summary">Summary</button>
+      </div>
+
+      <div class="subpanel active" id="sub-roster">
+        <div class="meta-line"><span>Highlighted column = <b>next/active week</b></span><span>Cal B guides may support weeks 6–7</span></div>
+        <div class="tablewrap"><table id="roster-table"></table></div>
+        <div class="legend">
+          <span><span class="swatch" style="background:var(--coral)"></span>TBD / open hire</span>
+          <span><span class="swatch" style="background:rgba(200,146,74,.4)"></span>Active week column</span>
+          <span><span class="swatch" style="background:var(--muted-2)"></span>Not staffed that week</span>
+        </div>
+      </div>
+
+      <div class="subpanel" id="sub-housing">
+        <div class="meta-line"><span><b>248 Blank Ln, Water Mill</b></span><span>5 bedrooms · 5 baseline / 7 surge</span><span>Stays: Coordinator, Lead, Manuel, extra guides</span></div>
+        <div class="callout" style="margin-bottom:16px">Does <b>not</b> stay in housing: Nancy (Admissions), Nurse, Lifeguards.</div>
+        <div class="tablewrap"><table id="housing-table"></table></div>
+      </div>
+
+      <div class="subpanel" id="sub-staff">
+        <p class="page-lead" style="margin-bottom:16px">Confirmed crew, availability constraints, and pre-camp setup week (06/22).</p>
+        <div class="tablewrap"><table id="staff-table"></table></div>
+      </div>
+
+      <div class="subpanel" id="sub-ops">
+        <p class="page-lead" style="margin-bottom:16px">Operations coverage across pre-launch, load-in, and the nine program weeks.</p>
+        <div class="tablewrap"><table id="ops-table"></table></div>
+      </div>
+
+      <div class="subpanel" id="sub-summary">
+        <div class="meta-line"><span>Ratio <b>1:6</b></span><span>Total <b>134</b> guide-weeks across the summer</span></div>
+        <div class="tablewrap"><table id="summary-table"></table></div>
+        <div class="callout" style="margin-top:16px"><b>Note:</b> the Summary sheet and the live Weekly Roster show slightly different enrollment for a few weeks (enrollment is still being finalized). The dashboard and roster use the live roster numbers.</div>
+      </div>
+    </section>
+
+    <!-- ===== ATTENDANCE ===== -->
+    <section class="view" id="view-attendance" hidden>
+      <div class="eyebrow">Daily logistics · DRI: Campus Coordinator</div>
+      <h1 class="page-title">Attendance</h1>
+      <p class="page-lead">Take the daily roll, see the count by level, and flag allergies &amp; medications. Marks save per date; health details save per roster — all in this browser.</p>
+
+      <div class="att-bar">
+        <div class="field">
+          <label for="att-week">Roster</label>
+          <select id="att-week"><option value="1">Week 1 · Survivor</option></select>
+        </div>
+        <div class="field">
+          <label for="att-date">Date</label>
+          <input type="date" id="att-date" />
+        </div>
+        <div class="att-stats" id="att-stats"></div>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
+      <div class="levels" id="att-levels"></div>
+
+      <div class="tablewrap" id="att-list"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+        <button class="btn" id="att-allp">Mark all present</button>
+        <button class="btn ghost" id="att-clear">Clear day</button>
+        <button class="btn ghost" id="att-export">Export CSV</button>
+        <span class="saved-note" id="att-saved"></span>
+      </div>
+      <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they'll flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Only the Week 1 roster is loaded; later weeks slot in here too.</div>
+    </section>
+
+    <!-- ===== TECH ONBOARDING ===== -->
+    <section class="view" id="view-tech" hidden>
+      <div class="eyebrow">Technology · DRI: Campus Coordinator · Robbie (screens)</div>
+      <h1 class="page-title">Tech onboarding</h1>
+      <p class="page-lead">Laptop and iPad assignments by student — asset tags, setup status, and who has what. Edits save per roster in this browser.</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="tech-week">Roster</label>
+          <select id="tech-week"><option value="1">Week 1 · Survivor</option></select></div>
+        <div class="att-stats" id="tech-stats"></div>
+      </div>
+
+      <div class="tablewrap"><table id="tech-table"></table></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+        <button class="btn ghost" id="tech-export">Export CSV</button>
+        <span class="saved-note" id="tech-saved"></span>
+      </div>
+      <div class="callout" style="margin-top:18px">Devices return to the cart each afternoon — set status to <b>Returned</b> at dismissal to keep the count clean. Only the Week 1 roster is loaded; later weeks slot in here too.</div>
+    </section>
+
+    <!-- ===== WEEKLY SUPPLIES ===== -->
+    <section class="view" id="view-weekly" hidden>
+      <div class="eyebrow">Inventory · DRI: Campus Coordinator</div>
+      <h1 class="page-title">Weekly supplies</h1>
+      <p class="page-lead">A per-week ordering &amp; restock checklist, kept separate from the packing system. Tick items as they're sourced, add your own, and export the week's list. Saved per week in this browser.</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="sup-week">Week</label><select id="sup-week"></select></div>
+        <div class="att-stats" id="sup-stats"></div>
+      </div>
+
+      <div class="tablewrap" id="sup-list"></div>
+
+      <div class="add-row">
+        <div class="field"><label for="sup-new">Add item</label><input class="cell-input" id="sup-new" placeholder="e.g. Extra sunscreen" style="min-width:220px"></div>
+        <div class="field"><label for="sup-newqty">Qty / note</label><input class="cell-input" id="sup-newqty" placeholder="optional" style="min-width:140px"></div>
+        <button class="btn" id="sup-add">Add item</button>
+        <button class="btn ghost" id="sup-export">Export CSV</button>
+        <button class="btn ghost" id="sup-reset">Reset to template</button>
+      </div>
+      <div class="callout" style="margin-top:18px">Placing actual orders? The <b>Supplies &amp; Packing</b> tab has the live ordering &amp; clear-tote system. <a href="https://summer-nyc.vercel.app/" target="_blank" rel="noopener" style="color:var(--brass-bright)">Open the Ops site ↗</a></div>
+    </section>
+
+    <!-- ===== ACCESS MANAGEMENT ===== -->
+    <section class="view" id="view-access" hidden>
+      <div class="eyebrow">Admin · Owner: zara.raheem@alpha.school</div>
+      <h1 class="page-title">Access management</h1>
+      <p class="page-lead">Control who can sign in to the Hamptons Hub. Sign-in is limited to @alpha.school and @trilogy.com emails — approve the specific people who should have access.</p>
+
+      <div class="grid g2" style="margin-bottom:24px">
+        <div class="card">
+          <h3>Access mode</h3>
+          <p style="margin-bottom:14px">How staff get in.</p>
+          <div class="seg" id="mode-seg" style="margin:0">
+            <button data-mode="allowlist">Approved emails only</button>
+            <button data-mode="domain">Anyone @alpha / @trilogy</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Add someone</h3>
+          <p style="margin-bottom:14px">They'll be able to sign in with this email.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input class="cell-input" id="add-email" placeholder="name@alpha.school" style="flex:1;min-width:180px">
+            <button class="btn" id="add-email-btn">Add</button>
+          </div>
+          <p class="gate-msg" id="add-msg" style="margin-top:9px"></p>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="num">#</span>Approved people</div>
+      <div class="tablewrap"><table id="access-table"></table></div>
+      <div class="callout" style="margin-top:18px">This is a preview access layer — the allow-list lives in this browser. For real protected sign-in across devices (magic-link login + a shared list with student data secured), connect Supabase; see the deploy guide that ships with this file.</div>
+    </section>
+
+    <!-- ===== WORKSTREAMS ===== -->
+    <section class="view" id="view-workstreams" hidden>
+      <div class="eyebrow">Accountability · Who owns what</div>
+      <h1 class="page-title">Workstreams &amp; DRIs</h1>
+      <p class="page-lead">Every workstream across the program, its scope, the directly-responsible individual, linked checklists, and success metric where one's defined.</p>
+      <div class="embed-head">
+        <div class="meta-line" style="margin:0"><span>Source: <b>Hamptons Roles &amp; Responsibilities</b></span></div>
+        <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1bKnVD1XSN4GYbiJKGqZ8pgV_yIenZ4MyglIui9Q6eLQ/edit" target="_blank" rel="noopener">Open master sheet ↗</a>
+      </div>
+      <div class="ws-filter" id="ws-filter"></div>
+      <div class="grid g2" id="ws-grid"></div>
+
+      <div class="section-title"><span class="num">↳</span>Checklists &amp; references</div>
+      <p class="page-lead" style="margin:-6px 0 14px">Linked docs referenced across the workstreams. These live in the master sheet — open it for the current links.</p>
+      <div class="refs" id="refs"></div>
+    </section>
+
+    <!-- ===== GUIDE HUB ===== -->
+    <section class="view" id="view-guide" hidden>
+      <div class="eyebrow">Curriculum · Contact Kate Liemandt on Slack</div>
+      <h1 class="page-title">Guide Hub</h1>
+      <p class="page-lead">Daily field guides for the summer Odyssey. The Full brief (Master) has every detail; each level tab is your grade's summary — read just that.</p>
+
+      <div class="embed-head">
+        <div class="meta-line" style="margin:0"><span>Nine weeks · day-by-day briefs</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">Open Guide Hub ↗</a>
+          <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/print?auto=1" target="_blank" rel="noopener">Download full PDF ↗</a>
+        </div>
+      </div>
+
+      <div class="grid g3" id="guide-weeks" style="margin-bottom:20px"></div>
+
+      <div class="embed-frame" id="guide-embed">
+        <div class="embed-fallback">
+          <div>Loading the live Guide Hub…</div>
+          <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SUPPLIES ===== -->
+    <section class="view" id="view-supplies" hidden>
+      <div class="eyebrow">Logistics · The clear-tote system</div>
+      <h1 class="page-title">Supplies &amp; packing</h1>
+      <p class="page-lead">The summer command center: every task by owner, the clear-tote packing system, and the side-quest / physical-challenge roster. Every physical item lives in a labeled clear container.</p>
+
+      <div class="grid g3" style="margin-bottom:20px">
+        <div class="card"><h3>Command Center</h3><p>Every task across every program component, grouped by owner. Surface what's urgent.</p></div>
+        <div class="card"><h3>Clear-tote system</h3><p>A mover reads the label, finds the tote, checks the contents. Group by week or storage zone.</p></div>
+        <div class="card"><h3>Side quests</h3><p>Voluntary mastery quests kids can pass any week, plus the physical-challenge sport roster.</p></div>
+      </div>
+
+      <div class="embed-head">
+        <div class="meta-line" style="margin:0"><span>Ordering · packing · program ops</span></div>
+        <a class="btn" href="https://summer-nyc.vercel.app/" target="_blank" rel="noopener">Open full Ops site ↗</a>
+      </div>
+      <div class="embed-frame" id="supplies-embed">
+        <div class="embed-fallback">
+          <div>Loading the live ordering &amp; packing site…</div>
+          <a class="btn ghost" href="https://summer-nyc.vercel.app/" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* =================== DATA =================== */
+const WEEKS = [
+  {n:1, theme:"Survivor",              range:"Jun 29 – Jul 3", start:"2026-06-29", end:"2026-07-03", kids:24, flag:""},
+  {n:2, theme:"Master Chef",           range:"Jul 6 – Jul 10", start:"2026-07-06", end:"2026-07-10", kids:21, flag:"Guest chef TBD"},
+  {n:3, theme:"Pottery & Forge",       range:"Jul 13 – Jul 17",start:"2026-07-13", end:"2026-07-17", kids:8,  flag:"Pottery instr."},
+  {n:4, theme:"Sky & Siege",           range:"Jul 20 – Jul 24",start:"2026-07-20", end:"2026-07-24", kids:8,  flag:""},
+  {n:5, theme:"Surf & Odyssey",        range:"Jul 27 – Jul 31",start:"2026-07-27", end:"2026-07-31", kids:6,  flag:"Surf instr. TBD"},
+  {n:6, theme:"Shadow & Screen",       range:"Aug 3 – Aug 7",  start:"2026-08-03", end:"2026-08-07", kids:7,  flag:""},
+  {n:7, theme:"Serhant Real Estate",   range:"Aug 10 – Aug 14",start:"2026-08-10", end:"2026-08-14", kids:11, flag:"Serhant brokerage"},
+  {n:8, theme:"Songwriting & Concert", range:"Aug 17 – Aug 21",start:"2026-08-17", end:"2026-08-21", kids:20, flag:"Songwriter TBD"},
+  {n:9, theme:"Maker's Workshop",      range:"Aug 24 – Aug 28",start:"2026-08-24", end:"2026-08-28", kids:37, flag:""},
+];
+const guidesNeeded = k => Math.ceil(k/6);
+
+const ROSTER = [
+  {role:"Campus Coordinator", cells:["Julianne AND Zara","Julianne","Julianne","Zara","Julianne AND Zara","Zara","Zara","Shannon","Shannon"]},
+  {role:"Admissions", cells:["Nancy","Nancy","Nancy","Nancy","Nancy","Nancy","Nancy","Nancy","Nancy"]},
+  {role:"World School Coord (NYC)", cells:["","","","","","Julianne","Julianne","Julianne","Julianne"]},
+  {role:"Lead Guide", cells:["Jenna K","Jesse","Jenna K","Jenna K","Parthvi","","Jenna K","Jenna K","Jenna K"]},
+  {role:"Guide 1", cells:["Sam","Sam","Sam","Sam","","Sam","Sam","Sam","Sam"]},
+  {role:"Guide 2", cells:["Liam","Kris Ponder","Darby Knox","Darby Knox","Varenya Hariharan","Varenya Hariharan","","","Parthvi"]},
+  {role:"Guide 3", cells:["Jesse","","Jesse","Jesse","","","Varenya Hariharan","Emily","Kayla"]},
+  {role:"Guide 4", cells:["Varenya Hariharan","Gaby","Jackson","Varenya Hariharan","","","","Varenya Hariharan",""]},
+  {role:"Guide 5", cells:["","Varenya Hariharan","Varenya Hariharan","Mia","","","","","Varenya Hariharan"]},
+  {role:"Nurse", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
+  {role:"Lifeguard 1", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
+  {role:"Lifeguard 2", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
+  {role:"Workshops (Manuel)", cells:["Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel"]},
+  {role:"Content", cells:["Gaby Guajardo","","","","Gaby Guajardo","","","","Gaby Guajardo"]},
+];
+const STANDBY = ["Mia","Gaby"];
+
+const HOUSING = [
+  {bed:"Bed 1 — BR1 (Coordinator)", tier:"BASELINE", cells:["Zara","Zara","","","","","","",""]},
+  {bed:"Bed 2 — BR2 (Lead Guide)", tier:"BASELINE", cells:["Jenna","Jesse","Jenna K","Jenna K","Parthvi","—","Jenna K","Jenna K","Jenna K"]},
+  {bed:"Bed 3 — BR3 (Manuel)", tier:"BASELINE", cells:["Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel"]},
+  {bed:"Bed 4 — BR4 (Guide 1)", tier:"BASELINE", cells:["Sam","Sam","Sam","Sam","Sam","Parthvi","Sam","Sam","Sam"]},
+  {bed:"Bed 5 — BR5 (Guide 2)", tier:"BASELINE", cells:["Liam","","","","","","","",""]},
+  {bed:"Bed 6", tier:"SURGE", cells:["Varenya","","","","","","","",""]},
+  {bed:"Bed 7", tier:"SURGE", cells:["Julianne","—","—","—","—","—","—","—","—"]},
+  {bed:"Bed 8", tier:"OVERFLOW", cells:["Gaby","","","","","","","",""]},
+  {bed:"Bed 9", tier:"OVERFLOW", cells:["Emily","","","","","","","",""]},
+  {bed:"Bed 10", tier:"OVERFLOW", cells:["Jesse","","","","","","","",""]},
+];
+
+const STAFF = [
+  ["Julianne","Campus Coordinator","Confirmed","Yes","Setup wk: Wed–Fri","—","Eligible any week"],
+  ["Zara","Campus Coordinator","Confirmed","Yes","Setup wk: Wed–Fri","—","Eligible any week"],
+  ["Liam","Lead Guide","Confirmed","Yes","—","—","Eligible any week"],
+  ["Emily","Campus Director","Confirmed","Yes","Wk 1: M–F","OUT W3 (7/13–17), W4 (7/20–24)","Cannot lead W3 or W4"],
+  ["Jenna","Guide → Lead Guide","Confirmed","Yes","Setup wk: arrives Fri","—","Eligible any week"],
+  ["Manuel","Workshops / Carpenter","Confirmed","Yes","—","—","All 9 weeks"],
+  ["Robbie","Ops DRI","—","—","Setup wk: all week","—","—"],
+  ["Gaby Guajardo","Content","—","—","Wk 1: M–F","—","—"],
+  ["Chauncey","Guide","—","—","Setup wk: Wed–Fri","—","—"],
+  ["Nancy","Admissions","Confirmed","No","—","—","All 9 weeks"],
+  ["TBD","Nurse","Open","No","—","—","Hire needed — all 9 weeks"],
+  ["TBD","Lifeguard 1","Open","No","—","—","Hire needed — all 9 weeks"],
+  ["TBD","Lifeguard 2","Open","No","—","—","Hire needed — all 9 weeks"],
+  ["TBD","Guide 1","Open","Yes","—","—","—"],
+  ["TBD","Guide 2","Open","Yes","—","—","—"],
+  ["TBD","Guide 3","Open","Yes","—","—","—"],
+  ["TBD","Guide 4","Open","Yes","—","—","—"],
+];
+
+const OPS = [
+  ["Robbie Forrest","Overall Ops DRI","Overall DRI; add onsite dates"],
+  ["Jake Petersen","Security","On-site from ~Jun 18"],
+  ["JR Houston","P2 / setup","Jun 16–19"],
+  ["Darya Castro","Design / setup","—"],
+  ["Alice Lee","Ops support","—"],
+  ["Jim Liu","Food / Transportation","Load-in ~Jun 24"],
+];
+
+const WORKSTREAMS = [
+  {name:"Overall Logistics", dri:"Ops · Robbie", scope:"Housing (staff), transportation (staff & student), food (lunch), cleaning, furnishings, HVAC.", links:["Hampton Staff Site Guide","JCOH Rules of the Road","Staff Driver / Auto Policy"], metric:""},
+  {name:"Compliance & Permitting", dri:"Ops · Robbie", scope:"Insurance, Health Department, fire safety, JCC comms & escalations.", links:[], metric:""},
+  {name:"Supplemental Personnel", dri:"Ops · Robbie", scope:"Aquatics director (2× lifeguards), nurse, armed security w/ Raptor check-in system.", links:[], metric:""},
+  {name:"Outdoor Facilities", dri:"Ops · Robbie", scope:"Ninja Warrior course, pool area, soccer, gaga ball, basketball, pickleball, volleyball, cornhole, flag football, frisbee, spikeball.", links:["Ninja Warrior Renderings"], metric:""},
+  {name:"Inventory", dri:"Campus Coordinator", scope:"Snacks, emporium items, AV equipment (mics, JBL speakers), moving everything there & back.", links:[], metric:""},
+  {name:"Technology", dri:"Campus Coordinator", scope:"Laptops, iPads, screens (outdoor projection), onboarding tech.", links:[], metric:""},
+  {name:"Pre-Summer Comms", dri:"Zara", scope:"Email reminders, registration forms (allergies, medications), drop-off/pickup, what to bring.", links:[], metric:""},
+  {name:"One-off Comms", dri:"Campus Coordinator", scope:"Emergencies, logistical changes.", links:[], metric:""},
+  {name:"Weekly / Daily Comms", dri:"Jenna", scope:"Weekly Plan and Daily Digest, pictures.", links:[], metric:"Open: ADoP / Nancy / Tasha?"},
+  {name:"Daily Logistics", dri:"Campus Coordinator", scope:"Attendance, dismissals, deliveries, vendor arrivals.", links:[], metric:""},
+  {name:"Admissions Activities", dri:"Nancy", scope:"Coffee & Conversations, events, closing 1:1s, in-person tours, one-off parent comms.", links:[], metric:"Conversion rate"},
+  {name:"ADoP Activities", dri:"Nancy", scope:"AlphaTest showcases (Event Collective + Vivia last week).", links:[], metric:"Open: Nancy or Tasha?"},
+  {name:"Workshops — Definition", dri:"Kate", scope:"Workshop creation, sourcing vendors & initial coordination, playbooks.", links:["Workshop Plans"], metric:""},
+  {name:"Workshops — Execution", dri:"Lead Guide · Jenna", scope:"Vendor management, adjustments.", links:[], metric:""},
+  {name:"Programming", dri:"Lead Guide · Jenna", scope:"Guide responsibilities & coverage, managing the floor, staffing coordination, where-to-be-when. Daily flow-of-day now lives in the Guide Hub.", links:[], metric:"", guideRef:true},
+  {name:"Academics", dri:"Lead Guide · Jenna", scope:"Everyone set up in the correct apps, support.", links:[], metric:""},
+  {name:"Decorations & Signage", dri:"Ops · Alice", scope:"Popup banners, decals, cultural messaging (shout-out language, calls to attention). Support from Chauncey.", links:["Decor & Signage Wish List"], metric:""},
+  {name:"Swag & Merch", dri:"Emily", scope:"Shirts, Julianne's beads, beach towels, water bottles, backpack/tote, hat/cap.", links:[], metric:""},
+  {name:"Staffing", dri:"Emily", scope:"Guide staffing for each week.", links:["Staffing List"], metric:""},
+];
+
+const STUDENTS_W1 = [
+  ["Harley","Damaghi","PK"],["Nell","Monness","K"],["Zen","Ovitz","K"],["Juliet","Krumholz","1"],
+  ["Ethan","Israel","1"],["Bennett","Fox","1"],["Jaxxon","Damaghi","2"],["Hutton","Thebault","2"],
+  ["River","Cortese","2"],["Annabelle","Israel","3"],["Fletcher","Johnson","3"],["Ariana","Sheikh","4"],
+  ["Pax","Ovitz","4"],["Casper","White","5"],["Christian","Israel","5"],["Noah","Moradi","5"],
+  ["Louis","Pack","6"],["Julia","Librizzi","7"],["Ayla","White","7"],["Price","Sparacino","7"],
+  ["Gio","Cortese","7"],["Enzo","Ciquera","7"],["Henry","Lipschultz","9"],["Radley","Lefkowitz","9"],
+];
+
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1bKnVD1XSN4GYbiJKGqZ8pgV_yIenZ4MyglIui9Q6eLQ/edit";
+const CHECKLISTS = [
+  {t:"Hampton Staff Site Guide", o:"Overall Logistics"},
+  {t:"JCOH Rules of the Road", o:"Overall Logistics"},
+  {t:"Staff Driver Info / Auto Policy", o:"Overall Logistics"},
+  {t:"Ninja Warrior Renderings", o:"Outdoor Facilities"},
+  {t:"Workshop Plans", o:"Workshops"},
+  {t:"Decor & Signage Wish List", o:"Decorations & Signage"},
+  {t:"Staffing List", o:"Staffing"},
+];
+const SUPPLY_TEMPLATE = [
+  "Snacks — daily restock","Water & drinks","Emporium / store items",
+  "AV check: mics + JBL speakers charged","Laptops & iPads charged","Workshop materials (Manuel)",
+  "Sports & outdoor gear","First aid / nurse supplies","Sunscreen",
+  "Signage & decor refresh","Swag for the week (shirts, towels, bottles)","Lunch headcount confirmed",
+];
+function studentEmail(s){ return `${s[0].toLowerCase()}.${s[1].toLowerCase()}@alpha.school`; }
+function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
+function csvDownload(name, rows){
+  const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  const a = document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+}
+function flash(id){ const el=document.getElementById(id); if(el) el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+/* program levels */
+const LEVELS = [
+  {key:'Wonderlab', label:'Wonderlab', range:'PK'},
+  {key:'LL', label:'LL', range:'K–1'},
+  {key:'L1', label:'L1', range:'2–3'},
+  {key:'L2', label:'L2', range:'4–5'},
+  {key:'MS', label:'MS', range:'6–8'},
+  {key:'HS', label:'HS', range:'9–12'},
+];
+function levelOf(grade){
+  const g = String(grade).toUpperCase().trim();
+  if(g==='PK') return 'Wonderlab';
+  if(g==='K'||g==='1') return 'LL';
+  if(g==='2'||g==='3') return 'L1';
+  if(g==='4'||g==='5') return 'L2';
+  if(['6','7','8'].includes(g)) return 'MS';
+  return 'HS';
+}
+
+/* access config */
+const OWNER = 'zara.raheem@alpha.school';
+const DOMAINS = ['alpha.school','trilogy.com'];
+const TODAY = new Date("2026-06-19");
+function activeWeekIndex(){
+  for(let i=0;i<WEEKS.length;i++){
+    if(TODAY <= new Date(WEEKS[i].end+"T23:59:59")) return i;
+  }
+  return WEEKS.length-1;
+}
+const NOW = activeWeekIndex(); // index of next/active week
+
+const mem = {};
+const store = {
+  get(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):(mem[k]??null);}catch(e){return mem[k]??null;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ mem[k]=v; } }
+};
+
+/* =================== RENDER: DASHBOARD =================== */
+function renderPorts(){
+  const maxK = Math.max(...WEEKS.map(w=>w.kids));
+  const el = document.getElementById('ports');
+  el.innerHTML = WEEKS.map((w,i)=>`
+    <a class="port ${i===NOW?'next':''}" href="https://alpha-odyssey-guide-hub.vercel.app/week/${w.n}" target="_blank" rel="noopener">
+      ${i===NOW?'<span class="dot"></span>':''}
+      <span class="wk">WEEK ${w.n}</span>
+      <span class="theme">${w.theme}</span>
+      <span class="dates">${w.range}</span>
+      <div class="meter"><i style="width:${Math.round(w.kids/maxK*100)}%"></i></div>
+      <div class="row"><span class="kids"><b>${w.kids}</b> kids</span><span class="need">${guidesNeeded(w.kids)} guides</span></div>
+      ${w.flag?`<span class="flag">⚓ ${w.flag}</span>`:''}
+    </a>`).join('');
+}
+function renderCountdown(){
+  const w = WEEKS[NOW];
+  const days = Math.ceil((new Date(w.start) - TODAY)/86400000);
+  const el = document.getElementById('countdown');
+  if(days>0) el.innerHTML = `T-minus <b>${days} days</b> to Week ${w.n} · ${w.theme} (${w.range})`;
+  else el.innerHTML = `Now sailing · <b>Week ${w.n} · ${w.theme}</b> (${w.range})`;
+}
+function renderTiles(){
+  const totalKids = WEEKS.reduce((a,w)=>a+w.kids,0);
+  const guideWeeks = WEEKS.reduce((a,w)=>a+guidesNeeded(w.kids),0);
+  const tiles = [
+    {k:"Total enrollment", v:totalKids, d:"across 9 weeks", c:""},
+    {k:"Guide-weeks needed", v:guideWeeks, d:"at the 1:6 ratio", c:"t-teal"},
+    {k:"Housing capacity", v:"5 / 7", d:"baseline / surge beds", c:""},
+    {k:"Open roles", v:"3", d:"nurse + 2 lifeguards (TBD)", c:"t-coral"},
+    {k:"Peak week", v:"W9 · 37", d:"Maker's Workshop", c:"t-teal"},
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map(t=>`
+    <div class="tile ${t.c}"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join('');
+}
+
+/* =================== RENDER: STAFFING TABLES =================== */
+function cellHTML(v){
+  if(v==="TBD") return `<span class="tbd">TBD</span>`;
+  if(v==="" ) return `<span class="blank">—</span>`;
+  if(v==="—") return `<span class="blank">—</span>`;
+  return v;
+}
+function weekHeaders(){
+  return WEEKS.map((w,i)=>`<th class="${i===NOW?'col-now':''}">W${w.n}<br><span style="color:var(--muted-2);font-weight:400">${w.range}</span></th>`).join('');
+}
+function renderRoster(){
+  const head = `<thead><tr><th class="role-cell">Role</th>${weekHeaders()}</tr></thead>`;
+  const body = ROSTER.map(r=>`<tr><td class="role-cell">${r.role}</td>${
+    r.cells.map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
+  }</tr>`).join('') +
+    `<tr><td class="role-cell">Standby</td><td colspan="9" class="note-row">${STANDBY.join(' · ')}</td></tr>`;
+  document.getElementById('roster-table').innerHTML = head+`<tbody>${body}</tbody>`;
+}
+function renderHousing(){
+  const head = `<thead><tr><th class="role-cell">Bed</th>${weekHeaders()}<th>Tier</th></tr></thead>`;
+  const body = HOUSING.map(r=>`<tr><td class="role-cell">${r.bed}</td>${
+    r.cells.map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
+  }<td><span class="pill ${r.tier==='BASELINE'?'ok':''}">${r.tier}</span></td></tr>`).join('');
+  document.getElementById('housing-table').innerHTML = head+`<tbody>${body}</tbody>`;
+}
+function renderStaff(){
+  const cols = ["Name","Role","Status","Housing","Pre-camp (06/22)","Constraint","Notes"];
+  const head = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+  const body = STAFF.map(r=>`<tr>
+    <td class="role-cell">${r[0]==='TBD'?'<span class="tbd">TBD</span>':r[0]}</td>
+    <td>${r[1]}</td>
+    <td>${r[2]==='Confirmed'?'<span class="pill ok">Confirmed</span>':r[2]==='Open'?'<span class="pill open">Open</span>':'<span class="blank">—</span>'}</td>
+    <td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="note-row">${r[6]}</td>
+  </tr>`).join('');
+  document.getElementById('staff-table').innerHTML = head+`<tbody>${body}</tbody>`;
+}
+function renderOps(){
+  const head = `<thead><tr><th>Person</th><th>Coverage role</th><th>Notes</th></tr></thead>`;
+  const body = OPS.map(r=>`<tr><td class="role-cell">${r[0]}</td><td>${r[1]}</td><td class="note-row">${r[2]}</td></tr>`).join('');
+  document.getElementById('ops-table').innerHTML = head+`<tbody>${body}</tbody>`;
+}
+function renderSummary(){
+  const head = `<thead><tr><th>Week</th><th>Dates</th><th>Theme</th><th>Kids</th><th>Guides needed</th><th>Status</th></tr></thead>`;
+  const body = WEEKS.map((w,i)=>`<tr class="${i===NOW?'':''}">
+    <td class="role-cell ${i===NOW?'col-now':''}">Week ${w.n}</td>
+    <td>${w.range}</td><td>${w.theme}</td>
+    <td><b style="color:var(--brass-bright)">${w.kids}</b></td>
+    <td>${guidesNeeded(w.kids)}</td>
+    <td><span class="pill ok">Within baseline</span></td>
+  </tr>`).join('');
+  const totalK = WEEKS.reduce((a,w)=>a+w.kids,0);
+  const totalG = WEEKS.reduce((a,w)=>a+guidesNeeded(w.kids),0);
+  const foot = `<tr><td class="role-cell">TOTAL</td><td>9 weeks</td><td>—</td><td><b style="color:var(--brass-bright)">${totalK}</b></td><td>${totalG}</td><td class="note-row">guide-weeks</td></tr>`;
+  document.getElementById('summary-table').innerHTML = head+`<tbody>${body}${foot}</tbody>`;
+}
+
+/* =================== RENDER: WORKSTREAMS =================== */
+function renderWorkstreams(filter){
+  const dris = [...new Set(WORKSTREAMS.map(w=>w.dri.split(' · ')[0]))];
+  // build filter once
+  const fwrap = document.getElementById('ws-filter');
+  if(!fwrap.dataset.built){
+    const all = ['All', ...[...new Set(WORKSTREAMS.map(w=>{
+      const d=w.dri; if(d.startsWith('Ops')) return 'Ops'; if(d.startsWith('Lead')) return 'Lead Guide'; if(d.startsWith('Campus')) return 'Campus Coordinator'; return d;
+    }))]];
+    fwrap.innerHTML = all.map((d,i)=>`<button class="fbtn ${i===0?'active':''}" data-f="${d}">${d}</button>`).join('');
+    fwrap.dataset.built="1";
+    fwrap.querySelectorAll('.fbtn').forEach(b=>b.addEventListener('click',()=>{
+      fwrap.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); renderWorkstreams(b.dataset.f);
+    }));
+  }
+  const match = w => filter==='All'||!filter ? true : w.dri.startsWith(filter) || w.dri.includes(filter);
+  document.getElementById('ws-grid').innerHTML = WORKSTREAMS.filter(match).map(w=>`
+    <div class="ws-card">
+      <div class="top"><h3>${w.name}</h3><span class="dri">${w.dri}</span></div>
+      <div class="scope">${w.scope}</div>
+      ${w.links.length?`<div class="links">${w.links.map(l=>`<span class="lk">🔗 ${l}</span>`).join('')}</div>`:''}
+      ${w.metric?`<div class="metric">${w.metric}</div>`:''}
+      ${w.guideRef?`<div class="note-guide" onclick="showTab('guide')">Daily flow-of-day → see Guide Hub</div>`:''}
+    </div>`).join('');
+}
+
+/* =================== RENDER: GUIDE WEEKS =================== */
+function renderGuideWeeks(){
+  document.getElementById('guide-weeks').innerHTML = WEEKS.map(w=>`
+    <a class="linkcard" href="https://alpha-odyssey-guide-hub.vercel.app/week/${w.n}" target="_blank" rel="noopener">
+      <div class="tag">Week ${w.n} · ${w.range}</div>
+      <h3>${w.theme}</h3>
+      <p class="lc-desc">${guidesNeeded(w.kids)} guides · ${w.kids} kids${w.flag?` · ${w.flag}`:''}</p>
+      <div class="go">Open day-by-day brief →</div>
+    </a>`).join('');
+}
+
+/* =================== ATTENDANCE =================== */
+const ATT_STATES = {p:'sel-p', l:'sel-l', a:'sel-a'};
+function attKey(){ return `att:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
+function loadAtt(){ return store.get(attKey()) || {}; }
+function saveAtt(data){ store.set(attKey(), data); flashSaved(); }
+function flashSaved(){
+  const el=document.getElementById('att-saved');
+  el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+function healthKey(){ return `health:w${document.getElementById('att-week').value}`; }
+function loadHealth(){ return store.get(healthKey()) || {}; }
+function saveHealth(h){ store.set(healthKey(), h); }
+function renderAtt(){
+  const data = loadAtt();
+  const health = loadHealth();
+  const list = document.getElementById('att-list');
+  list.innerHTML = STUDENTS_W1.map((s,idx)=>{
+    const st = data[idx]||'';
+    const init = (s[0][0]+s[1][0]).toUpperCase();
+    const h = health[idx]||{};
+    const hasAllergy = !!(h.allergies && h.allergies.trim());
+    const hasMed = !!(h.meds && h.meds.trim());
+    const flag = hasAllergy || hasMed;
+    return `<div class="student-block" data-idx="${idx}">
+      <div class="student-row">
+        <div class="avatar">${init}</div>
+        <div><div class="nm">${esc(s[0])} ${esc(s[1])}${hasAllergy?`<span class="allergy-chip">⚠ ${esc((h.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:''}</div>
+          <div class="gr">Grade ${esc(s[2])}<span class="lvlbadge">${levelOf(s[2])}</span></div></div>
+        <button class="health-toggle ${flag?'flag':''}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
+        <div class="seg" data-idx="${idx}">
+          <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
+          <button data-s="l" class="${st==='l'?'sel-l':''}">Late</button>
+          <button data-s="a" class="${st==='a'?'sel-a':''}">Absent</button>
+        </div>
+      </div>
+      <div class="health-panel">
+        <div class="hgrid">
+          <div><label>Allergies</label><input class="cell-input" data-h="allergies" value="${escAttr(h.allergies)}" placeholder="e.g. peanuts, bee stings — or NKA"></div>
+          <div><label>Medications</label><input class="cell-input" data-h="meds" value="${escAttr(h.meds)}" placeholder="e.g. EpiPen, inhaler, daily Rx"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.seg button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=btn.parentElement.dataset.idx, s=btn.dataset.s;
+      const d=loadAtt();
+      if(d[idx]===s){ delete d[idx]; } else { d[idx]=s; }
+      saveAtt(d); renderAtt(); renderLevels();
+    });
+  });
+  list.querySelectorAll('[data-act=htoggle]').forEach(btn=>{
+    btn.addEventListener('click',()=>{ btn.closest('.student-block').querySelector('.health-panel').classList.toggle('open'); });
+  });
+  list.querySelectorAll('[data-h]').forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      const block=inp.closest('.student-block'); const idx=block.dataset.idx;
+      const h=loadHealth(); h[idx]=h[idx]||{}; h[idx][inp.dataset.h]=inp.value; saveHealth(h);
+      const hh=h[idx];
+      const hasAllergy=!!(hh.allergies&&hh.allergies.trim());
+      const flag=hasAllergy||!!(hh.meds&&hh.meds.trim());
+      const tgl=block.querySelector('[data-act=htoggle]');
+      tgl.classList.toggle('flag',flag); tgl.textContent=flag?'⚠ health':'＋ health';
+      const nm=block.querySelector('.nm');
+      const base=`${esc(STUDENTS_W1[idx][0])} ${esc(STUDENTS_W1[idx][1])}`;
+      nm.innerHTML=base+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((hh.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
+    });
+  });
+  renderAttStats(); renderLevels();
+}
+function renderAttStats(){
+  const d=loadAtt(); let p=0,l=0,a=0;
+  Object.values(d).forEach(v=>{ if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
+  const total=STUDENTS_W1.length, unmarked=total-p-l-a;
+  document.getElementById('att-stats').innerHTML = `
+    <div class="ministat p"><div class="n">${p}</div><div class="l">Present</div></div>
+    <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
+    <div class="ministat a"><div class="n">${a}</div><div class="l">Absent</div></div>
+    <div class="ministat"><div class="n">${unmarked}</div><div class="l">Unmarked</div></div>`;
+}
+function renderLevels(){
+  const data=loadAtt();
+  const counts={}; LEVELS.forEach(l=>counts[l.key]={enr:0,pres:0});
+  STUDENTS_W1.forEach((s,i)=>{ const lv=levelOf(s[2]); counts[lv].enr++; if(data[i]==='p'||data[i]==='l') counts[lv].pres++; });
+  let totE=0,totP=0;
+  const cards=LEVELS.map(l=>{ const c=counts[l.key]; totE+=c.enr; totP+=c.pres;
+    return `<div class="lvl"><div class="ln">${c.enr}</div><div class="ll">${l.label}</div><div class="lr">Gr ${l.range}</div><div class="lp">${c.pres} in</div></div>`;
+  }).join('');
+  const total=`<div class="lvl total"><div class="ln">${totE}</div><div class="ll">Total</div><div class="lr">all levels</div><div class="lp">${totP} in</div></div>`;
+  document.getElementById('att-levels').innerHTML=cards+total;
+}
+function attExport(){
+  const d=loadAtt(); const h=loadHealth(); const labels={p:'Present',l:'Late',a:'Absent'};
+  const rows=[["First","Last","Grade","Level","Email","Status","Allergies","Medications","Date"]];
+  STUDENTS_W1.forEach((s,idx)=>{ const hh=h[idx]||{};
+    rows.push([s[0],s[1],s[2],levelOf(s[2]),studentEmail(s),labels[d[idx]]||"Unmarked",hh.allergies||'',hh.meds||'',document.getElementById('att-date').value]);
+  });
+  csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
+}
+function attInit(){
+  const dateEl=document.getElementById('att-date');
+  // default to next active week's Monday, else today
+  dateEl.value = WEEKS[NOW].start;
+  dateEl.addEventListener('change',()=>{ renderAtt(); });
+  document.getElementById('att-week').addEventListener('change',()=>renderAtt());
+  document.getElementById('att-allp').addEventListener('click',()=>{
+    const d={}; STUDENTS_W1.forEach((s,i)=>d[i]='p'); saveAtt(d); renderAtt();
+  });
+  document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
+  document.getElementById('att-export').addEventListener('click',attExport);
+  renderAtt();
+}
+
+/* =================== REFERENCES =================== */
+function renderRefs(){
+  document.getElementById('refs').innerHTML = CHECKLISTS.map(c=>`
+    <a class="ref" href="${SHEET_URL}" target="_blank" rel="noopener">
+      <span class="ri">🔗</span><span class="rt">${esc(c.t)}</span><span class="ro">${esc(c.o)}</span></a>`).join('');
+}
+
+/* =================== TECH ONBOARDING =================== */
+const TECH_STATUS = [["","Not started"],["assigned","Assigned"],["setup","Set up"],["returned","Returned"]];
+function techKey(){ return `tech:w${document.getElementById('tech-week').value}`; }
+function loadTech(){ return store.get(techKey()) || {}; }
+function saveTech(d){ store.set(techKey(), d); flash('tech-saved'); }
+function renderTech(){
+  const d = loadTech();
+  const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th>Status</th><th>Notes</th></tr></thead>`;
+  const body = STUDENTS_W1.map((s,i)=>{
+    const r = d[i]||{}; const dev = r.device||'Laptop';
+    return `<tr data-i="${i}">
+      <td class="role-cell">${esc(s[0])} ${esc(s[1])}</td><td>${esc(s[2])}</td>
+      <td><select class="cell-select" data-f="device">
+        <option ${dev==='Laptop'?'selected':''}>Laptop</option>
+        <option ${dev==='iPad'?'selected':''}>iPad</option></select></td>
+      <td><input class="cell-input" data-f="tag" value="${escAttr(r.tag)}" placeholder="ALPHA-…"></td>
+      <td><select class="cell-select" data-f="status">${TECH_STATUS.map(t=>`<option value="${t[0]}" ${(r.status||'')===t[0]?'selected':''}>${t[1]}</option>`).join('')}</select></td>
+      <td><input class="cell-input" data-f="notes" value="${escAttr(r.notes)}" placeholder="—"></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tech-table').innerHTML = head+`<tbody>${body}</tbody>`;
+  document.querySelectorAll('#tech-table [data-f]').forEach(el=>{
+    el.addEventListener('change',()=>{
+      const i=el.closest('tr').dataset.i; const d=loadTech();
+      d[i]=d[i]||{}; d[i][el.dataset.f]=el.value; saveTech(d); renderTechStats();
+    });
+  });
+  renderTechStats();
+}
+function renderTechStats(){
+  const d=loadTech(); let as=0,su=0,re=0;
+  Object.values(d).forEach(r=>{ if(r.status==='assigned')as++; else if(r.status==='setup')su++; else if(r.status==='returned')re++; });
+  document.getElementById('tech-stats').innerHTML = `
+    <div class="ministat"><div class="n">${STUDENTS_W1.length}</div><div class="l">Students</div></div>
+    <div class="ministat l-late"><div class="n">${as}</div><div class="l">Assigned</div></div>
+    <div class="ministat p"><div class="n">${su}</div><div class="l">Set up</div></div>
+    <div class="ministat"><div class="n">${re}</div><div class="l">Returned</div></div>`;
+}
+function techExport(){
+  const d=loadTech(); const lbl=Object.fromEntries(TECH_STATUS);
+  const rows=[["First","Last","Grade","Email","Device","Asset tag","Status","Notes"]];
+  STUDENTS_W1.forEach((s,i)=>{ const r=d[i]||{};
+    rows.push([s[0],s[1],s[2],studentEmail(s),r.device||'Laptop',r.tag||'',lbl[r.status||'']||'Not started',r.notes||'']);
+  });
+  csvDownload(`tech-onboarding-w${document.getElementById('tech-week').value}.csv`, rows);
+}
+function techInit(){
+  document.getElementById('tech-week').addEventListener('change',renderTech);
+  document.getElementById('tech-export').addEventListener('click',techExport);
+  renderTech();
+}
+
+/* =================== WEEKLY SUPPLIES =================== */
+function supKey(){ return `supplies:w${document.getElementById('sup-week').value}`; }
+function loadSup(){
+  let d = store.get(supKey());
+  if(!d){ d = SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",done:false})); store.set(supKey(), d); }
+  return d;
+}
+function saveSup(d){ store.set(supKey(), d); }
+function renderSup(){
+  const d = loadSup(); const list=document.getElementById('sup-list');
+  list.innerHTML = d.length ? d.map((it,i)=>`
+    <div class="supply-row ${it.done?'done':''}" data-i="${i}">
+      <div class="cbox ${it.done?'on':''}" data-act="toggle">${it.done?'✓':''}</div>
+      <span class="sname">${esc(it.name)}</span>
+      <input class="cell-input sqty" data-act="qty" value="${escAttr(it.qty)}" placeholder="qty">
+      <button class="del" data-act="del" title="Remove">×</button>
+    </div>`).join('') : `<div style="padding:18px;color:var(--muted)">No items yet — add one below or reset to the template.</div>`;
+  list.querySelectorAll('.supply-row').forEach(row=>{
+    const i=+row.dataset.i;
+    row.querySelector('[data-act=toggle]').addEventListener('click',()=>{ const d=loadSup(); d[i].done=!d[i].done; saveSup(d); renderSup(); });
+    row.querySelector('[data-act=qty]').addEventListener('change',e=>{ const d=loadSup(); d[i].qty=e.target.value; saveSup(d); });
+    row.querySelector('[data-act=del]').addEventListener('click',()=>{ const d=loadSup(); d.splice(i,1); saveSup(d); renderSup(); });
+  });
+  renderSupStats();
+}
+function renderSupStats(){
+  const d=loadSup(); const done=d.filter(x=>x.done).length;
+  document.getElementById('sup-stats').innerHTML = `
+    <div class="ministat p"><div class="n">${done}</div><div class="l">Sourced</div></div>
+    <div class="ministat a"><div class="n">${d.length-done}</div><div class="l">To source</div></div>
+    <div class="ministat"><div class="n">${d.length}</div><div class="l">Items</div></div>`;
+}
+function supExport(){
+  const d=loadSup(); const wk=document.getElementById('sup-week').value;
+  const rows=[["Week","Item","Qty / note","Sourced"]];
+  d.forEach(it=>rows.push([`Week ${wk}`,it.name,it.qty||'',it.done?'Yes':'No']));
+  csvDownload(`weekly-supplies-w${wk}.csv`, rows);
+}
+function supInit(){
+  const sel=document.getElementById('sup-week');
+  sel.innerHTML = WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
+  sel.value = WEEKS[NOW].n;
+  sel.addEventListener('change',renderSup);
+  document.getElementById('sup-add').addEventListener('click',()=>{
+    const nm=document.getElementById('sup-new').value.trim(); if(!nm) return;
+    const qt=document.getElementById('sup-newqty').value.trim();
+    const d=loadSup(); d.push({name:nm,qty:qt,done:false}); saveSup(d);
+    document.getElementById('sup-new').value=''; document.getElementById('sup-newqty').value='';
+    renderSup();
+  });
+  document.getElementById('sup-new').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('sup-add').click(); });
+  document.getElementById('sup-export').addEventListener('click',supExport);
+  document.getElementById('sup-reset').addEventListener('click',()=>{
+    const d=SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",done:false})); saveSup(d); renderSup();
+  });
+  renderSup();
+}
+
+/* =================== EMBEDS (lazy) =================== */
+function lazyEmbed(id,url){
+  const box=document.getElementById(id);
+  if(box.dataset.loaded) return;
+  box.dataset.loaded="1";
+  const ifr=document.createElement('iframe');
+  ifr.src=url; ifr.loading="lazy"; ifr.referrerPolicy="no-referrer";
+  ifr.title=id;
+  ifr.style.position="relative"; ifr.style.zIndex="1";
+  box.appendChild(ifr);
+}
+
+/* =================== TAB NAV =================== */
+const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','access'];
+function showTab(t){
+  if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
+  tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+  if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
+  if(t==='supplies') lazyEmbed('supplies-embed','https://summer-nyc.vercel.app/');
+  closeRail();
+  window.scrollTo({top:0});
+}
+document.getElementById('nav').addEventListener('click',e=>{
+  const b=e.target.closest('.nav-item'); if(b) showTab(b.dataset.tab);
+});
+document.querySelectorAll('[data-jump]').forEach(el=>el.addEventListener('click',()=>showTab(el.dataset.jump)));
+
+/* sub-tabs (staffing) */
+document.getElementById('staff-subtabs').addEventListener('click',e=>{
+  const b=e.target.closest('.subtab'); if(!b) return;
+  document.querySelectorAll('#staff-subtabs .subtab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  ['roster','housing','staff','ops','summary'].forEach(s=>{
+    document.getElementById('sub-'+s).classList.toggle('active', s===b.dataset.sub);
+  });
+});
+
+/* mobile rail */
+function openRail(){document.getElementById('rail').classList.add('open');document.getElementById('scrim').classList.add('show');}
+function closeRail(){document.getElementById('rail').classList.remove('open');document.getElementById('scrim').classList.remove('show');}
+document.getElementById('burger').addEventListener('click',openRail);
+document.getElementById('scrim').addEventListener('click',closeRail);
+
+/* =================== AUTH / ACCESS =================== */
+function domainOk(email){ return DOMAINS.includes((email.split('@')[1]||'').toLowerCase()); }
+function getAllow(){ let a=store.get('allowlist'); if(!a){ a=[{email:OWNER,admin:true,owner:true}]; store.set('allowlist',a); } return a; }
+function setAllow(a){ store.set('allowlist',a); }
+function getMode(){ return store.get('accessMode')||'allowlist'; }
+function setMode(m){ store.set('accessMode',m); }
+function findAllow(email){ return getAllow().find(x=>x.email.toLowerCase()===email.toLowerCase()); }
+function canAccess(email){
+  if(!domainOk(email)) return false;
+  if(email.toLowerCase()===OWNER) return true;
+  if(getMode()==='domain') return true;
+  return !!findAllow(email);
+}
+function isAdmin(email){ if(email.toLowerCase()===OWNER) return true; const e=findAllow(email); return !!(e&&e.admin); }
+function refreshAdminState(){ const s=store.get('session'); document.body.classList.toggle('is-admin', !!(s&&s.email&&isAdmin(s.email))); }
+
+function enterHub(email){
+  store.set('session',{email});
+  document.body.classList.remove('locked');
+  document.body.classList.toggle('is-admin', isAdmin(email));
+  document.getElementById('me-mail').textContent=email;
+  renderAccess();
+  showTab('dashboard');
+}
+function signOut(){
+  store.set('session',null);
+  document.body.classList.add('locked');
+  document.body.classList.remove('is-admin');
+  const e=document.getElementById('gate-email'); if(e) e.value='';
+  const m=document.getElementById('gate-msg'); if(m) m.textContent='';
+}
+function gateSubmit(){
+  const email=(document.getElementById('gate-email').value||'').trim().toLowerCase();
+  const msg=document.getElementById('gate-msg');
+  if(!email||!email.includes('@')){ msg.className='gate-msg err'; msg.textContent='Enter your work email.'; return; }
+  if(!domainOk(email)){ msg.className='gate-msg err'; msg.textContent='Use your @alpha.school or @trilogy.com email.'; return; }
+  if(!canAccess(email)){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — ask Zara to add you."; return; }
+  msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
+  setTimeout(()=>enterHub(email),250);
+}
+function renderAccess(){
+  const seg=document.getElementById('mode-seg'); if(!seg) return;
+  const mode=getMode();
+  seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+  const a=getAllow();
+  const head=`<thead><tr><th>Email</th><th>Role</th><th>Admin</th><th></th></tr></thead>`;
+  const body=a.map((u,i)=>`<tr>
+    <td class="role-cell">${esc(u.email)}</td>
+    <td>${u.owner?'<span class="pill ok">Owner</span>':(u.admin?'<span class="pill">Admin</span>':'<span class="pill">Member</span>')}</td>
+    <td>${u.owner?'<span class="blank">—</span>':`<button class="health-toggle ${u.admin?'flag':''}" data-act="admin" data-i="${i}">${u.admin?'Admin ✓':'Make admin'}</button>`}</td>
+    <td>${u.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove" data-i="${i}" title="Remove">×</button>`}</td>
+  </tr>`).join('');
+  document.getElementById('access-table').innerHTML=head+`<tbody>${body}</tbody>`;
+  document.querySelectorAll('#access-table [data-act=admin]').forEach(b=>b.addEventListener('click',()=>{
+    const arr=getAllow(); const i=+b.dataset.i; arr[i].admin=!arr[i].admin; setAllow(arr); refreshAdminState(); renderAccess();
+  }));
+  document.querySelectorAll('#access-table [data-act=remove]').forEach(b=>b.addEventListener('click',()=>{
+    const arr=getAllow(); arr.splice(+b.dataset.i,1); setAllow(arr); renderAccess();
+  }));
+}
+function authInit(){
+  document.getElementById('gate-go').addEventListener('click',gateSubmit);
+  document.getElementById('gate-email').addEventListener('keydown',e=>{ if(e.key==='Enter') gateSubmit(); });
+  document.getElementById('signout').addEventListener('click',signOut);
+  // access management controls
+  document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
+  document.getElementById('add-email-btn').addEventListener('click',()=>{
+    const email=(document.getElementById('add-email').value||'').trim().toLowerCase();
+    const m=document.getElementById('add-msg');
+    if(!domainOk(email)){ m.className='gate-msg err'; m.textContent='Must be an @alpha.school or @trilogy.com email.'; return; }
+    if(findAllow(email)){ m.className='gate-msg err'; m.textContent='Already on the list.'; return; }
+    const a=getAllow(); a.push({email,admin:false}); setAllow(a);
+    document.getElementById('add-email').value=''; m.className='gate-msg ok'; m.textContent='Added ✓'; renderAccess();
+  });
+  document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('add-email-btn').click(); });
+  renderAccess();
+  const s=store.get('session');
+  if(s&&s.email&&canAccess(s.email)) enterHub(s.email);
+  else document.body.classList.add('locked');
+}
+
+/* =================== INIT =================== */
+renderPorts(); renderCountdown(); renderTiles();
+renderRoster(); renderHousing(); renderStaff(); renderOps(); renderSummary();
+renderWorkstreams('All'); renderGuideWeeks(); renderRefs();
+attInit(); techInit(); supInit(); authInit();
+</script>
+</body>
+</html>

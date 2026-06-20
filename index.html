@@ -609,25 +609,44 @@
           <label for="att-date">Date</label>
           <input type="date" id="att-date" />
         </div>
-        <div class="att-stats" id="att-stats"></div>
+        <button class="btn ghost" data-jump="roster" style="align-self:flex-end">Manage roster →</button>
       </div>
 
-      <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
-      <div class="levels" id="att-levels"></div>
-
-      <div class="eyebrow" style="margin-top:18px;margin-bottom:8px">Allergies &amp; medications</div>
-      <div id="att-health"></div>
-
-      <div class="tablewrap" id="att-list" style="margin-top:18px"></div>
-
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
-        <button class="btn" id="att-allp">Mark all present</button>
-        <button class="btn ghost" id="att-clear">Clear day</button>
-        <button class="btn ghost" id="att-export">Export CSV</button>
-        <button class="btn ghost" data-jump="roster">Manage roster →</button>
-        <span class="saved-note" id="att-saved"></span>
+      <div class="subtabs" id="att-subtabs">
+        <button class="subtab active" data-asub="roll">Daily roll · check-in</button>
+        <button class="subtab" data-asub="dismissal">Dismissal · check-out</button>
       </div>
-      <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Pick the week above — students come from the shared <a data-jump="roster" style="color:var(--brass-bright);cursor:pointer">Students roster</a>; add or import them there.</div>
+
+      <div class="subpanel active" id="asub-roll">
+        <div class="att-stats" id="att-stats" style="margin-bottom:16px"></div>
+
+        <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
+        <div class="levels" id="att-levels"></div>
+
+        <div class="eyebrow" style="margin-top:18px;margin-bottom:8px">Allergies &amp; medications</div>
+        <div id="att-health"></div>
+
+        <div class="tablewrap" id="att-list" style="margin-top:18px"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+          <button class="btn" id="att-allp">Mark all present</button>
+          <button class="btn ghost" id="att-clear">Clear day</button>
+          <button class="btn ghost" id="att-export">Export CSV</button>
+          <span class="saved-note" id="att-saved"></span>
+        </div>
+        <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Students come from the shared <a data-jump="roster" style="color:var(--brass-bright);cursor:pointer">Students roster</a>.</div>
+      </div>
+
+      <div class="subpanel" id="asub-dismissal">
+        <div class="att-stats" id="dism-stats" style="margin-bottom:16px"></div>
+        <p class="page-lead" style="margin-bottom:14px">End-of-day check-out roll. Record who each child was <b>released to</b> and tap <b>Check out</b> to stamp the time — never release a child to anyone not authorized. Saves per date on this device.</p>
+        <div class="tablewrap" id="dism-list"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+          <button class="btn ghost" id="dism-export">Export CSV</button>
+          <button class="btn ghost" id="dism-clear">Reset day</button>
+          <span class="saved-note" id="dism-saved"></span>
+        </div>
+      </div>
     </section>
 
     <!-- ===== STUDENT ROSTER ===== -->
@@ -656,6 +675,7 @@
         <button class="fbtn" data-cf="yes">✓ Media consent</button>
         <button class="fbtn" data-cf="no">✗ No consent</button>
         <button class="fbtn" data-cf="pending">Consent pending</button>
+        <button class="fbtn" data-cf="health">⚠ Health flag</button>
       </div>
       <div class="tablewrap"><table id="ros-table"></table></div>
 
@@ -1628,19 +1648,76 @@ function fillWeekSelect(sel){
   sel.innerHTML = WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
   sel.value = cur || WEEKS[NOW].n;
 }
+/* =================== DISMISSAL (daily check-out roll) =================== */
+function dismKey(){ return `dism:w${curWeek()}:${document.getElementById('att-date').value}`; }
+function loadDism(){ return store.get(dismKey()) || {}; }
+function saveDism(d){ store.set(dismKey(), d); flash('dism-saved'); }
+function nowTime(){ return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function renderDism(){
+  const data=loadDism();
+  const studs=studentsForWeek(curWeek());
+  const list=document.getElementById('dism-list');
+  const head=`<thead><tr><th>Student</th><th>Grade</th><th>Released to</th><th>Status</th><th></th></tr></thead>`;
+  if(!studs.length){ list.innerHTML=head+`<tbody><tr><td colspan="5" class="note-row">No students on the Week ${esc(curWeek())} roster yet — add them in the Students tab.</td></tr></tbody>`; renderDismStats(); return; }
+  const body=studs.map(s=>{ const r=data[s.id]||{};
+    return `<tr data-id="${escAttr(s.id)}">
+      <td class="role-cell">${esc(s.first)} ${esc(s.last)}</td><td>${esc(s.grade)}</td>
+      <td><input class="cell-input" data-d="to" value="${escAttr(r.to||'')}" placeholder="Parent / authorized pickup"></td>
+      <td>${r.out?`<span class="pill ok">Out · ${esc(r.time||'')}</span>`:'<span class="pill open">In</span>'}</td>
+      <td><button class="btn ${r.out?'ghost':''} dism-toggle">${r.out?'Undo':'Check out'}</button></td>
+    </tr>`;
+  }).join('');
+  list.innerHTML=head+`<tbody>${body}</tbody>`;
+  list.querySelectorAll('[data-d=to]').forEach(inp=>inp.addEventListener('change',()=>{
+    const id=inp.closest('tr').dataset.id; const d=loadDism(); d[id]=d[id]||{}; d[id].to=inp.value; saveDism(d);
+  }));
+  list.querySelectorAll('.dism-toggle').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.closest('tr').dataset.id; const d=loadDism(); d[id]=d[id]||{};
+    if(d[id].out){ d[id].out=false; d[id].time=''; } else { d[id].out=true; d[id].time=nowTime(); }
+    saveDism(d); renderDism();
+  }));
+  renderDismStats();
+}
+function renderDismStats(){
+  const d=loadDism(); const studs=studentsForWeek(curWeek());
+  const out=studs.filter(s=>(d[s.id]||{}).out).length;
+  document.getElementById('dism-stats').innerHTML = `
+    <div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>
+    <div class="ministat p"><div class="n">${out}</div><div class="l">Checked out</div></div>
+    <div class="ministat l-late"><div class="n">${studs.length-out}</div><div class="l">Still here</div></div>`;
+}
+function dismExport(){
+  const d=loadDism(); const date=document.getElementById('att-date').value;
+  const rows=[["First","Last","Grade","Released to","Status","Time","Date"]];
+  studentsForWeek(curWeek()).forEach(s=>{ const r=d[s.id]||{};
+    rows.push([s.first,s.last,s.grade,r.to||'',r.out?'Checked out':'Still here',r.time||'',date]);
+  });
+  csvDownload(`dismissal-w${curWeek()}-${date}.csv`, rows);
+}
 function attInit(){
   fillWeekSelect(document.getElementById('att-week'));
   const dateEl=document.getElementById('att-date');
   // default to next active week's Monday, else today
   dateEl.value = WEEKS[NOW].start;
-  dateEl.addEventListener('change',()=>{ renderAtt(); });
-  document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
+  dateEl.addEventListener('change',()=>{ renderAtt(); renderDism(); });
+  document.getElementById('att-week').addEventListener('change',()=>{ refreshAtt(); renderDism(); });
   document.getElementById('att-allp').addEventListener('click',()=>{
     const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]='p'); saveAtt(d); renderAtt();
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
-  refreshAtt();
+  document.getElementById('dism-export').addEventListener('click',dismExport);
+  document.getElementById('dism-clear').addEventListener('click',()=>{ if(confirm('Reset the dismissal roll for this day?')){ saveDism({}); renderDism(); } });
+  document.getElementById('att-subtabs').addEventListener('click',e=>{
+    const b=e.target.closest('.subtab'); if(!b) return;
+    document.querySelectorAll('#att-subtabs .subtab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const roll=b.dataset.asub==='roll';
+    document.getElementById('asub-roll').classList.toggle('active', roll);
+    document.getElementById('asub-dismissal').classList.toggle('active', !roll);
+    if(!roll) renderDism();
+  });
+  refreshAtt(); renderDism();
 }
 
 /* =================== REFERENCES =================== */
@@ -1723,22 +1800,31 @@ let ROS_FILTER='all';
 function rosConsentMatch(s){
   if(ROS_FILTER==='all') return true;
   if(ROS_FILTER==='pending') return !(s.media_consent==='yes'||s.media_consent==='no');
+  if(ROS_FILTER==='health') return !!((s.allergies||'').trim()||(s.meds||'').trim());
   return s.media_consent===ROS_FILTER;
 }
 function consentColor(v){ return v==='yes'?'color:var(--ok)':v==='no'?'color:var(--coral)':'color:var(--muted)'; }
+function rosHealthCell(s){
+  const a=(s.allergies||'').trim(), m=(s.meds||'').trim();
+  if(!a&&!m) return '<span class="blank">—</span>';
+  let out=''; if(a) out+=`<span class="allergy-chip" title="${escAttr(a)}">⚠ ${esc(a.slice(0,22))}${a.length>22?'…':''}</span>`;
+  if(m) out+=`${a?' ':''}<span style="font-family:var(--mono);font-size:11px;color:var(--brass-bright)" title="${escAttr(m)}">℞ ${esc(m.slice(0,18))}${m.length>18?'…':''}</span>`;
+  return out;
+}
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
-  const head = `<thead><tr><th>#</th><th>First</th><th>Last</th><th>Grade</th><th>Level</th><th>Media consent</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
-  const cols = ed?9:8;
+  const head = `<thead><tr><th>#</th><th>First</th><th>Last</th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
+  const cols = ed?10:9;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
       <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
+      <td class="note-row">${rosHealthCell(s)}</td>
       <td><select class="cell-select" data-consent style="${consentColor(s.media_consent)}">
         <option value="" ${!s.media_consent?'selected':''}>— pending</option>
         <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>
@@ -1795,9 +1881,9 @@ function renderRosStats(){
 function rosExport(){
   const studs=studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const label=v=>v==='yes'?'Consent':v==='no'?'No consent':'Pending';
-  const rows=[["First","Last","Grade","Level","Email","Media consent","Laptop assigned","Laptop ready"]];
-  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No']));
-  const suffix = ROS_FILTER==='all'?'':'-'+(ROS_FILTER==='yes'?'consent':ROS_FILTER==='no'?'no-consent':'pending');
+  const rows=[["First","Last","Grade","Level","Email","Media consent","Allergies","Medications","Laptop assigned","Laptop ready"]];
+  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),s.allergies||'',s.meds||'',s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No']));
+  const suffix = ROS_FILTER==='all'?'':'-'+(ROS_FILTER==='yes'?'consent':ROS_FILTER==='no'?'no-consent':ROS_FILTER==='health'?'health':'pending');
   csvDownload(`roster-w${rosWeek()}${suffix}.csv`, rows);
 }
 async function rosImport(file){

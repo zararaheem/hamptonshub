@@ -102,7 +102,9 @@
   .page-lead{color:var(--muted);max-width:62ch;font-size:15px}
 
   /* ---------- Voyage strip (signature) ---------- */
-  .voyage{margin:26px 0 30px}
+  .voyage{margin:26px 0 30px;background:linear-gradient(135deg,rgba(62,140,132,.12),rgba(11,35,48,.35));
+    border:1px solid var(--line);border-radius:var(--radius);padding:20px 20px 8px}
+  .voyage .tiles{margin:4px 0 8px}
   .voyage-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
   .voyage-head .tline{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
   .voyage-head .tline b{color:var(--brass-bright)}
@@ -128,7 +130,7 @@
 
   /* ---------- Stat tiles ---------- */
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:8px 0 30px}
-  .tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;position:relative;overflow:hidden}
+  .tile{background:var(--navy);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;position:relative;overflow:hidden}
   .tile::after{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--brass);opacity:.7}
   .tile.t-teal::after{background:var(--teal)}
   .tile.t-coral::after{background:var(--coral)}
@@ -503,9 +505,8 @@
           <div class="eyebrow">Where we are</div>
           <div class="tline" id="countdown">—</div>
         </div>
+        <div class="tiles editable-disp" id="tiles"></div>
       </div>
-
-      <div class="tiles editable-disp" id="tiles"></div>
       <div class="editor-wrap" id="tiles-editor"></div>
 
       <div class="grid g3 editable-disp" id="jump-grid"></div>

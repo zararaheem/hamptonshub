@@ -336,6 +336,23 @@
   .hd-row{background:var(--navy-2);border:1px solid var(--line-soft);border-radius:9px;padding:9px 12px}
   .hd-k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
   .hd-v{font-size:14px;color:var(--oyster);font-weight:600}
+  /* dismissal carpool line */
+  .dq-picker{display:flex;flex-wrap:wrap;gap:8px}
+  .dq-pick{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
+    border-radius:8px;padding:7px 12px;cursor:pointer;transition:.12s}
+  .dq-pick:hover{border-color:var(--brass)}
+  .dq-pick.on{background:var(--brass);color:var(--navy);border-color:var(--brass);font-weight:700}
+  .dq-car{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+  .dq-car.next{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+  .dq-pos{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--navy-2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:17px;color:var(--brass-bright)}
+  .dq-car.next .dq-pos{background:var(--brass);color:var(--navy);border-color:var(--brass)}
+  .dq-body{flex:1;min-width:0}
+  .dq-names{font-size:15.5px;font-weight:600;color:var(--oyster)}
+  .dq-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+  .dq-dismiss{flex:0 0 auto}
+  .dq-done{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
+  .dq-done .lk{background:none;border:0;color:var(--teal-bright);cursor:pointer;font-family:var(--mono);font-size:11px}
   .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
   .gradein{max-width:74px}
   /* roster admin-only controls (self-contained so layout is preserved) */
@@ -482,6 +499,7 @@
       <button class="nav-item" data-tab="staffing">Staffing</button>
       <button class="nav-item" data-tab="attendance">Attendance</button>
       <button class="nav-item" data-tab="roster">Students</button>
+      <button class="nav-item" data-tab="dismissal">Dismissal</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item" data-tab="weekly">Weekly Supplies</button>
@@ -618,12 +636,7 @@
         <button class="btn ghost" data-jump="roster" style="align-self:flex-end">Manage roster →</button>
       </div>
 
-      <div class="subtabs" id="att-subtabs">
-        <button class="subtab active" data-asub="roll">Daily roll · check-in</button>
-        <button class="subtab" data-asub="dismissal">Dismissal · check-out</button>
-      </div>
-
-      <div class="subpanel active" id="asub-roll">
+      <div id="asub-roll">
         <div class="att-stats" id="att-stats" style="margin-bottom:16px"></div>
 
         <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
@@ -640,18 +653,7 @@
           <button class="btn ghost" id="att-export">Export CSV</button>
           <span class="saved-note" id="att-saved"></span>
         </div>
-        <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Students come from the shared <a data-jump="roster" style="color:var(--brass-bright);cursor:pointer">Students roster</a>.</div>
-      </div>
-
-      <div class="subpanel" id="asub-dismissal">
-        <div class="att-stats" id="dism-stats" style="margin-bottom:16px"></div>
-        <p class="page-lead" style="margin-bottom:14px">End-of-day check-out roll. Record who each child was <b>released to</b> and tap <b>Check out</b> to stamp the time — never release a child to anyone not authorized. Saves per date on this device.</p>
-        <div class="tablewrap" id="dism-list"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
-          <button class="btn ghost" id="dism-export">Export CSV</button>
-          <button class="btn ghost" id="dism-clear">Reset day</button>
-          <span class="saved-note" id="dism-saved"></span>
-        </div>
+        <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Students come from the shared <a data-jump="roster" style="color:var(--brass-bright);cursor:pointer">Students roster</a>. For pickup, use the <a data-jump="dismissal" style="color:var(--brass-bright);cursor:pointer">Dismissal</a> tab.</div>
       </div>
     </section>
 
@@ -696,6 +698,39 @@
         <span class="gate-msg" id="ros-io-msg"></span>
       </div>
       <div class="callout" style="margin-top:18px"><b>CSV format:</b> columns <code>First, Last, Grade</code> — optionally <code>Laptop assigned, Laptop ready</code> (yes/no). A header row is auto-detected, and a single <code>Full Name, Grade</code> layout also works. Grades PK · K · 1–12 map to levels Wonderlab / LL / L1 / L2 / MS / HS. Editing is limited to admins; everyone can view.</div>
+    </section>
+
+    <!-- ===== DISMISSAL (carpool line) ===== -->
+    <section class="view" id="view-dismissal" hidden>
+      <div class="eyebrow">Daily logistics · Carpool line</div>
+      <h1 class="page-title">Dismissal</h1>
+      <p class="page-lead">A live pickup queue. At the curb, add each car as it pulls up; inside, staff watch the line and tap <b>Dismiss</b> as kids head out. Updates in real time across devices.</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="dq-week">Roster</label><select id="dq-week"></select></div>
+        <div class="field"><label for="dq-date">Date</label><input type="date" id="dq-date" /></div>
+        <button class="btn ghost" id="dq-refresh" style="align-self:flex-end">↻ Refresh</button>
+      </div>
+
+      <div class="att-stats" id="dq-stats" style="margin:6px 0 18px"></div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="eyebrow" style="margin-bottom:8px">Add a car to the line</div>
+        <p class="lc-desc" style="margin:0 0 10px">Tap the student(s) in the car, add an optional label (e.g. "Blue SUV"), then add to the line.</p>
+        <div id="dq-picker" class="dq-picker"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">
+          <input class="cell-input" id="dq-label" placeholder="Car label (optional)" style="min-width:200px">
+          <button class="btn" id="dq-add" disabled>Add car to line</button>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="num">↓</span>Carpool line</div>
+      <div id="dq-line"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
+        <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
+        <button class="btn ghost" id="dq-export">Export CSV</button>
+      </div>
+      <div id="dq-log"></div>
     </section>
 
     <!-- ===== TECH ONBOARDING ===== -->
@@ -1670,76 +1705,151 @@ function fillWeekSelect(sel){
   sel.innerHTML = WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
   sel.value = cur || WEEKS[NOW].n;
 }
-/* =================== DISMISSAL (daily check-out roll) =================== */
-function dismKey(){ return `dism:w${curWeek()}:${document.getElementById('att-date').value}`; }
-function loadDism(){ return store.get(dismKey()) || {}; }
-function saveDism(d){ store.set(dismKey(), d); flash('dism-saved'); }
-function nowTime(){ return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
-function renderDism(){
-  const data=loadDism();
-  const studs=studentsForWeek(curWeek());
-  const list=document.getElementById('dism-list');
-  const head=`<thead><tr><th>Student</th><th>Grade</th><th>Released to</th><th>Status</th><th></th></tr></thead>`;
-  if(!studs.length){ list.innerHTML=head+`<tbody><tr><td colspan="5" class="note-row">No students on the Week ${esc(curWeek())} roster yet — add them in the Students tab.</td></tr></tbody>`; renderDismStats(); return; }
-  const body=studs.map(s=>{ const r=data[s.id]||{};
-    return `<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell">${esc(s.first)} ${esc(s.last)}</td><td>${esc(s.grade)}</td>
-      <td><input class="cell-input" data-d="to" value="${escAttr(r.to||'')}" placeholder="Parent / authorized pickup"></td>
-      <td>${r.out?`<span class="pill ok">Out · ${esc(r.time||'')}</span>`:'<span class="pill open">In</span>'}</td>
-      <td><button class="btn ${r.out?'ghost':''} dism-toggle">${r.out?'Undo':'Check out'}</button></td>
-    </tr>`;
-  }).join('');
-  list.innerHTML=head+`<tbody>${body}</tbody>`;
-  list.querySelectorAll('[data-d=to]').forEach(inp=>inp.addEventListener('change',()=>{
-    const id=inp.closest('tr').dataset.id; const d=loadDism(); d[id]=d[id]||{}; d[id].to=inp.value; saveDism(d);
-  }));
-  list.querySelectorAll('.dism-toggle').forEach(b=>b.addEventListener('click',()=>{
-    const id=b.closest('tr').dataset.id; const d=loadDism(); d[id]=d[id]||{};
-    if(d[id].out){ d[id].out=false; d[id].time=''; } else { d[id].out=true; d[id].time=nowTime(); }
-    saveDism(d); renderDism();
-  }));
-  renderDismStats();
-}
-function renderDismStats(){
-  const d=loadDism(); const studs=studentsForWeek(curWeek());
-  const out=studs.filter(s=>(d[s.id]||{}).out).length;
-  document.getElementById('dism-stats').innerHTML = `
-    <div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>
-    <div class="ministat p"><div class="n">${out}</div><div class="l">Checked out</div></div>
-    <div class="ministat l-late"><div class="n">${studs.length-out}</div><div class="l">Still here</div></div>`;
-}
-function dismExport(){
-  const d=loadDism(); const date=document.getElementById('att-date').value;
-  const rows=[["First","Last","Grade","Released to","Status","Time","Date"]];
-  studentsForWeek(curWeek()).forEach(s=>{ const r=d[s.id]||{};
-    rows.push([s.first,s.last,s.grade,r.to||'',r.out?'Checked out':'Still here',r.time||'',date]);
-  });
-  csvDownload(`dismissal-w${curWeek()}-${date}.csv`, rows);
-}
 function attInit(){
   fillWeekSelect(document.getElementById('att-week'));
   const dateEl=document.getElementById('att-date');
   // default to next active week's Monday, else today
   dateEl.value = WEEKS[NOW].start;
-  dateEl.addEventListener('change',()=>{ renderAtt(); renderDism(); });
-  document.getElementById('att-week').addEventListener('change',()=>{ refreshAtt(); renderDism(); });
+  dateEl.addEventListener('change',()=>{ renderAtt(); });
+  document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
     const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]='p'); saveAtt(d); renderAtt();
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
-  document.getElementById('dism-export').addEventListener('click',dismExport);
-  document.getElementById('dism-clear').addEventListener('click',()=>{ if(confirm('Reset the dismissal roll for this day?')){ saveDism({}); renderDism(); } });
-  document.getElementById('att-subtabs').addEventListener('click',e=>{
-    const b=e.target.closest('.subtab'); if(!b) return;
-    document.querySelectorAll('#att-subtabs .subtab').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    const roll=b.dataset.asub==='roll';
-    document.getElementById('asub-roll').classList.toggle('active', roll);
-    document.getElementById('asub-dismissal').classList.toggle('active', !roll);
-    if(!roll) renderDism();
-  });
-  refreshAtt(); renderDism();
+  refreshAtt();
+}
+
+/* =================== DISMISSAL — live carpool line =================== */
+/* Shared queue in Supabase: curb staff add a car (one+ students); inside staff
+   tap Dismiss. Live across devices via realtime; localStorage fallback. */
+let DQ_ROWS = [];           // queue rows for the selected day
+let DQ_PICK = [];           // student ids selected to add as the next car
+let DQ_CHAN = null;         // realtime channel
+function dqDay(){ return document.getElementById('dq-date').value; }
+function dqWeek(){ return document.getElementById('dq-week').value; }
+function dqLocalKey(){ return `dq:${dqDay()}`; }
+function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function nowTime(){ return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+async function dqFetch(){
+  if(SUPA){
+    const { data, error } = await SB.from('dismissal_queue').select('*').eq('day', dqDay()).order('queued_at');
+    DQ_ROWS = (!error && data) ? data : [];
+  } else {
+    DQ_ROWS = store.get(dqLocalKey()) || [];
+  }
+}
+function dqPersistLocal(){ store.set(dqLocalKey(), DQ_ROWS); }
+async function dqAddCar(){
+  if(!DQ_PICK.length) return;
+  const studs = DQ_PICK.map(id=>{ const s=findStudent(id); return {id, name: s?`${s.first} ${s.last}`:'Student'}; });
+  const label = (document.getElementById('dq-label').value||'').trim();
+  const rec = { day:dqDay(), week:+dqWeek(), students:studs, label, status:'waiting', queued_at:new Date().toISOString() };
+  if(SUPA){
+    const { error } = await SB.from('dismissal_queue').insert(rec);
+    if(error){ console.warn('queue add failed', error); }
+  } else {
+    rec.id='loc-'+Date.now(); DQ_ROWS.push(rec); dqPersistLocal();
+  }
+  DQ_PICK=[]; document.getElementById('dq-label').value='';
+  await dqFetch(); renderDismissal();
+}
+async function dqDismiss(id){
+  if(SUPA){ await SB.from('dismissal_queue').update({status:'dismissed', dismissed_at:new Date().toISOString()}).eq('id', id); }
+  else { const r=DQ_ROWS.find(x=>x.id===id); if(r){ r.status='dismissed'; r.dismissed_at=new Date().toISOString(); } dqPersistLocal(); }
+  await dqFetch(); renderDismissal();
+}
+async function dqUndo(id){
+  if(SUPA){ await SB.from('dismissal_queue').update({status:'waiting', dismissed_at:null}).eq('id', id); }
+  else { const r=DQ_ROWS.find(x=>x.id===id); if(r){ r.status='waiting'; r.dismissed_at=null; } dqPersistLocal(); }
+  await dqFetch(); renderDismissal();
+}
+async function dqRemove(id){
+  if(SUPA){ await SB.from('dismissal_queue').delete().eq('id', id); }
+  else { DQ_ROWS=DQ_ROWS.filter(x=>x.id!==id); dqPersistLocal(); }
+  await dqFetch(); renderDismissal();
+}
+async function dqDismissAll(){
+  const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
+  if(!waiting.length) return;
+  if(!confirm(`Dismiss all ${waiting.length} car${waiting.length>1?'s':''} in the line?`)) return;
+  if(SUPA){ await SB.from('dismissal_queue').update({status:'dismissed', dismissed_at:new Date().toISOString()}).eq('day',dqDay()).eq('status','waiting'); }
+  else { waiting.forEach(r=>{ r.status='dismissed'; r.dismissed_at=new Date().toISOString(); }); dqPersistLocal(); }
+  await dqFetch(); renderDismissal();
+}
+function dqStudentInQueue(id){ return DQ_ROWS.some(r=>(r.students||[]).some(s=>s.id===id)); }
+function renderDismissal(){
+  const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
+  const dismissed=DQ_ROWS.filter(r=>r.status==='dismissed');
+  const studs=studentsForWeek(dqWeek());
+  const inLineStudents=waiting.reduce((a,r)=>a+(r.students||[]).length,0);
+  const dismissedStudents=dismissed.reduce((a,r)=>a+(r.students||[]).length,0);
+  // waiting-to-go = roster students not yet queued or dismissed
+  const accounted=new Set(); DQ_ROWS.forEach(r=>(r.students||[]).forEach(s=>accounted.add(s.id)));
+  const notYet=studs.filter(s=>!accounted.has(s.id)).length;
+  // summary
+  document.getElementById('dq-stats').innerHTML = `
+    <div class="ministat l-late"><div class="n">${waiting.length}</div><div class="l">Cars in line</div></div>
+    <div class="ministat l-late"><div class="n">${inLineStudents}</div><div class="l">Students in line</div></div>
+    <div class="ministat p"><div class="n">${dismissedStudents}</div><div class="l">Dismissed</div></div>
+    <div class="ministat"><div class="n">${notYet}</div><div class="l">Not in line yet</div></div>`;
+  // the line (FIFO, #1 at top)
+  const line=document.getElementById('dq-line');
+  line.innerHTML = waiting.length ? waiting.map((r,i)=>`
+    <div class="dq-car ${i===0?'next':''}">
+      <div class="dq-pos">${i+1}</div>
+      <div class="dq-body">
+        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)).join(', ')}</div>
+        <div class="dq-sub">${r.label?esc(r.label)+' · ':''}in line since ${esc(new Date(r.queued_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}${i===0?' · <b style="color:var(--brass-bright)">UP NEXT</b>':''}</div>
+      </div>
+      <button class="btn dq-dismiss" data-id="${escAttr(r.id)}">Dismiss →</button>
+      <button class="del" data-rm="${escAttr(r.id)}" title="Remove from line">×</button>
+    </div>`).join('') : `<div class="callout">No cars in the line yet. Add one above as they pull up.</div>`;
+  line.querySelectorAll('.dq-dismiss').forEach(b=>b.addEventListener('click',()=>dqDismiss(b.dataset.id)));
+  line.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>dqRemove(b.dataset.rm)));
+  // dismissed log
+  const log=document.getElementById('dq-log');
+  log.innerHTML = dismissed.length ? `<div class="eyebrow" style="margin:18px 0 8px">Dismissed today (${dismissedStudents})</div>`+dismissed.slice().reverse().map(r=>`
+    <div class="dq-done">
+      <span>${(r.students||[]).map(s=>esc(s.name)).join(', ')}${r.label?` · ${esc(r.label)}`:''}</span>
+      <span class="dq-sub">${r.dismissed_at?esc(new Date(r.dismissed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''} <button class="lk" data-undo="${escAttr(r.id)}">undo</button></span>
+    </div>`).join('') : '';
+  log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
+  // student picker (not already queued/dismissed)
+  const picker=document.getElementById('dq-picker');
+  const avail=studs.filter(s=>!dqStudentInQueue(s.id));
+  picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick ${DQ_PICK.includes(s.id)?'on':''}" data-pick="${escAttr(s.id)}">${esc(s.first)} ${esc(s.last)}</button>`).join('')
+    : `<span class="note-row">Everyone is in the line or dismissed.</span>`;
+  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.pick; const i=DQ_PICK.indexOf(id);
+    if(i>=0) DQ_PICK.splice(i,1); else DQ_PICK.push(id);
+    b.classList.toggle('on');
+    document.getElementById('dq-add').disabled = !DQ_PICK.length;
+  }));
+  document.getElementById('dq-add').disabled = !DQ_PICK.length;
+}
+function dqExport(){
+  const rows=[["Students","Label","Status","Queued","Dismissed","Date"]];
+  DQ_ROWS.forEach(r=>rows.push([(r.students||[]).map(s=>s.name).join('; '), r.label||'', r.status, r.queued_at?new Date(r.queued_at).toLocaleTimeString():'', r.dismissed_at?new Date(r.dismissed_at).toLocaleTimeString():'', dqDay()]));
+  csvDownload(`dismissal-${dqDay()}.csv`, rows);
+}
+function dqSubscribe(){
+  if(!SUPA || DQ_CHAN) return;
+  DQ_CHAN = SB.channel('dq-live')
+    .on('postgres_changes', {event:'*', schema:'public', table:'dismissal_queue'}, async ()=>{ await dqFetch(); renderDismissal(); })
+    .subscribe();
+}
+async function refreshDismissal(){ DQ_PICK=[]; await dqFetch(); renderDismissal(); dqSubscribe(); }
+function dismissalInit(){
+  fillWeekSelect(document.getElementById('dq-week'));
+  document.getElementById('dq-date').value = todayISO();
+  document.getElementById('dq-week').addEventListener('change',()=>{ renderDismissal(); });
+  document.getElementById('dq-date').addEventListener('change',refreshDismissal);
+  document.getElementById('dq-add').addEventListener('click',dqAddCar);
+  document.getElementById('dq-dismissall').addEventListener('click',dqDismissAll);
+  document.getElementById('dq-export').addEventListener('click',dqExport);
+  document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
+  document.getElementById('dq-label').addEventListener('keydown',e=>{ if(e.key==='Enter') dqAddCar(); });
 }
 
 /* =================== REFERENCES =================== */
@@ -2112,8 +2222,8 @@ async function nlDelete(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',roster:'Students',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',roster:'Students',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -2124,6 +2234,7 @@ function showTab(t){
   if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
   if(t==='newsletter') loadNewsletter();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
+  if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
   closeRail();
   window.scrollTo({top:0});
 }
@@ -2344,7 +2455,7 @@ async function authInit(){
 renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
 renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks();
-attInit(); techInit(); supInit(); rosterInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();

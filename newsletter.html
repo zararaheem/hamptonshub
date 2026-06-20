@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alpha Summer · Hamptons — Family Newsletter</title>
+<meta name="description" content="Highlights, photos, and reminders from Alpha Summer in the Hamptons." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0e2233; --panel:#fff; --line:#e6e0d4; --ink:#1f2d3a; --muted:#5d6b78;
+    --brass:#b07a2c; --teal:#1f7a73; --teal-bright:#2aa39a; --sand:#f6f1e7; --shadow:0 8px 30px rgba(20,40,60,.10);
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.55}
+  a{color:var(--brass)}
+  .hero{background:linear-gradient(160deg,#0e2233,#143b4a);color:#fdf8ee;padding:46px 22px 40px;text-align:center}
+  .hero .eyebrow{font-family:var(--body);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7fd4cc;margin-bottom:10px}
+  .hero h1{font-family:var(--display);font-weight:600;font-size:38px;margin:0 0 8px;line-height:1.1}
+  .hero p{margin:0 auto;max-width:560px;color:#cdd8de;font-size:15px}
+  .wrap{max-width:760px;margin:0 auto;padding:30px 20px 70px}
+  .post{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin-bottom:22px;box-shadow:var(--shadow)}
+  .post .date{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-bright);font-weight:600}
+  .post h2{font-family:var(--display);font-weight:600;font-size:25px;margin:7px 0 12px;color:var(--navy)}
+  .post p{margin:0 0 11px;font-size:16px;color:#33414e}
+  .imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:14px}
+  .imgs a{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .imgs img{width:100%;height:170px;object-fit:cover;display:block;transition:transform .25s}
+  .imgs a:hover img{transform:scale(1.04)}
+  .empty,.loading{text-align:center;color:var(--muted);padding:50px 20px;font-size:15px}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
+  @media(max-width:520px){ .hero h1{font-size:30px} .post{padding:20px} }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Alpha Summer · The Hamptons · 2026</div>
+    <h1>Family Newsletter</h1>
+    <p>Highlights, photos, and reminders from the beach. Check back through the summer for the latest from your child's week.</p>
+  </header>
+  <main class="wrap">
+    <div id="list"><div class="loading">Loading the latest updates…</div></div>
+  </main>
+  <div class="foot">Alpha Summer · 248 Blank Ln, Water Mill · Questions? Reach out to your campus team.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL='https://zbduxegkxhgyfvrfkgai.supabase.co';
+    const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZHV4ZWdreGhneWZ2cmZrZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTIzOTUsImV4cCI6MjA5MzIyODM5NX0.pTdpdvjkaWFPQdRm7k0xqtAxcUsMo015qRH2_H4spOk';
+    const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const escAttr=v=>String(v==null?'':v).replace(/"/g,'&quot;');
+    function card(p){
+      const d=new Date(p.created_at||Date.now());
+      const date=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+      const paras=(p.body||'').split(/\n+/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('');
+      const imgs=(p.photos||[]).length?`<div class="imgs">${p.photos.map(u=>`<a href="${escAttr(u)}" target="_blank" rel="noopener"><img src="${escAttr(u)}" alt="" loading="lazy"></a>`).join('')}</div>`:'';
+      return `<article class="post"><div class="date">${esc(date)}</div>${p.title?`<h2>${esc(p.title)}</h2>`:''}${paras}${imgs}</article>`;
+    }
+    (async function(){
+      const list=document.getElementById('list');
+      try{
+        const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+        const { data, error }=await sb.from('newsletter_posts').select('*').order('created_at',{ascending:false});
+        if(error) throw error;
+        if(!data||!data.length){ list.innerHTML='<div class="empty">No updates yet — check back soon! 🌊</div>'; return; }
+        list.innerHTML=data.map(card).join('');
+      }catch(e){
+        console.error(e);
+        list.innerHTML='<div class="empty">We couldn’t load the newsletter right now. Please refresh in a moment.</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

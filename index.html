@@ -260,6 +260,29 @@
   .embed-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:12px;text-align:center;padding:30px;color:var(--muted);font-size:13px}
 
+  /* ---------- Newsletter ---------- */
+  .nl-composer{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:6px 0 8px}
+  .nl-composer input[type=text],.nl-composer textarea{width:100%;box-sizing:border-box;background:var(--navy-2);
+    border:1px solid var(--line);color:var(--oyster);border-radius:10px;padding:11px 12px;font:inherit;font-size:14px;margin-bottom:10px}
+  .nl-composer textarea{resize:vertical;line-height:1.5}
+  .nl-photos{display:flex;flex-wrap:wrap;gap:10px}
+  .nl-photos .thumb{position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--navy-2)}
+  .nl-photos .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .nl-photos .thumb .x{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:50%;
+    width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1}
+  .nl-photos .thumb.up{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px}
+  .nl-list{display:flex;flex-direction:column;gap:16px}
+  .nl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .nl-card .nl-date{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-bright)}
+  .nl-card h3{margin:6px 0 8px;font-family:var(--display);font-size:20px}
+  .nl-card p{margin:0 0 8px;color:var(--oyster);font-size:14.5px;line-height:1.55}
+  .nl-card .nl-imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+  .nl-card .nl-imgs a{display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .nl-card .nl-imgs img{width:100%;height:130px;object-fit:cover;display:block}
+  .nl-card .nl-foot{margin-top:12px;display:flex;gap:10px;align-items:center}
+  .nl-del{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px}
+  .nl-del:hover{border-color:var(--coral);color:var(--coral)}
+
   .callout{background:linear-gradient(180deg,var(--panel),var(--navy-2));border:1px solid var(--line);
     border-left:3px solid var(--brass);border-radius:12px;padding:14px 16px;font-size:13.5px;color:var(--muted)}
   .callout b{color:var(--oyster)}
@@ -419,6 +442,8 @@
       <button class="nav-item" data-tab="workstreams"><span class="ico">🗂️</span>Task List</button>
       <button class="nav-item" data-tab="guide"><span class="ico">📖</span>Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="resources"><span class="ico">📚</span>Resources<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="signage"><span class="ico">🎨</span>Signage Wish List<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="newsletter"><span class="ico">📰</span>Newsletter</button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only" data-tab="access"><span class="ico">🔑</span>Access</button>
     </nav>
@@ -649,6 +674,54 @@
           <a class="btn ghost" href="https://alpha-session0.lovable.app/resources" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
         </div>
       </div>
+    </section>
+
+    <!-- ===== SIGNAGE WISH LIST ===== -->
+    <section class="view" id="view-signage" hidden>
+      <div class="eyebrow">Branding · Decor &amp; signage</div>
+      <h1 class="page-title">Signage &amp; posters wish list</h1>
+      <p class="page-lead">Everything we want printed, posted, or branded on-site — live from the shared sheet. Add a row in the sheet and it shows here.</p>
+      <div class="embed-head">
+        <div class="meta-line" style="margin:0"><span>Signage / branding · shared sheet</span></div>
+        <a class="btn" href="https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342" target="_blank" rel="noopener">Open sheet ↗</a>
+      </div>
+      <div class="embed-frame" id="signage-embed">
+        <div class="embed-fallback">
+          <div>Loading the signage wish list…</div>
+          <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== NEWSLETTER ===== -->
+    <section class="view" id="view-newsletter" hidden>
+      <div class="eyebrow">Families · Parent-facing</div>
+      <h1 class="page-title">Parent newsletter</h1>
+      <p class="page-lead">Highlights, photos, and reminders for families. Admins post here; parents read it at the public link below — no password needed.</p>
+
+      <div class="embed-head">
+        <div class="meta-line" style="margin:0"><span>Public parent link</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <a class="btn ghost" id="nl-public-link" href="newsletter.html" target="_blank" rel="noopener">Open public newsletter ↗</a>
+          <button class="btn" id="nl-copy">Copy parent link</button>
+        </div>
+      </div>
+
+      <div class="nl-composer admin-only" id="nl-composer">
+        <h3 style="margin:0 0 10px">Post an update</h3>
+        <input id="nl-title" type="text" placeholder="Title — e.g. Week 1: Sailing &amp; Showcase" />
+        <textarea id="nl-body" rows="5" placeholder="Highlights, reminders, what to bring… (each line becomes a paragraph)"></textarea>
+        <div class="nl-photos" id="nl-photo-strip"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+          <label class="btn ghost" for="nl-file">＋ Add photos</label>
+          <input id="nl-file" type="file" accept="image/*" multiple style="display:none" />
+          <button class="btn" id="nl-publish">Publish update</button>
+          <span class="gate-msg" id="nl-msg" style="margin:0"></span>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="num">↳</span>Posted updates</div>
+      <div id="nl-list" class="nl-list"></div>
     </section>
 
     <!-- ===== WORKSTREAMS ===== -->
@@ -1307,8 +1380,106 @@ function lazyEmbed(id,url){
   box.appendChild(ifr);
 }
 
+/* =================== NEWSLETTER =================== */
+let NL_PHOTOS = [];        // pending photo URLs for the composer
+let NL_BOUND = false;
+function nlPublicUrl(){ return location.origin + (location.pathname.replace(/[^/]*$/, '')) + 'newsletter.html'; }
+async function loadNewsletter(){
+  const link=document.getElementById('nl-public-link'); if(link) link.href=nlPublicUrl();
+  if(!NL_BOUND){
+    NL_BOUND=true;
+    const copy=document.getElementById('nl-copy');
+    if(copy) copy.addEventListener('click',async()=>{
+      try{ await navigator.clipboard.writeText(nlPublicUrl()); copy.textContent='Copied ✓'; setTimeout(()=>copy.textContent='Copy parent link',1500); }
+      catch(e){ prompt('Copy the parent link:', nlPublicUrl()); }
+    });
+    const file=document.getElementById('nl-file');
+    if(file) file.addEventListener('change',e=>nlAddPhotos(e.target.files));
+    const pub=document.getElementById('nl-publish');
+    if(pub) pub.addEventListener('click',nlPublish);
+  }
+  await nlRenderList();
+}
+async function nlAddPhotos(files){
+  if(!files||!files.length) return;
+  const msg=document.getElementById('nl-msg');
+  const strip=document.getElementById('nl-photo-strip');
+  for(const f of files){
+    if(!f.type.startsWith('image/')) continue;
+    const ph={url:'', up:true}; NL_PHOTOS.push(ph); nlRenderStrip();
+    if(SUPA){
+      try{
+        const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${f.name.replace(/[^\w.\-]/g,'_')}`;
+        const { error }=await SB.storage.from('newsletter').upload(path,f,{cacheControl:'3600',upsert:false});
+        if(error) throw error;
+        ph.url=SB.storage.from('newsletter').getPublicUrl(path).data.publicUrl; ph.up=false;
+      }catch(err){ console.warn('photo upload failed',err); NL_PHOTOS=NL_PHOTOS.filter(x=>x!==ph); if(msg){msg.className='gate-msg err';msg.textContent='A photo failed to upload.';} }
+    } else { ph.up=false; ph.url=URL.createObjectURL(f); }
+    nlRenderStrip();
+  }
+  const fi=document.getElementById('nl-file'); if(fi) fi.value='';
+}
+function nlRenderStrip(){
+  const strip=document.getElementById('nl-photo-strip'); if(!strip) return;
+  strip.innerHTML=NL_PHOTOS.map((p,i)=>p.up
+    ? `<div class="thumb up">uploading…</div>`
+    : `<div class="thumb"><img src="${escAttr(p.url)}" alt=""><button class="x" data-i="${i}">×</button></div>`).join('');
+  strip.querySelectorAll('.x').forEach(b=>b.addEventListener('click',()=>{ NL_PHOTOS.splice(+b.dataset.i,1); nlRenderStrip(); }));
+}
+async function nlPublish(){
+  const msg=document.getElementById('nl-msg');
+  const title=(document.getElementById('nl-title').value||'').trim();
+  const body=(document.getElementById('nl-body').value||'').trim();
+  if(NL_PHOTOS.some(p=>p.up)){ if(msg){msg.className='gate-msg';msg.textContent='Hang on — photos still uploading…';} return; }
+  if(!title && !body && !NL_PHOTOS.length){ if(msg){msg.className='gate-msg err';msg.textContent='Add a title, a note, or a photo first.';} return; }
+  const post={ title, body, photos:NL_PHOTOS.map(p=>p.url).filter(Boolean), author:(SESSION&&SESSION.email)||null };
+  if(SUPA){
+    const { error }=await SB.from('newsletter_posts').insert(post);
+    if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not publish — '+(error.message||'try again');} return; }
+  } else {
+    const local=store.get('nl_posts')||[]; local.unshift({...post,id:'local-'+Date.now(),created_at:new Date().toISOString()}); store.set('nl_posts',local);
+  }
+  document.getElementById('nl-title').value=''; document.getElementById('nl-body').value=''; NL_PHOTOS=[]; nlRenderStrip();
+  if(msg){ msg.className='gate-msg ok'; msg.textContent='Published ✓ — parents can see it now.'; setTimeout(()=>{msg.textContent='';},2500); }
+  await nlRenderList();
+}
+async function nlFetch(){
+  if(SUPA){
+    const { data, error }=await SB.from('newsletter_posts').select('*').order('created_at',{ascending:false});
+    if(error){ console.warn('newsletter load failed',error); return []; }
+    return data||[];
+  }
+  return store.get('nl_posts')||[];
+}
+async function nlRenderList(){
+  const wrap=document.getElementById('nl-list'); if(!wrap) return;
+  const posts=await nlFetch();
+  if(!posts.length){ wrap.innerHTML='<p class="page-lead" style="margin:0">No updates posted yet.</p>'; return; }
+  const admin=document.body.classList.contains('is-admin');
+  wrap.innerHTML=posts.map(p=>nlCard(p,admin)).join('');
+  if(admin) wrap.querySelectorAll('.nl-del').forEach(b=>b.addEventListener('click',()=>nlDelete(b.dataset.id)));
+}
+function nlCard(p,admin){
+  const d=new Date(p.created_at||Date.now());
+  const date=d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
+  const paras=(p.body||'').split(/\n+/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('');
+  const imgs=(p.photos||[]).length?`<div class="nl-imgs">${p.photos.map(u=>`<a href="${escAttr(u)}" target="_blank" rel="noopener"><img src="${escAttr(u)}" alt="" loading="lazy"></a>`).join('')}</div>`:'';
+  return `<div class="nl-card">
+    <div class="nl-date">${esc(date)}</div>
+    ${p.title?`<h3>${esc(p.title)}</h3>`:''}
+    ${paras}${imgs}
+    ${admin?`<div class="nl-foot"><button class="nl-del" data-id="${escAttr(p.id)}">Delete</button></div>`:''}
+  </div>`;
+}
+async function nlDelete(id){
+  if(!confirm('Delete this update? Parents will no longer see it.')) return;
+  if(SUPA){ const { error }=await SB.from('newsletter_posts').delete().eq('id',id); if(error){ alert('Could not delete: '+error.message); return; } }
+  else { store.set('nl_posts',(store.get('nl_posts')||[]).filter(p=>p.id!==id)); }
+  await nlRenderList();
+}
+
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','resources','access'];
+const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','resources','signage','newsletter','access'];
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -1316,6 +1487,8 @@ function showTab(t){
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
   if(t==='supplies') lazyEmbed('supplies-embed','https://summer-nyc.vercel.app/');
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
+  if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
+  if(t==='newsletter') loadNewsletter();
   closeRail();
   window.scrollTo({top:0});
 }

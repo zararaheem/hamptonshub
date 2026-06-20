@@ -162,6 +162,14 @@
     border-radius:16px;padding:6px 13px;color:var(--oyster);display:inline-flex;flex-direction:column;align-items:center;line-height:1.35}
   .chip small{font-size:10.5px;letter-spacing:.04em;color:var(--brass-bright)}
   .arrow{color:var(--brass);font-family:var(--mono)}
+  /* daily rhythm as longitudinal rows */
+  .flow{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel)}
+  .flow-row{display:flex;align-items:center;gap:16px;padding:11px 16px;border-bottom:1px solid var(--line-soft)}
+  .flow-row:last-child{border-bottom:0}
+  .flow-row:nth-child(even){background:rgba(62,140,132,.04)}
+  .flow-time{font-family:var(--mono);font-size:12.5px;color:var(--brass-bright);min-width:118px;flex-shrink:0}
+  .flow-act{font-size:14.5px;color:var(--oyster);font-weight:600}
+  .flow-note{font-weight:400;font-size:12px;color:var(--muted)}
 
   /* ---------- Tables ---------- */
   .tablewrap{border:1px solid var(--line);border-radius:var(--radius);overflow:auto;background:var(--navy-2)}
@@ -453,6 +461,7 @@
       <button class="nav-item" data-tab="supplies">Supplies &amp; Packing<span class="ext">live ↗</span></button>
       <div class="nav-label">Reference</div>
       <button class="nav-item" data-tab="workstreams">Task List</button>
+      <button class="nav-item" data-tab="events">Events Team</button>
       <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
@@ -497,18 +506,31 @@
       </div>
 
       <div class="section-title"><span class="num">i</span>The daily rhythm</div>
-      <div class="rhythm">
-        <span class="chip">Drop-off<small>8:15–8:45</small></span><span class="arrow">→</span>
-        <span class="chip">Core Skills<small>8:45–10:15</small></span><span class="arrow">→</span>
-        <span class="chip">Physical Adventure<small>10:15–11:00</small></span><span class="arrow">→</span>
-        <span class="chip">Pool<small>11:00–1:30</small></span><span class="arrow">→</span>
-        <span class="chip">Lunch<small>12:00–12:45</small></span><span class="arrow">→</span>
-        <span class="chip">Workshop<small>1:30–3:30</small></span><span class="arrow">→</span>
-        <span class="chip">Shout-Outs<small>3:30–3:45</small></span><span class="arrow">→</span>
-        <span class="chip">Pick-up<small>4:00–4:30</small></span>
-      </div>
-      <div class="callout" style="margin-top:18px">
+      <div class="callout" style="margin-bottom:16px">
         <b>Pool window</b> — Mon–Thu <b>11:00 AM–1:30 PM</b> · Fri <b>11:00 AM–12:00 PM</b>. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
+      </div>
+      <div class="flow">
+        <div class="flow-row"><span class="flow-time">8:15 – 8:45</span><span class="flow-act">Drop-off</span></div>
+        <div class="flow-row"><span class="flow-time">8:45 – 10:15</span><span class="flow-act">Core Skills</span></div>
+        <div class="flow-row"><span class="flow-time">10:15 – 11:00</span><span class="flow-act">Physical Adventure</span></div>
+        <div class="flow-row"><span class="flow-time">11:00 – 1:30</span><span class="flow-act">Pool <span class="flow-note">(Mon–Thu; Fri ends 12:00)</span></span></div>
+        <div class="flow-row"><span class="flow-time">12:00 – 12:45</span><span class="flow-act">Lunch</span></div>
+        <div class="flow-row"><span class="flow-time">1:30 – 3:30</span><span class="flow-act">Workshop</span></div>
+        <div class="flow-row"><span class="flow-time">3:30 – 3:45</span><span class="flow-act">Shout-Outs</span></div>
+        <div class="flow-row"><span class="flow-time">4:00 – 4:30</span><span class="flow-act">Pick-up</span></div>
+      </div>
+
+      <div class="section-title"><span class="num">↗</span>Bus service</div>
+      <div class="card" id="bus-card">
+        <h3 style="margin:0 0 6px">Daily camp bus</h3>
+        <p class="lc-desc" style="margin:0 0 10px">Door-to-door transport to and from 248 Blank Ln, Water Mill.</p>
+        <div class="meta-line">
+          <span><b>Route / stops</b> — TBD</span>
+          <span><b>Morning pickup</b> — TBD</span>
+          <span><b>Afternoon drop</b> — TBD</span>
+          <span><b>Provider</b> — TBD</span>
+        </div>
+        <p class="lc-desc" style="margin:10px 0 0">Owner: Jim Liu (Transportation). Send route, stops &amp; times and I'll fill this in.</p>
       </div>
     </section>
 
@@ -672,6 +694,21 @@
         <button class="btn ghost" id="sup-reset">Reset to template</button>
       </div>
       <div class="callout" style="margin-top:18px">Placing actual orders? The <b>Supplies &amp; Packing</b> tab has the live ordering &amp; clear-tote system. <a href="https://summer-nyc.vercel.app/" target="_blank" rel="noopener" style="color:var(--brass-bright)">Open the Ops site ↗</a></div>
+    </section>
+
+    <!-- ===== EVENTS TEAM ===== -->
+    <section class="view" id="view-events" hidden>
+      <div class="eyebrow">Events Team · signage &amp; owned events</div>
+      <h1 class="page-title">Events team</h1>
+      <p class="page-lead">What the events team is producing for the Hamptons — the signage they're sending over and the events they own end-to-end. The detailed wish list with renderings stays in the Signage Wish List tab.</p>
+
+      <div class="section-title"><span class="num">1</span>Events they own</div>
+      <div class="tablewrap"><table id="events-table"></table></div>
+
+      <div class="section-title" style="margin-top:24px"><span class="num">2</span>Signage being sent</div>
+      <div class="tablewrap"><table id="signage-send-table"></table></div>
+
+      <div class="callout" style="margin-top:18px">The full wish list with renderings lives in the <a data-jump="signage" style="color:var(--brass-bright);cursor:pointer">Signage Wish List</a> tab (live Google Sheet). Send me the events the team owns and the signage they're shipping, and I'll populate these two tables.</div>
     </section>
 
     <!-- ===== ACCESS MANAGEMENT ===== -->
@@ -940,6 +977,14 @@ const WORKSTREAMS = [
   {task:"Draft and send week-one parent communication (tick prevention, timeline, showcase arrival time)", owners:["Nancy"], note:"Zara to notify Nancy", tabs:["newsletter"]},
 ];
 
+/* Events team — fill these in as the team confirms. */
+const EVENTS_OWNED = [
+  // {event:"", week:"", date:"", owner:"", status:"", notes:""}
+];
+const SIGNAGE_SEND = [
+  // {item:"", qty:"", location:"", status:"", notes:""}
+];
+
 const STUDENTS_W1 = [
   ["Harley","Damaghi","PK"],["Nell","Monness","K"],["Zen","Ovitz","K"],["Juliet","Krumholz","1"],
   ["Ethan","Israel","1"],["Bennett","Fox","1"],["Jaxxon","Damaghi","2"],["Hutton","Thebault","2"],
@@ -1128,11 +1173,11 @@ function renderTiles(){
   const totalKids = WEEKS.reduce((a,w)=>a+w.kids,0);
   const guideWeeks = WEEKS.reduce((a,w)=>a+guidesNeeded(w.kids),0);
   const tiles = [
-    {k:"Total enrollment", v:totalKids, d:"across 9 weeks", c:""},
-    {k:"Guide-weeks needed", v:guideWeeks, d:"at the 1:6 ratio", c:"t-teal"},
-    {k:"Housing capacity", v:"5 / 7", d:"baseline / surge beds", c:""},
-    {k:"Open roles", v:"3", d:"nurse + 2 lifeguards (TBD)", c:"t-coral"},
-    {k:"Peak week", v:"W9 · 37", d:"Maker's Workshop", c:"t-teal"},
+    {k:"When", v:"Jun 29 – Aug 28", d:"9 themed weeks, Mon–Fri", c:""},
+    {k:"Where", v:"Water Mill, NY", d:"248 Blank Ln, the Hamptons", c:""},
+    {k:"Students enrolled", v:totalKids, d:"across the whole summer", c:"t-teal"},
+    {k:"Guides needed", v:guideWeeks, d:"1 guide per 6 kids", c:""},
+    {k:"Roles still to hire", v:"3", d:"1 nurse + 2 lifeguards", c:"t-coral"},
   ];
   document.getElementById('tiles').innerHTML = tiles.map(t=>`
     <div class="tile ${t.c}"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join('');
@@ -1214,6 +1259,26 @@ function renderWorkstreams(filter){
       ${w.note?`<div class="metric">${esc(w.note)}</div>`:''}
       ${(w.tabs&&w.tabs.length)?`<div class="ws-jumps">${w.tabs.map(t=>`<button class="ws-jump" onclick="showTab('${t}')">${esc(TAB_LABELS[t]||t)} →</button>`).join('')}</div>`:''}
     </div>`).join('');
+}
+
+/* =================== RENDER: EVENTS TEAM =================== */
+function renderEvents(){
+  const et=document.getElementById('events-table'); if(!et) return;
+  const eh=`<thead><tr><th>Event</th><th>Week</th><th>Date</th><th>Owner</th><th>Status</th><th>Notes</th></tr></thead>`;
+  const eb = EVENTS_OWNED.length ? EVENTS_OWNED.map(e=>`<tr>
+    <td class="role-cell">${esc(e.event)}</td><td>${esc(e.week||'')}</td><td>${esc(e.date||'')}</td>
+    <td>${esc(e.owner||'')}</td><td>${e.status?`<span class="pill">${esc(e.status)}</span>`:'<span class="blank">—</span>'}</td>
+    <td class="note-row">${esc(e.notes||'')}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="note-row">No events added yet — send the list of events the team owns and I'll populate this.</td></tr>`;
+  et.innerHTML = eh+`<tbody>${eb}</tbody>`;
+  const st=document.getElementById('signage-send-table');
+  const sh=`<thead><tr><th>Signage item</th><th>Qty</th><th>Location / use</th><th>Status</th><th>Notes</th></tr></thead>`;
+  const sb = SIGNAGE_SEND.length ? SIGNAGE_SEND.map(s=>`<tr>
+    <td class="role-cell">${esc(s.item)}</td><td>${esc(s.qty||'')}</td><td>${esc(s.location||'')}</td>
+    <td>${s.status?`<span class="pill">${esc(s.status)}</span>`:'<span class="blank">—</span>'}</td>
+    <td class="note-row">${esc(s.notes||'')}</td></tr>`).join('')
+    : `<tr><td colspan="5" class="note-row">No signage added yet — send what the events team is shipping over and I'll list it here.</td></tr>`;
+  st.innerHTML = sh+`<tbody>${sb}</tbody>`;
 }
 
 /* =================== RENDER: GUIDE WEEKS =================== */
@@ -1702,8 +1767,8 @@ async function nlDelete(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','tech','weekly','supplies','workstreams','guide','resources','signage','newsletter','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',roster:'Students',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',roster:'Students',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -1924,7 +1989,7 @@ async function authInit(){
 /* =================== INIT =================== */
 renderPorts(); renderCountdown(); renderTiles();
 renderRoster(); renderHousing(); renderStaff(); renderOps(); renderSummary();
-renderWorkstreams('All'); renderGuideWeeks();
+renderWorkstreams('All'); renderEvents(); renderGuideWeeks();
 attInit(); techInit(); supInit(); rosterInit(); authInit();
 hydrateRoster().then(()=>{ renderAtt(); renderTech(); renderRosterTab(); });
 </script>

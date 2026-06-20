@@ -640,6 +640,12 @@
         <button class="btn" id="ros-add">Add student</button>
       </div>
 
+      <div class="ws-filter" id="ros-filter" style="margin-bottom:12px">
+        <button class="fbtn active" data-cf="all">All</button>
+        <button class="fbtn" data-cf="yes">✓ Media consent</button>
+        <button class="fbtn" data-cf="no">✗ No consent</button>
+        <button class="fbtn" data-cf="pending">Consent pending</button>
+      </div>
       <div class="tablewrap"><table id="ros-table"></table></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
@@ -1068,13 +1074,13 @@ function studentsForWeek(w){ return (ROSTER_DATA[+w]||[]).slice().sort((a,b)=>(a
 function rosterLocalKey(){ return 'roster_local_v1'; }
 function persistLocalRoster(){ store.set(rosterLocalKey(), ROSTER_DATA); }
 function seedLocalRoster(){
-  ROSTER_DATA = {1: STUDENTS_W1.map((s,i)=>({id:'loc-w1-'+i, week:1, first:s[0], last:s[1], grade:s[2], laptop_assigned:false, laptop_ready:false, allergies:'', meds:'', sort_order:i}))};
+  ROSTER_DATA = {1: STUDENTS_W1.map((s,i)=>({id:'loc-w1-'+i, week:1, first:s[0], last:s[1], grade:s[2], laptop_assigned:false, laptop_ready:false, allergies:'', meds:'', media_consent:'', sort_order:i}))};
   persistLocalRoster(); return ROSTER_DATA;
 }
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,grade,laptop_assigned,laptop_ready,allergies,meds,sort_order')
+      .select('id,week,first,last,grade,laptop_assigned,laptop_ready,allergies,meds,media_consent,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1087,7 +1093,7 @@ function nextSort(w){ return (ROSTER_DATA[+w]||[]).reduce((m,s)=>Math.max(m,s.so
 function findStudent(id){ for(const w in ROSTER_DATA){ const s=ROSTER_DATA[w].find(x=>x.id===id); if(s) return s; } return null; }
 async function dbAddStudent(week, first, last, grade){
   week=+week;
-  const rec={week, first:(first||'').trim(), last:(last||'').trim(), grade:(grade||'').trim(), laptop_assigned:false, laptop_ready:false, allergies:'', meds:'', sort_order:nextSort(week)};
+  const rec={week, first:(first||'').trim(), last:(last||'').trim(), grade:(grade||'').trim(), laptop_assigned:false, laptop_ready:false, allergies:'', meds:'', media_consent:'', sort_order:nextSort(week)};
   if(SUPA){
     const { data, error } = await SB.from('students').insert(rec).select().single();
     if(error){ console.warn('add student failed:', error); return error; }
@@ -1100,7 +1106,7 @@ async function dbAddStudent(week, first, last, grade){
 }
 async function dbBulkAddStudents(week, arr){
   week=+week; const base=nextSort(week);
-  const recs=arr.map((s,i)=>({week, first:(s.first||'').trim(), last:(s.last||'').trim(), grade:(s.grade||'').trim(), laptop_assigned:!!s.laptop_assigned, laptop_ready:!!s.laptop_ready, allergies:'', meds:'', sort_order:base+i}));
+  const recs=arr.map((s,i)=>({week, first:(s.first||'').trim(), last:(s.last||'').trim(), grade:(s.grade||'').trim(), laptop_assigned:!!s.laptop_assigned, laptop_ready:!!s.laptop_ready, allergies:'', meds:'', media_consent:s.media_consent||'', sort_order:base+i}));
   if(!recs.length) return null;
   if(SUPA){
     const { data, error } = await SB.from('students').insert(recs).select();
@@ -1136,6 +1142,7 @@ function parseRosterCSV(text){
     if(c==='"'){ if(q&&l[i+1]==='"'){cur+='"';i++;} else q=!q; }
     else if(c===','&&!q){ out.push(cur); cur=''; } else cur+=c; } out.push(cur); return out.map(x=>x.trim()); };
   const truthy=v=>/^(1|y|yes|true|x|✓|done|ready)$/i.test(String(v||'').trim());
+  const consentVal=v=>{ const s=String(v||'').trim().toLowerCase(); if(/^(y|yes|true|1|consent|consented|approved|ok)$/.test(s)) return 'yes'; if(/^(n|no|false|0|decline|declined|non|none|no consent)$/.test(s)) return 'no'; return ''; };
   let rows=lines.map(splitRow);
   const head=rows[0].map(h=>h.toLowerCase());
   const looksHeader=head.some(h=>/first|last|name|grade|laptop/.test(h));
@@ -1144,7 +1151,7 @@ function parseRosterCSV(text){
     if(c.length===1){ return {first:c[0], last:'', grade:''}; }
     // Heuristic: if 2 cols and 2nd looks like a grade, treat as Name,Grade
     if(c.length===2 && /^(pk|k|\d{1,2})$/i.test(c[1])){ const parts=c[0].split(/\s+/); return {first:parts[0]||'', last:parts.slice(1).join(' '), grade:c[1]}; }
-    return {first:c[0]||'', last:c[1]||'', grade:c[2]||'', laptop_assigned:truthy(c[3]), laptop_ready:truthy(c[4])};
+    return {first:c[0]||'', last:c[1]||'', grade:c[2]||'', laptop_assigned:truthy(c[3]), laptop_ready:truthy(c[4]), media_consent:consentVal(c[5])};
   }).filter(s=>s.first||s.last);
 }
 
@@ -1682,26 +1689,43 @@ function techInit(){
 
 /* =================== STUDENT ROSTER TAB =================== */
 function rosWeek(){ return document.getElementById('ros-week').value; }
+let ROS_FILTER='all';
+function rosConsentMatch(s){
+  if(ROS_FILTER==='all') return true;
+  if(ROS_FILTER==='pending') return !(s.media_consent==='yes'||s.media_consent==='no');
+  return s.media_consent===ROS_FILTER;
+}
+function consentColor(v){ return v==='yes'?'color:var(--ok)':v==='no'?'color:var(--coral)':'color:var(--muted)'; }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
   const ed = isAdmin();
-  const studs = studentsForWeek(rosWeek());
+  const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
-  const head = `<thead><tr><th>#</th><th>First</th><th>Last</th><th>Grade</th><th>Level</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
+  const head = `<thead><tr><th>#</th><th>First</th><th>Last</th><th>Grade</th><th>Level</th><th>Media consent</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
+  const cols = ed?9:8;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
       <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
+      <td><select class="cell-select" data-consent style="${consentColor(s.media_consent)}">
+        <option value="" ${!s.media_consent?'selected':''}>— pending</option>
+        <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>
+        <option value="no" ${s.media_consent==='no'?'selected':''}>✗ No consent</option></select></td>
       <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
       <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_ready" ${s.laptop_ready?'checked':''}></td>
       ${ed?`<td><button class="del" data-act="del" title="Remove">×</button></td>`:''}
-    </tr>`).join('') : `<tr><td colspan="${ed?8:7}" class="note-row">No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="${cols}" class="note-row">${ROS_FILTER==='all'?`No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}`:'No students match this consent filter.'}</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('change',async ()=>{
     const id=el.closest('tr').dataset.id;
     await dbUpdateStudent(id, {[el.dataset.f]: el.value});
+    flash('ros-saved'); renderRosterTab();
+  }));
+  tbl.querySelectorAll('[data-consent]').forEach(el=>el.addEventListener('change',async ()=>{
+    const id=el.closest('tr').dataset.id;
+    await dbUpdateStudent(id, {media_consent: el.value});
     flash('ros-saved'); renderRosterTab();
   }));
   tbl.querySelectorAll('[data-flag]').forEach(el=>el.addEventListener('change',async ()=>{
@@ -1721,8 +1745,14 @@ function renderRosStats(){
   const studs=studentsForWeek(rosWeek());
   const assigned=studs.filter(s=>s.laptop_assigned).length;
   const ready=studs.filter(s=>s.laptop_ready).length;
+  const consent=studs.filter(s=>s.media_consent==='yes').length;
+  const noConsent=studs.filter(s=>s.media_consent==='no').length;
+  const pending=studs.length-consent-noConsent;
   document.getElementById('ros-stats').innerHTML = `
     <div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>
+    <div class="ministat p"><div class="n">${consent}</div><div class="l">Media consent</div></div>
+    <div class="ministat a"><div class="n">${noConsent}</div><div class="l">No consent</div></div>
+    <div class="ministat"><div class="n">${pending}</div><div class="l">Consent pending</div></div>
     <div class="ministat l-late"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>
     <div class="ministat p"><div class="n">${ready}</div><div class="l">Laptop ready</div></div>`;
   // count by level
@@ -1733,9 +1763,12 @@ function renderRosStats(){
   ).join('') + `<div class="lvl total"><div class="ln">${studs.length}</div><div class="ll">Total</div><div class="lr">all levels</div></div>`;
 }
 function rosExport(){
-  const rows=[["First","Last","Grade","Level","Email","Laptop assigned","Laptop ready"]];
-  studentsForWeek(rosWeek()).forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No']));
-  csvDownload(`roster-w${rosWeek()}.csv`, rows);
+  const studs=studentsForWeek(rosWeek()).filter(rosConsentMatch);
+  const label=v=>v==='yes'?'Consent':v==='no'?'No consent':'Pending';
+  const rows=[["First","Last","Grade","Level","Email","Media consent","Laptop assigned","Laptop ready"]];
+  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No']));
+  const suffix = ROS_FILTER==='all'?'':'-'+(ROS_FILTER==='yes'?'consent':ROS_FILTER==='no'?'no-consent':'pending');
+  csvDownload(`roster-w${rosWeek()}${suffix}.csv`, rows);
 }
 async function rosImport(file){
   const msg=document.getElementById('ros-io-msg');
@@ -1762,9 +1795,11 @@ function rosterInit(){
     f.value=''; l.value=''; g.value=''; f.focus(); flash('ros-saved'); renderRosterTab();
   });
   ['ros-first','ros-last','ros-grade'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('ros-add').click(); }));
+  const rf=document.getElementById('ros-filter');
+  if(rf) rf.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; rf.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); ROS_FILTER=b.dataset.cf; renderRosterTab(); });
   document.getElementById('ros-export').addEventListener('click',rosExport);
   document.getElementById('ros-template').addEventListener('click',()=>{
-    csvDownload('roster-template.csv', [["First","Last","Grade","Laptop assigned","Laptop ready"],["Jane","Doe","3","no","no"]]);
+    csvDownload('roster-template.csv', [["First","Last","Grade","Laptop assigned","Laptop ready","Media consent"],["Jane","Doe","3","no","no","yes"]]);
   });
   document.getElementById('ros-file').addEventListener('change',e=>{ if(e.target.files[0]) rosImport(e.target.files[0]); e.target.value=''; });
   renderRosterTab();

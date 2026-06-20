@@ -252,6 +252,17 @@
   .fbtn:hover{color:var(--oyster);border-color:var(--teal)}
   .fbtn.active{background:var(--brass);color:var(--navy);border-color:var(--brass);font-weight:700}
   .ws-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px 18px;display:flex;flex-direction:column;gap:9px}
+  .ws-head{display:flex;align-items:flex-start;gap:11px}
+  .ws-check{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line);background:var(--navy-2);
+    color:var(--navy);font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s}
+  .ws-check:hover{border-color:var(--brass)}
+  .ws-check.on{background:var(--ok);border-color:var(--ok)}
+  .ws-card.done{opacity:.62}
+  .ws-card.done h3{text-decoration:line-through;color:var(--muted)}
+  .ws-owners{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .ws-owl{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+  .ws-owner{font-family:var(--mono);font-size:11.5px;background:var(--brass);color:var(--navy);font-weight:700;border-radius:6px;padding:3px 9px}
+  .ws-owner.none{background:transparent;color:var(--coral);border:1px solid var(--coral);font-weight:600}
   .ws-jumps{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
   .ws-jump{font-family:var(--mono);font-size:11.5px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);
     border-radius:8px;padding:5px 11px;cursor:pointer;transition:.15s}
@@ -817,7 +828,8 @@
     <section class="view" id="view-workstreams" hidden>
       <div class="eyebrow">Accountability · Who owns what</div>
       <h1 class="page-title">Pre-launch task list</h1>
-      <p class="page-lead">The final to-dos before opening week, each with its owner. Filter by owner to see just yours.</p>
+      <p class="page-lead">The final to-dos before opening week, each with its owner. Check items off as they're done — saved for everyone. Filter by owner to see just yours.</p>
+      <div class="meta-line" style="margin-bottom:10px"><span><b id="ws-progress">—</b></span></div>
       <div class="ws-filter" id="ws-filter"></div>
       <div class="grid g2 editable-disp" id="ws-grid"></div>
       <div class="editor-wrap" id="tasks-editor"></div>
@@ -1191,6 +1203,7 @@ const CONTENT_DEFAULTS = {
   ],
   events: EVENTS_GROUPS,
   tasks: WORKSTREAMS,
+  taskDone: {},
   roster: ROSTER,
   housing: HOUSING,
   staff: STAFF,
@@ -1422,6 +1435,7 @@ function renderSummary(){
 }
 
 /* =================== RENDER: WORKSTREAMS =================== */
+function taskDoneMap(){ return (CONTENT.taskDone = CONTENT.taskDone || {}); }
 function renderWorkstreams(filter){
   // build owner filter once
   const fwrap = document.getElementById('ws-filter');
@@ -1434,13 +1448,29 @@ function renderWorkstreams(filter){
       b.classList.add('active'); renderWorkstreams(b.dataset.f);
     }));
   }
+  const done=taskDoneMap();
   const match = w => (!filter||filter==='All') ? true : (w.owners||[]).includes(filter);
-  document.getElementById('ws-grid').innerHTML = CONTENT.tasks.filter(match).map((w,i)=>`
-    <div class="ws-card">
-      <div class="top"><h3>${esc(w.task)}</h3><span class="dri">${(w.owners||[]).map(esc).join(' · ')}</span></div>
+  const grid=document.getElementById('ws-grid');
+  const total=CONTENT.tasks.length, doneN=CONTENT.tasks.filter(w=>done[w.task]).length;
+  const prog=document.getElementById('ws-progress'); if(prog) prog.textContent=`${doneN} of ${total} done`;
+  grid.innerHTML = CONTENT.tasks.map((w,idx)=>({w,idx})).filter(({w})=>match(w)).map(({w,idx})=>{
+    const isDone=!!done[w.task];
+    const owners=(w.owners||[]);
+    return `<div class="ws-card ${isDone?'done':''}">
+      <div class="ws-head">
+        <button class="ws-check ${isDone?'on':''}" data-ti="${idx}" title="Mark done">${isDone?'✓':''}</button>
+        <h3>${esc(w.task)}</h3>
+      </div>
+      <div class="ws-owners"><span class="ws-owl">Owner${owners.length>1?'s':''}</span>${owners.length?owners.map(o=>`<span class="ws-owner">${esc(o)}</span>`).join(''):'<span class="ws-owner none">Unassigned</span>'}</div>
       ${w.note?`<div class="metric">${esc(w.note)}</div>`:''}
       ${(w.tabs&&w.tabs.length)?`<div class="ws-jumps">${w.tabs.map(t=>`<button class="ws-jump" onclick="showTab('${t}')">${esc(TAB_LABELS[t]||t)} →</button>`).join('')}</div>`:''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.ws-check').forEach(b=>b.addEventListener('click',async ()=>{
+    const w=CONTENT.tasks[+b.dataset.ti]; if(!w) return;
+    const d=taskDoneMap(); d[w.task]=!d[w.task];
+    await saveContent('taskDone'); renderWorkstreams(filter);
+  }));
 }
 
 /* =================== RENDER: EVENTS TEAM =================== */

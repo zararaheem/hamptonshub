@@ -372,6 +372,16 @@
   .admin-only{display:none!important}
   body.is-admin .nav-label.admin-only{display:block!important}
   body.is-admin .nav-item.admin-only{display:flex!important}
+  body.is-admin .edit-toggle.admin-only{display:inline-flex!important}
+  /* admin edit mode */
+  .edit-toggle{align-items:center;gap:6px;background:var(--navy-2);border:1px solid var(--brass);color:var(--brass-bright);
+    border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:12px;letter-spacing:.05em;cursor:pointer}
+  .edit-toggle:hover{background:var(--brass);color:var(--navy)}
+  body.edit-mode .edit-toggle{background:var(--brass);color:var(--navy)}
+  .editor-wrap{display:none;margin-top:12px;border:1px dashed var(--brass);border-radius:var(--radius);padding:14px;background:rgba(200,146,74,.06)}
+  body.edit-mode .editor-wrap{display:block}
+  body.edit-mode .editable-disp{display:none!important}
+  .editor-wrap .e-hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin:0 0 10px}
   .seg button.on{background:var(--brass);color:var(--navy)}
 
   /* ---------- Level summary ---------- */
@@ -480,7 +490,10 @@
   <div class="main">
     <div class="topbar">
       <span class="anchor">ALPHA ODYSSEY</span>
-      <button class="burger" id="burger" aria-label="Menu">☰</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+        <button class="edit-toggle admin-only" id="edit-toggle">Edit</button>
+        <button class="burger" id="burger" aria-label="Menu">☰</button>
+      </div>
     </div>
 
     <!-- ===== DASHBOARD ===== -->
@@ -492,34 +505,18 @@
         </div>
       </div>
 
-      <div class="tiles" id="tiles"></div>
+      <div class="tiles editable-disp" id="tiles"></div>
+      <div class="editor-wrap" id="tiles-editor"></div>
 
-      <div class="grid g3">
-        <a class="linkcard" data-jump="staffing"><div class="tag">Roster</div><h3>Staffing &amp; Housing</h3><p class="lc-desc">Weekly crew, bed assignments, constraints.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" data-jump="attendance"><div class="tag">Daily</div><h3>Attendance</h3><p class="lc-desc">Check students in, export the day's roll.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" data-jump="roster"><div class="tag">Enrollment</div><h3>Students</h3><p class="lc-desc">Add, edit &amp; import the roster per week; mark laptops assigned/ready.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" data-jump="guide"><div class="tag">Curriculum</div><h3>Guide Hub</h3><p class="lc-desc">Daily field guides for all nine themed weeks.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" data-jump="tech"><div class="tag">Logistics</div><h3>Tech Onboarding</h3><p class="lc-desc">Laptop &amp; iPad assignments by student — asset tags, setup status.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" data-jump="weekly"><div class="tag">Logistics</div><h3>Weekly Supplies</h3><p class="lc-desc">Per-week supply checklist — separate from the ordering site.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" href="https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814" target="_blank" rel="noopener"><div class="tag">Ops</div><h3>DoP Task List</h3><p class="lc-desc">The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.</p><div class="go">Open sheet ↗</div></a>
-        <a class="linkcard" data-jump="supplies"><div class="tag">Logistics</div><h3>Supplies &amp; Ordering</h3><p class="lc-desc">The live ordering / packing site (summer-nyc), embedded in the hub.</p><div class="go">Open tab →</div></a>
-        <a class="linkcard" href="https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit" target="_blank" rel="noopener"><div class="tag">Parents</div><h3>Parent FAQ</h3><p class="lc-desc">The family-facing FAQ — everything parents need to know about the summer.</p><div class="go">Open doc ↗</div></a>
-      </div>
+      <div class="grid g3 editable-disp" id="jump-grid"></div>
+      <div class="editor-wrap" id="jump-editor"></div>
 
       <div class="section-title"><span class="num">i</span>The daily rhythm</div>
       <div class="callout" style="margin-bottom:16px">
         <b>Pool window</b> — Mon–Thu <b>11:00 AM–1:30 PM</b> · Fri <b>11:00 AM–12:00 PM</b>. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
       </div>
-      <div class="flow">
-        <div class="flow-row"><span class="flow-time">8:15 – 8:45</span><span class="flow-act">Drop-off</span></div>
-        <div class="flow-row"><span class="flow-time">8:45 – 10:15</span><span class="flow-act">Core Skills</span></div>
-        <div class="flow-row"><span class="flow-time">10:15 – 11:00</span><span class="flow-act">Physical Adventure</span></div>
-        <div class="flow-row"><span class="flow-time">11:00 – 1:30</span><span class="flow-act">Pool <span class="flow-note">(Mon–Thu; Fri ends 12:00)</span></span></div>
-        <div class="flow-row"><span class="flow-time">12:00 – 12:45</span><span class="flow-act">Lunch</span></div>
-        <div class="flow-row"><span class="flow-time">1:30 – 3:30</span><span class="flow-act">Workshop</span></div>
-        <div class="flow-row"><span class="flow-time">3:30 – 3:45</span><span class="flow-act">Shout-Outs</span></div>
-        <div class="flow-row"><span class="flow-time">4:00 – 4:30</span><span class="flow-act">Pick-up</span></div>
-      </div>
+      <div class="flow editable-disp" id="flow"></div>
+      <div class="editor-wrap" id="rhythm-editor"></div>
 
       <div class="section-title"><span class="num">↗</span>Bus service</div>
       <div class="card" id="bus-card">
@@ -551,7 +548,8 @@
 
       <div class="subpanel active" id="sub-roster">
         <div class="meta-line"><span>Highlighted column = <b>next/active week</b></span><span>Cal B guides may support weeks 6–7</span></div>
-        <div class="tablewrap"><table id="roster-table"></table></div>
+        <div class="tablewrap editable-disp"><table id="roster-table"></table></div>
+        <div class="editor-wrap" id="roster-editor"></div>
         <div class="legend">
           <span><span class="swatch" style="background:var(--coral)"></span>TBD / open hire</span>
           <span><span class="swatch" style="background:rgba(200,146,74,.4)"></span>Active week column</span>
@@ -562,12 +560,14 @@
       <div class="subpanel" id="sub-housing">
         <div class="meta-line"><span><b>248 Blank Ln, Water Mill</b></span><span>5 bedrooms · 5 baseline / 7 surge</span><span>Stays: Coordinator, Lead, Manuel, extra guides</span></div>
         <div class="callout" style="margin-bottom:16px">Does <b>not</b> stay in housing: Nancy (Admissions), Nurse, Lifeguards.</div>
-        <div class="tablewrap"><table id="housing-table"></table></div>
+        <div class="tablewrap editable-disp"><table id="housing-table"></table></div>
+        <div class="editor-wrap" id="housing-editor"></div>
       </div>
 
       <div class="subpanel" id="sub-staff">
         <p class="page-lead" style="margin-bottom:16px">Confirmed crew, availability constraints, and pre-camp setup week (06/22).</p>
-        <div class="tablewrap"><table id="staff-table"></table></div>
+        <div class="tablewrap editable-disp"><table id="staff-table"></table></div>
+        <div class="editor-wrap" id="staff-editor"></div>
       </div>
 
       <div class="subpanel" id="sub-ops">
@@ -703,7 +703,8 @@
       <h1 class="page-title">Events team</h1>
       <p class="page-lead">Everything the events team is sending over and producing for the Hamptons. For visibility, the whole team works off this one shared list (owner: Alice Lee).</p>
 
-      <div id="events-groups"></div>
+      <div id="events-groups" class="editable-disp"></div>
+      <div class="editor-wrap" id="events-editor"></div>
 
       <div class="callout" style="margin-top:6px">The full signage wish list with renderings lives in the <a data-jump="signage" style="color:var(--brass-bright);cursor:pointer">Signage Wish List</a> tab (live Google Sheet).</div>
     </section>
@@ -810,7 +811,8 @@
       <h1 class="page-title">Pre-launch task list</h1>
       <p class="page-lead">The final to-dos before opening week, each with its owner. Filter by owner to see just yours.</p>
       <div class="ws-filter" id="ws-filter"></div>
-      <div class="grid g2" id="ws-grid"></div>
+      <div class="grid g2 editable-disp" id="ws-grid"></div>
+      <div class="editor-wrap" id="tasks-editor"></div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -992,7 +994,7 @@ const EVENTS_GROUPS = [
       {item:"Additional fitted tablecloths — branded", qty:"4 total"},
       {item:"6 ft tables", qty:"2"},
       {item:"8 ft tables", qty:"2"},
-      {item:"Step &amp; Repeat backdrop (10' × 10')", qty:"1"},
+      {item:"Step & Repeat backdrop (10' × 10')", qty:"1"},
       {item:"Branded floor mat", qty:"1"},
       {item:"Feather flag — Alpha Pickup", qty:"1"},
       {item:"Alpha branded pillow covers", qty:"8"},
@@ -1009,7 +1011,7 @@ const EVENTS_GROUPS = [
     ],
   },
   {
-    title:"Coffee &amp; Conversations event items",
+    title:"Coffee & Conversations event items",
     items:[
       {item:"Branded coffee cup sleeves (for to-go cups)", qty:""},
       {item:"Acrylic stir sticks", qty:""},
@@ -1144,6 +1146,150 @@ function parseRosterCSV(text){
   }).filter(s=>s.first||s.last);
 }
 
+/* =================== EDITABLE SITE CONTENT (shared) ===================
+   Tiles, jump cards, daily rhythm, events, tasks, and the staffing/housing
+   rosters are seeded from the defaults below, then overlaid with anything an
+   admin has saved to the Supabase `site_content` table (key -> JSON). */
+const CONTENT_DEFAULTS = {
+  tiles: (function(){ const tk=WEEKS.reduce((a,w)=>a+w.kids,0), gw=WEEKS.reduce((a,w)=>a+guidesNeeded(w.kids),0);
+    return [
+      {k:"When", v:"Jun 29 – Aug 28", d:"9 themed weeks, Mon–Fri", c:""},
+      {k:"Students enrolled", v:String(tk), d:"across the whole summer", c:"t-teal"},
+      {k:"Guides needed", v:String(gw), d:"1 guide per 6 kids", c:""},
+      {k:"Roles still to hire", v:"3", d:"1 nurse + 2 lifeguards", c:"t-coral"},
+    ]; })(),
+  jumpCards: [
+    {tag:"Roster", title:"Staffing & Housing", desc:"Weekly crew, bed assignments, constraints.", to:"staffing"},
+    {tag:"Daily", title:"Attendance", desc:"Check students in, export the day's roll.", to:"attendance"},
+    {tag:"Enrollment", title:"Students", desc:"Add, edit & import the roster per week; mark laptops assigned/ready.", to:"roster"},
+    {tag:"Curriculum", title:"Guide Hub", desc:"Daily field guides for all nine themed weeks.", to:"guide"},
+    {tag:"Logistics", title:"Tech Onboarding", desc:"Laptop & iPad assignments by student — asset tags, setup status.", to:"tech"},
+    {tag:"Logistics", title:"Weekly Supplies", desc:"Per-week supply checklist — separate from the ordering site.", to:"weekly"},
+    {tag:"Ops", title:"DoP Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
+    {tag:"Logistics", title:"Supplies & Ordering", desc:"The live ordering / packing site (summer-nyc), embedded in the hub.", to:"supplies"},
+    {tag:"Parents", title:"Parent FAQ", desc:"The family-facing FAQ — everything parents need to know about the summer.", to:"https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit"},
+  ],
+  rhythm: [
+    {time:"8:15 – 8:45", act:"Drop-off", note:""},
+    {time:"8:45 – 10:15", act:"Core Skills", note:""},
+    {time:"10:15 – 11:00", act:"Physical Adventure", note:""},
+    {time:"11:00 – 1:30", act:"Pool", note:"Mon–Thu; Fri ends 12:00"},
+    {time:"12:00 – 12:45", act:"Lunch", note:""},
+    {time:"1:30 – 3:30", act:"Workshop", note:""},
+    {time:"3:30 – 3:45", act:"Shout-Outs", note:""},
+    {time:"4:00 – 4:30", act:"Pick-up", note:""},
+  ],
+  events: EVENTS_GROUPS,
+  tasks: WORKSTREAMS,
+  roster: ROSTER,
+  housing: HOUSING,
+  staff: STAFF,
+};
+let CONTENT = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
+async function loadContent(){
+  CONTENT = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
+  try{
+    if(SUPA){
+      const { data, error } = await SB.from('site_content').select('id,data');
+      if(!error && data) data.forEach(r=>{ if(r.data!=null) CONTENT[r.id]=r.data; });
+    } else {
+      const local=store.get('site_content')||{}; Object.keys(local).forEach(k=>{ CONTENT[k]=local[k]; });
+    }
+  }catch(e){ console.warn('content load failed', e); }
+}
+async function saveContent(key){
+  if(SUPA){
+    const { error } = await SB.from('site_content').upsert({id:key, data:CONTENT[key], updated_at:new Date().toISOString()});
+    if(error){ console.warn('content save failed', error); return error; }
+    return null;
+  }
+  const local=store.get('site_content')||{}; local[key]=CONTENT[key]; store.set('site_content',local); return null;
+}
+const csvJoin = a => (a||[]).join(', ');
+const csvSplit = s => String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
+
+/* Generic table editor: schema=[{key,label,w}], rows=array of flat objects.
+   onSave(newRows) is called with the edited rows. */
+function buildEditor(mount, schema, rows, onSave){
+  const cell=(o,c)=>`<td><input class="cell-input" data-k="${c.key}" value="${escAttr(o[c.key]==null?'':o[c.key])}" placeholder="${escAttr(c.label)}" style="min-width:${c.w||120}px"></td>`;
+  const rowHtml=o=>`<tr>${schema.map(c=>cell(o,c)).join('')}<td><button class="del" data-act="del" title="Remove row">×</button></td></tr>`;
+  mount.innerHTML = `
+    <p class="e-hint">Editing — change any field, add or remove rows, then Save. Saved for everyone.</p>
+    <div class="tablewrap"><table>
+      <thead><tr>${schema.map(c=>`<th>${esc(c.label)}</th>`).join('')}<th></th></tr></thead>
+      <tbody>${rows.map(rowHtml).join('')}</tbody>
+    </table></div>
+    <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn ghost" data-act="add">+ Add row</button>
+      <button class="btn" data-act="save">Save changes</button>
+      <span class="saved-note" data-role="msg"></span>
+    </div>`;
+  const tbody=mount.querySelector('tbody');
+  function bindDel(tr){ tr.querySelector('[data-act=del]').addEventListener('click',()=>tr.remove()); }
+  tbody.querySelectorAll('tr').forEach(bindDel);
+  mount.querySelector('[data-act=add]').addEventListener('click',()=>{
+    const tmp=document.createElement('tbody'); tmp.innerHTML=rowHtml({});
+    const tr=tmp.firstElementChild; tbody.appendChild(tr); bindDel(tr);
+  });
+  mount.querySelector('[data-act=save]').addEventListener('click',async ()=>{
+    const newRows=[...tbody.querySelectorAll('tr')].map(tr=>{ const o={}; tr.querySelectorAll('[data-k]').forEach(inp=>o[inp.dataset.k]=inp.value); return o; });
+    const m=mount.querySelector('[data-role=msg]'); m.textContent='Saving…';
+    const err=await onSave(newRows);
+    m.textContent = err ? '⚠ save failed' : '✓ saved'; setTimeout(()=>{ m.textContent=''; },1800);
+  });
+}
+function buildAllEditors(){
+  const mk=(id,schema,rows,save)=>{ const m=document.getElementById(id); if(m) buildEditor(m,schema,rows,save); };
+  const wcols=[0,1,2,3,4,5,6,7,8].map(n=>({key:'c'+n,label:'W'+(n+1),w:88}));
+  mk('tiles-editor',
+    [{key:'k',label:'Label',w:150},{key:'v',label:'Value',w:120},{key:'d',label:'Detail',w:200},{key:'c',label:'Accent (t-teal / t-coral)',w:130}],
+    CONTENT.tiles.map(o=>({...o})),
+    async rows=>{ CONTENT.tiles=rows; const e=await saveContent('tiles'); renderTiles(); return e; });
+  mk('jump-editor',
+    [{key:'tag',label:'Tag',w:110},{key:'title',label:'Title',w:150},{key:'desc',label:'Description',w:230},{key:'to',label:'Tab name or URL',w:170}],
+    CONTENT.jumpCards.map(o=>({...o})),
+    async rows=>{ CONTENT.jumpCards=rows; const e=await saveContent('jumpCards'); renderJumpCards(); return e; });
+  mk('rhythm-editor',
+    [{key:'time',label:'Time',w:120},{key:'act',label:'Activity',w:160},{key:'note',label:'Note (optional)',w:180}],
+    CONTENT.rhythm.map(o=>({...o})),
+    async rows=>{ CONTENT.rhythm=rows; const e=await saveContent('rhythm'); renderRhythm(); return e; });
+  mk('tasks-editor',
+    [{key:'task',label:'Task',w:240},{key:'owners',label:'Owners (comma)',w:140},{key:'note',label:'Note',w:160},{key:'tabs',label:'Tab links (comma)',w:130}],
+    CONTENT.tasks.map(w=>({task:w.task, owners:csvJoin(w.owners), note:w.note||'', tabs:csvJoin(w.tabs)})),
+    async rows=>{ CONTENT.tasks=rows.map(r=>({task:r.task, owners:csvSplit(r.owners), note:r.note||'', tabs:csvSplit(r.tabs)})); const e=await saveContent('tasks'); const f=document.getElementById('ws-filter'); if(f) f.dataset.built=''; renderWorkstreams('All'); return e; });
+  const evRows=[]; CONTENT.events.forEach(g=>{ if(!g.items.length) evRows.push({group:g.title,item:'',qty:'',note:''}); g.items.forEach(it=>evRows.push({group:g.title,item:it.item,qty:it.qty||'',note:it.note||''})); });
+  mk('events-editor',
+    [{key:'group',label:'Group',w:170},{key:'item',label:'Item',w:230},{key:'qty',label:'Qty',w:70},{key:'note',label:'Note',w:160}],
+    evRows,
+    async rows=>{ const groups=[]; const idx={}; rows.forEach(r=>{ const t=(r.group||'').trim()||'Other'; if(!(t in idx)){ idx[t]=groups.length; groups.push({title:t,items:[]}); } if((r.item||'').trim()) groups[idx[t]].items.push({item:r.item, qty:r.qty||'', note:r.note||''}); }); CONTENT.events=groups; const e=await saveContent('events'); renderEvents(); return e; });
+  mk('roster-editor',
+    [{key:'role',label:'Role',w:150},...wcols],
+    CONTENT.roster.map(r=>{ const o={role:r.role}; (r.cells||[]).forEach((c,i)=>o['c'+i]=c); return o; }),
+    async rows=>{ CONTENT.roster=rows.map(r=>({role:r.role, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('roster'); renderRoster(); return e; });
+  mk('housing-editor',
+    [{key:'bed',label:'Bed',w:150},{key:'tier',label:'Tier',w:90},...wcols],
+    CONTENT.housing.map(r=>{ const o={bed:r.bed,tier:r.tier}; (r.cells||[]).forEach((c,i)=>o['c'+i]=c); return o; }),
+    async rows=>{ CONTENT.housing=rows.map(r=>({bed:r.bed, tier:r.tier, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('housing'); renderHousing(); return e; });
+  mk('staff-editor',
+    [{key:'name',label:'Name',w:120},{key:'role',label:'Role',w:140},{key:'status',label:'Status',w:100},{key:'housing',label:'Housing',w:90},{key:'precamp',label:'Pre-camp',w:120},{key:'constraint',label:'Constraint',w:140},{key:'notes',label:'Notes',w:160}],
+    CONTENT.staff.map(r=>({name:r[0],role:r[1],status:r[2],housing:r[3],precamp:r[4],constraint:r[5],notes:r[6]})),
+    async rows=>{ CONTENT.staff=rows.map(r=>[r.name,r.role,r.status,r.housing,r.precamp,r.constraint,r.notes]); const e=await saveContent('staff'); renderStaff(); return e; });
+}
+function renderJumpCards(){
+  const el=document.getElementById('jump-grid'); if(!el) return;
+  el.innerHTML=(CONTENT.jumpCards||[]).map(c=>{
+    const http=/^https?:/i.test(c.to||'');
+    const go=http?'Open ↗':'Open tab →';
+    const attrs=http?`href="${escAttr(c.to)}" target="_blank" rel="noopener"`:`data-jump="${escAttr(c.to)}" style="cursor:pointer"`;
+    return `<a class="linkcard" ${attrs}><div class="tag">${esc(c.tag)}</div><h3>${esc(c.title)}</h3><p class="lc-desc">${esc(c.desc)}</p><div class="go">${go}</div></a>`;
+  }).join('');
+  el.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',()=>showTab(a.dataset.jump)));
+}
+function renderRhythm(){
+  const el=document.getElementById('flow'); if(!el) return;
+  el.innerHTML=(CONTENT.rhythm||[]).map(r=>`<div class="flow-row"><span class="flow-time">${esc(r.time)}</span><span class="flow-act">${esc(r.act)}${r.note?` <span class="flow-note">(${esc(r.note)})</span>`:''}</span></div>`).join('');
+}
+
 /* program levels */
 const LEVELS = [
   {key:'Wonderlab', label:'Wonderlab', range:'PK'},
@@ -1205,16 +1351,8 @@ function renderCountdown(){
   else el.innerHTML = `Now sailing · <b>Week ${w.n} · ${w.theme}</b> (${w.range})`;
 }
 function renderTiles(){
-  const totalKids = WEEKS.reduce((a,w)=>a+w.kids,0);
-  const guideWeeks = WEEKS.reduce((a,w)=>a+guidesNeeded(w.kids),0);
-  const tiles = [
-    {k:"When", v:"Jun 29 – Aug 28", d:"9 themed weeks, Mon–Fri", c:""},
-    {k:"Students enrolled", v:totalKids, d:"across the whole summer", c:"t-teal"},
-    {k:"Guides needed", v:guideWeeks, d:"1 guide per 6 kids", c:""},
-    {k:"Roles still to hire", v:"3", d:"1 nurse + 2 lifeguards", c:"t-coral"},
-  ];
-  document.getElementById('tiles').innerHTML = tiles.map(t=>`
-    <div class="tile ${t.c}"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join('');
+  document.getElementById('tiles').innerHTML = (CONTENT.tiles||[]).map(t=>`
+    <div class="tile ${esc(t.c||'')}"><div class="k">${esc(t.k)}</div><div class="v">${esc(t.v)}</div><div class="d">${esc(t.d)}</div></div>`).join('');
 }
 
 /* =================== RENDER: STAFFING TABLES =================== */
@@ -1229,25 +1367,25 @@ function weekHeaders(){
 }
 function renderRoster(){
   const head = `<thead><tr><th class="role-cell">Role</th>${weekHeaders()}</tr></thead>`;
-  const body = ROSTER.map(r=>`<tr><td class="role-cell">${r.role}</td>${
-    r.cells.map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
+  const body = CONTENT.roster.map(r=>`<tr><td class="role-cell">${esc(r.role)}</td>${
+    (r.cells||[]).map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
   }</tr>`).join('') +
     `<tr><td class="role-cell">Standby</td><td colspan="9" class="note-row">${STANDBY.join(' · ')}</td></tr>`;
   document.getElementById('roster-table').innerHTML = head+`<tbody>${body}</tbody>`;
 }
 function renderHousing(){
   const head = `<thead><tr><th class="role-cell">Bed</th>${weekHeaders()}<th>Tier</th></tr></thead>`;
-  const body = HOUSING.map(r=>`<tr><td class="role-cell">${r.bed}</td>${
-    r.cells.map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
-  }<td><span class="pill ${r.tier==='BASELINE'?'ok':''}">${r.tier}</span></td></tr>`).join('');
+  const body = CONTENT.housing.map(r=>`<tr><td class="role-cell">${esc(r.bed)}</td>${
+    (r.cells||[]).map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
+  }<td><span class="pill ${r.tier==='BASELINE'?'ok':''}">${esc(r.tier)}</span></td></tr>`).join('');
   document.getElementById('housing-table').innerHTML = head+`<tbody>${body}</tbody>`;
 }
 function renderStaff(){
   const cols = ["Name","Role","Status","Housing","Pre-camp (06/22)","Constraint","Notes"];
   const head = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
-  const body = STAFF.map(r=>`<tr>
-    <td class="role-cell">${r[0]==='TBD'?'<span class="tbd">TBD</span>':r[0]}</td>
-    <td>${r[1]}</td>
+  const body = CONTENT.staff.map(r=>`<tr>
+    <td class="role-cell">${r[0]==='TBD'?'<span class="tbd">TBD</span>':esc(r[0])}</td>
+    <td>${esc(r[1])}</td>
     <td>${r[2]==='Confirmed'?'<span class="pill ok">Confirmed</span>':r[2]==='Open'?'<span class="pill open">Open</span>':'<span class="blank">—</span>'}</td>
     <td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="note-row">${r[6]}</td>
   </tr>`).join('');
@@ -1278,7 +1416,7 @@ function renderWorkstreams(filter){
   // build owner filter once
   const fwrap = document.getElementById('ws-filter');
   if(!fwrap.dataset.built){
-    const all = ['All', ...[...new Set(WORKSTREAMS.flatMap(w=>w.owners))]];
+    const all = ['All', ...[...new Set(CONTENT.tasks.flatMap(w=>w.owners||[]))]];
     fwrap.innerHTML = all.map((d,i)=>`<button class="fbtn ${i===0?'active':''}" data-f="${escAttr(d)}">${esc(d)}</button>`).join('');
     fwrap.dataset.built="1";
     fwrap.querySelectorAll('.fbtn').forEach(b=>b.addEventListener('click',()=>{
@@ -1286,10 +1424,10 @@ function renderWorkstreams(filter){
       b.classList.add('active'); renderWorkstreams(b.dataset.f);
     }));
   }
-  const match = w => (!filter||filter==='All') ? true : w.owners.includes(filter);
-  document.getElementById('ws-grid').innerHTML = WORKSTREAMS.filter(match).map((w,i)=>`
+  const match = w => (!filter||filter==='All') ? true : (w.owners||[]).includes(filter);
+  document.getElementById('ws-grid').innerHTML = CONTENT.tasks.filter(match).map((w,i)=>`
     <div class="ws-card">
-      <div class="top"><h3>${esc(w.task)}</h3><span class="dri">${w.owners.map(esc).join(' · ')}</span></div>
+      <div class="top"><h3>${esc(w.task)}</h3><span class="dri">${(w.owners||[]).map(esc).join(' · ')}</span></div>
       ${w.note?`<div class="metric">${esc(w.note)}</div>`:''}
       ${(w.tabs&&w.tabs.length)?`<div class="ws-jumps">${w.tabs.map(t=>`<button class="ws-jump" onclick="showTab('${t}')">${esc(TAB_LABELS[t]||t)} →</button>`).join('')}</div>`:''}
     </div>`).join('');
@@ -1298,14 +1436,14 @@ function renderWorkstreams(filter){
 /* =================== RENDER: EVENTS TEAM =================== */
 function renderEvents(){
   const wrap=document.getElementById('events-groups'); if(!wrap) return;
-  wrap.innerHTML = EVENTS_GROUPS.map(g=>{
+  wrap.innerHTML = (CONTENT.events||[]).map(g=>{
     const head=`<thead><tr><th>Item</th><th style="width:90px">Qty</th><th>Notes</th></tr></thead>`;
     const body=g.items.map(it=>`<tr>
-      <td class="role-cell">${it.item}</td>
-      <td>${it.qty?`<b style="color:var(--brass-bright)">${it.qty}</b>`:'<span class="blank">—</span>'}</td>
-      <td class="note-row">${it.note||'<span class="blank">—</span>'}</td></tr>`).join('');
+      <td class="role-cell">${esc(it.item)}</td>
+      <td>${it.qty?`<b style="color:var(--brass-bright)">${esc(it.qty)}</b>`:'<span class="blank">—</span>'}</td>
+      <td class="note-row">${it.note?esc(it.note):'<span class="blank">—</span>'}</td></tr>`).join('');
     return `<div style="margin-bottom:22px">
-      <div class="section-title"><span class="num">›</span>${g.title}</div>
+      <div class="section-title"><span class="num">›</span>${esc(g.title)}</div>
       ${g.note?`<div class="callout" style="margin-bottom:12px">${g.note}</div>`:''}
       <div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>
     </div>`;
@@ -1834,6 +1972,15 @@ function closeRail(){document.getElementById('rail').classList.remove('open');do
 document.getElementById('burger').addEventListener('click',openRail);
 document.getElementById('scrim').addEventListener('click',closeRail);
 
+/* admin edit-mode toggle */
+{ const et=document.getElementById('edit-toggle');
+  if(et) et.addEventListener('click',()=>{
+    const on=document.body.classList.toggle('edit-mode');
+    et.textContent=on?'Done':'Edit';
+    if(on){ buildAllEditors(); window.scrollTo({top:0}); }
+  });
+}
+
 /* =================== AUTH / ACCESS =================== */
 function domainOk(email){ return DOMAINS.includes((email.split('@')[1]||'').toLowerCase()); }
 
@@ -1892,6 +2039,7 @@ function enterHub(sess){
   document.getElementById('me-mail').textContent=sess.email;
   renderAccess();
   hydrateRoster().then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); });
+  if(typeof buildAllEditors==='function') buildAllEditors();
   showTab('dashboard');
 }
 async function signOut(){
@@ -2018,10 +2166,16 @@ async function authInit(){
 }
 
 /* =================== INIT =================== */
-renderPorts(); renderCountdown(); renderTiles();
+renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
 renderRoster(); renderHousing(); renderStaff(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks();
 attInit(); techInit(); supInit(); rosterInit(); authInit();
+loadContent().then(()=>{
+  const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
+  renderTiles(); renderJumpCards(); renderRhythm();
+  renderRoster(); renderHousing(); renderStaff();
+  renderWorkstreams('All'); renderEvents(); buildAllEditors();
+});
 hydrateRoster().then(()=>{ renderAtt(); renderTech(); renderRosterTab(); });
 </script>
 </body>

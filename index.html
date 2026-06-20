@@ -522,7 +522,7 @@
     <section class="view" id="view-attendance" hidden>
       <div class="eyebrow">Daily logistics · DRI: Campus Coordinator</div>
       <h1 class="page-title">Attendance</h1>
-      <p class="page-lead">Take the daily roll, see the count by level, and flag allergies &amp; medications. Marks save per date; health details save per roster — all in this browser.</p>
+      <p class="page-lead">Take the daily roll, see the count by level, and flag allergies &amp; medications. Attendance marks save per date on this device; health details sync to the shared, access-controlled database.</p>
 
       <div class="att-bar">
         <div class="field">
@@ -539,7 +539,10 @@
       <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
       <div class="levels" id="att-levels"></div>
 
-      <div class="tablewrap" id="att-list"></div>
+      <div class="eyebrow" style="margin-top:18px;margin-bottom:8px">Allergies &amp; medications</div>
+      <div id="att-health"></div>
+
+      <div class="tablewrap" id="att-list" style="margin-top:18px"></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
         <button class="btn" id="att-allp">Mark all present</button>
@@ -547,7 +550,7 @@
         <button class="btn ghost" id="att-export">Export CSV</button>
         <span class="saved-note" id="att-saved"></span>
       </div>
-      <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they'll flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Only the Week 1 roster is loaded; later weeks slot in here too.</div>
+      <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Only the Week 1 roster is loaded; later weeks slot in here too.</div>
     </section>
 
     <!-- ===== TECH ONBOARDING ===== -->
@@ -1099,9 +1102,32 @@ function renderAtt(){
       const nm=block.querySelector('.nm');
       const base=`${esc(STUDENTS_W1[idx][0])} ${esc(STUDENTS_W1[idx][1])}`;
       nm.innerHTML=base+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((hh.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
+      renderHealthSummary();
     });
   });
-  renderAttStats(); renderLevels();
+  renderAttStats(); renderLevels(); renderHealthSummary();
+}
+function renderHealthSummary(){
+  const el=document.getElementById('att-health'); if(!el) return;
+  const health=loadHealth();
+  const flagged=[];
+  STUDENTS_W1.forEach((s,idx)=>{
+    const h=health[idx]||{}; const a=(h.allergies||'').trim(), m=(h.meds||'').trim();
+    if(a||m) flagged.push({name:`${s[0]} ${s[1]}`, grade:s[2], level:levelOf(s[2]), a, m});
+  });
+  if(!flagged.length){
+    el.innerHTML=`<div class="callout">No allergies or medications recorded for this roster yet. Tap <b>＋ health</b> on a student below to add details — they'll roll up here and flag red on the roll.</div>`;
+    return;
+  }
+  const allergyN=flagged.filter(f=>f.a).length, medN=flagged.filter(f=>f.m).length;
+  const head=`<thead><tr><th>Student</th><th>Level</th><th>Allergies</th><th>Medications</th></tr></thead>`;
+  const body=flagged.map(f=>`<tr>
+    <td class="role-cell">${esc(f.name)} <span class="gr">Gr ${esc(f.grade)}</span></td>
+    <td><span class="lvlbadge">${f.level}</span></td>
+    <td>${f.a?`<span class="allergy-chip">⚠ ${esc(f.a)}</span>`:'<span class="blank">—</span>'}</td>
+    <td>${f.m?esc(f.m):'<span class="blank">—</span>'}</td>
+  </tr>`).join('');
+  el.innerHTML=`<div class="meta-line" style="margin-bottom:8px"><span><b>${flagged.length}</b> student${flagged.length>1?'s':''} flagged</span><span><b>${allergyN}</b> with allergies</span><span><b>${medN}</b> on medication</span></div><div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>`;
 }
 function renderAttStats(){
   const d=loadAtt(); let p=0,l=0,a=0;

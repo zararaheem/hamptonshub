@@ -390,6 +390,8 @@
     <p class="gp">Staff access only. Sign in with your <b>@alpha.school</b> or <b>@trilogy.com</b> email.</p>
     <label for="gate-email">Work email</label>
     <input id="gate-email" type="email" autocomplete="email" placeholder="you@alpha.school" />
+    <label for="gate-pass" id="gate-pass-label">Staff password</label>
+    <input id="gate-pass" type="password" autocomplete="current-password" placeholder="••••••••" />
     <button class="btn" id="gate-go">Continue</button>
     <p class="gate-msg" id="gate-msg"></p>
     <div class="gate-foot">Access is managed by Zara Raheem.</div>
@@ -707,6 +709,8 @@
    mode:'local'    → browser-only preview gate (no backend). */
 const CONFIG = {
   mode: 'supabase',
+  magicLink: false,            // true → magic-link email login. false → shared-password gate below.
+  accessPassword: 'hamptons26', // shared staff password (used when magicLink is false)
   supabaseUrl: 'https://zbduxegkxhgyfvrfkgai.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZHV4ZWdreGhneWZ2cmZrZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTIzOTUsImV4cCI6MjA5MzIyODM5NX0.pTdpdvjkaWFPQdRm7k0xqtAxcUsMo015qRH2_H4spOk'
 };
@@ -717,6 +721,8 @@ try {
     SUPA = true;
   }
 } catch(e){ console.warn('Supabase init failed — falling back to local preview gate:', e); SUPA = false; }
+const NEEDS_LOGIN = SUPA && CONFIG.magicLink === true;  // true only when real sign-in is enabled
+const PASSWORD_GATE = !NEEDS_LOGIN && !!CONFIG.accessPassword;  // shared-password gate
 
 /* =================== DATA =================== */
 const WEEKS = [
@@ -1400,10 +1406,11 @@ function enterHub(sess){
 async function signOut(){
   SESSION=null;
   store.set('session',null);
-  if(SUPA){ try{ await SB.auth.signOut(); }catch(e){} }
+  if(NEEDS_LOGIN){ try{ await SB.auth.signOut(); }catch(e){} }
   document.body.classList.add('locked');
   document.body.classList.remove('is-admin');
   const e=document.getElementById('gate-email'); if(e) e.value='';
+  const p=document.getElementById('gate-pass'); if(p) p.value='';
   const m=document.getElementById('gate-msg'); if(m){ m.className='gate-msg'; m.textContent=''; }
 }
 async function gateSubmit(){
@@ -1411,11 +1418,20 @@ async function gateSubmit(){
   const msg=document.getElementById('gate-msg');
   if(!email||!email.includes('@')){ msg.className='gate-msg err'; msg.textContent='Enter your work email.'; return; }
   if(!domainOk(email)){ msg.className='gate-msg err'; msg.textContent='Use your @alpha.school or @trilogy.com email.'; return; }
-  if(SUPA){
+  if(NEEDS_LOGIN){
     msg.className='gate-msg'; msg.textContent='Sending your sign-in link…';
     const { error } = await SB.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } });
     if(error){ msg.className='gate-msg err'; msg.textContent=error.message||'Could not send link — try again.'; return; }
     msg.className='gate-msg ok'; msg.textContent='Check your email for a one-time sign-in link ✉️';
+    return;
+  }
+  if(PASSWORD_GATE){
+    const pass=(document.getElementById('gate-pass')||{}).value||'';
+    if(pass!==CONFIG.accessPassword){ msg.className='gate-msg err'; msg.textContent='Wrong staff password — ask Zara.'; return; }
+    const acc={admin: email===OWNER, owner: email===OWNER};
+    try{ const a=await dbCheckAccess(email); if(a&&(a.admin||a.owner)){ acc.admin=true; acc.owner=a.owner; } }catch(e){}
+    msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
+    setTimeout(()=>enterHub({email, ...acc}),200);
     return;
   }
   const acc = await dbCheckAccess(email);
@@ -1469,12 +1485,13 @@ async function addEmailHandler(){
 async function authInit(){
   document.getElementById('gate-go').addEventListener('click',gateSubmit);
   document.getElementById('gate-email').addEventListener('keydown',e=>{ if(e.key==='Enter') gateSubmit(); });
+  { const gp=document.getElementById('gate-pass'); if(gp) gp.addEventListener('keydown',e=>{ if(e.key==='Enter') gateSubmit(); }); }
   document.getElementById('signout').addEventListener('click',signOut);
   document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ if(SUPA) return; setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
   document.getElementById('add-email-btn').addEventListener('click',addEmailHandler);
   document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter') addEmailHandler(); });
 
-  if(SUPA){
+  if(NEEDS_LOGIN){
     const go=document.getElementById('gate-go'); if(go) go.textContent='Email me a sign-in link';
     const banner=document.getElementById('demo-banner');
     if(banner) banner.textContent='Protected sign-in — you’ll get a one-time magic link by email. The allow-list and student health are stored securely with row-level security; only approved staff can read them.';
@@ -1486,11 +1503,27 @@ async function authInit(){
     SB.auth.onAuthStateChange(async (_ev, sess)=>{
       if(sess && sess.user && sess.user.email && !SESSION){ await tryEnter(sess.user.email); }
     });
+  } else if(PASSWORD_GATE){
+    const banner=document.getElementById('demo-banner');
+    if(banner) banner.textContent='Enter your @alpha.school / @trilogy.com email and the shared staff password. You stay signed in on this device.';
+    const note=document.getElementById('access-note');
+    if(note) note.innerHTML='<b>Shared staff password.</b> Everyone uses the same password to get in. Allergies & health are live for all staff. This is a soft gate — for hard, per-person security, switch on email sign-in.';
+    const s=store.get('session');
+    if(s&&s.email){
+      const acc={email:s.email, admin:s.email.toLowerCase()===OWNER, owner:s.email.toLowerCase()===OWNER};
+      try{ const a=await dbCheckAccess(s.email); if(a&&(a.admin||a.owner)){ acc.admin=true; acc.owner=a.owner; } }catch(e){}
+      enterHub(acc); return;
+    }
+    document.body.classList.add('locked');
   } else {
+    // local allow-list preview gate (no password configured)
+    const pass=document.getElementById('gate-pass'), passL=document.getElementById('gate-pass-label');
+    if(pass) pass.style.display='none'; if(passL) passL.style.display='none';
     const s=store.get('session');
     if(s&&s.email){ const acc=await dbCheckAccess(s.email); if(acc.allowed){ enterHub({email:s.email, ...acc}); return; } }
     document.body.classList.add('locked');
   }
+  if(NEEDS_LOGIN){ const pass=document.getElementById('gate-pass'), passL=document.getElementById('gate-pass-label'); if(pass) pass.style.display='none'; if(passL) passL.style.display='none'; }
 }
 
 /* =================== INIT =================== */

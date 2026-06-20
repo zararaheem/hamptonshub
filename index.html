@@ -622,7 +622,7 @@
 
       <div class="section-title"><span class="num">#</span>Approved people</div>
       <div class="tablewrap"><table id="access-table"></table></div>
-      <div class="callout" style="margin-top:18px">This is a preview access layer — the allow-list lives in this browser. For real protected sign-in across devices (magic-link login + a shared list with student data secured), connect Supabase; see the deploy guide that ships with this file.</div>
+      <div class="callout" id="access-note" style="margin-top:18px">This is a preview access layer — the allow-list lives in this browser. For real protected sign-in across devices (magic-link login + a shared list with student data secured), connect Supabase; see the deploy guide that ships with this file.</div>
     </section>
 
     <!-- ===== WORKSTREAMS ===== -->
@@ -693,7 +693,24 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
 <script>
+/* =================== CONFIG =================== */
+/* mode:'supabase' → real magic-link login + shared, RLS-protected allow-list & student health.
+   mode:'local'    → browser-only preview gate (no backend). */
+const CONFIG = {
+  mode: 'supabase',
+  supabaseUrl: 'https://zbduxegkxhgyfvrfkgai.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZHV4ZWdreGhneWZ2cmZrZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTIzOTUsImV4cCI6MjA5MzIyODM5NX0.pTdpdvjkaWFPQdRm7k0xqtAxcUsMo015qRH2_H4spOk'
+};
+let SB = null, SUPA = false;
+try {
+  if (CONFIG.mode === 'supabase' && window.supabase && CONFIG.supabaseUrl && CONFIG.supabaseAnonKey) {
+    SB = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+    SUPA = true;
+  }
+} catch(e){ console.warn('Supabase init failed — falling back to local preview gate:', e); SUPA = false; }
+
 /* =================== DATA =================== */
 const WEEKS = [
   {n:1, theme:"Survivor",              range:"Jun 29 – Jul 3", start:"2026-06-29", end:"2026-07-03", kids:24, flag:""},
@@ -1001,9 +1018,33 @@ function flashSaved(){
   const el=document.getElementById('att-saved');
   el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
-function healthKey(){ return `health:w${document.getElementById('att-week').value}`; }
-function loadHealth(){ return store.get(healthKey()) || {}; }
-function saveHealth(h){ store.set(healthKey(), h); }
+let HEALTH_CACHE = {}; // { [week]: { [idx]: {allergies, meds} } }
+function curWeek(){ return document.getElementById('att-week').value; }
+function loadHealth(){ return HEALTH_CACHE[curWeek()] || {}; }
+async function hydrateHealth(){
+  const w=curWeek();
+  if(SUPA){
+    const { data, error } = await SB.from('student_health').select('idx,allergies,meds').eq('week', +w);
+    const obj={}; if(!error && data){ data.forEach(r=>{ obj[r.idx]={allergies:r.allergies||'', meds:r.meds||''}; }); }
+    HEALTH_CACHE[w]=obj;
+  } else {
+    HEALTH_CACHE[w]=store.get(`health:w${w}`)||{};
+  }
+}
+async function refreshAtt(){ await hydrateHealth(); renderAtt(); }
+async function persistHealth(idx, field, value){
+  const w=curWeek();
+  HEALTH_CACHE[w]=HEALTH_CACHE[w]||{}; HEALTH_CACHE[w][idx]=HEALTH_CACHE[w][idx]||{};
+  HEALTH_CACHE[w][idx][field]=value;
+  if(SUPA){
+    const r=HEALTH_CACHE[w][idx];
+    const { error } = await SB.from('student_health')
+      .upsert({week:+w, idx:+idx, allergies:r.allergies||'', meds:r.meds||''}, {onConflict:'week,idx'});
+    if(error) console.warn('health save failed:', error);
+  } else {
+    store.set(`health:w${w}`, HEALTH_CACHE[w]);
+  }
+}
 function renderAtt(){
   const data = loadAtt();
   const health = loadHealth();
@@ -1049,8 +1090,8 @@ function renderAtt(){
   list.querySelectorAll('[data-h]').forEach(inp=>{
     inp.addEventListener('change',()=>{
       const block=inp.closest('.student-block'); const idx=block.dataset.idx;
-      const h=loadHealth(); h[idx]=h[idx]||{}; h[idx][inp.dataset.h]=inp.value; saveHealth(h);
-      const hh=h[idx];
+      persistHealth(idx, inp.dataset.h, inp.value);
+      const hh=loadHealth()[idx]||{};
       const hasAllergy=!!(hh.allergies&&hh.allergies.trim());
       const flag=hasAllergy||!!(hh.meds&&hh.meds.trim());
       const tgl=block.querySelector('[data-act=htoggle]');
@@ -1096,13 +1137,13 @@ function attInit(){
   // default to next active week's Monday, else today
   dateEl.value = WEEKS[NOW].start;
   dateEl.addEventListener('change',()=>{ renderAtt(); });
-  document.getElementById('att-week').addEventListener('change',()=>renderAtt());
+  document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
     const d={}; STUDENTS_W1.forEach((s,i)=>d[i]='p'); saveAtt(d); renderAtt();
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
-  renderAtt();
+  refreshAtt();
 }
 
 /* =================== REFERENCES =================== */
@@ -1268,83 +1309,158 @@ document.getElementById('scrim').addEventListener('click',closeRail);
 
 /* =================== AUTH / ACCESS =================== */
 function domainOk(email){ return DOMAINS.includes((email.split('@')[1]||'').toLowerCase()); }
-function getAllow(){ let a=store.get('allowlist'); if(!a){ a=[{email:OWNER,admin:true,owner:true}]; store.set('allowlist',a); } return a; }
-function setAllow(a){ store.set('allowlist',a); }
+
+/* ---- local (preview) allow-list — fallback when not in supabase mode ---- */
+function getAllowLocal(){ let a=store.get('allowlist'); if(!a){ a=[{email:OWNER,admin:true,owner:true}]; store.set('allowlist',a); } return a; }
+function setAllowLocal(a){ store.set('allowlist',a); }
 function getMode(){ return store.get('accessMode')||'allowlist'; }
 function setMode(m){ store.set('accessMode',m); }
-function findAllow(email){ return getAllow().find(x=>x.email.toLowerCase()===email.toLowerCase()); }
-function canAccess(email){
-  if(!domainOk(email)) return false;
-  if(email.toLowerCase()===OWNER) return true;
-  if(getMode()==='domain') return true;
-  return !!findAllow(email);
-}
-function isAdmin(email){ if(email.toLowerCase()===OWNER) return true; const e=findAllow(email); return !!(e&&e.admin); }
-function refreshAdminState(){ const s=store.get('session'); document.body.classList.toggle('is-admin', !!(s&&s.email&&isAdmin(s.email))); }
 
-function enterHub(email){
-  store.set('session',{email});
+/* current signed-in user, cached after access check */
+let SESSION = null; // {email, admin, owner}
+
+/* ---- unified allow-list data layer (Supabase or local) ---- */
+async function dbGetAllow(){
+  if(SUPA){
+    const { data, error } = await SB.from('allowed_emails')
+      .select('email,is_admin,is_owner').order('is_owner',{ascending:false}).order('email');
+    if(error){ console.warn('load allow-list failed:', error); return []; }
+    return (data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner}));
+  }
+  return getAllowLocal();
+}
+async function dbAddAllow(email){
+  if(SUPA){ const { error } = await SB.from('allowed_emails').insert({email, is_admin:false}); return error; }
+  const a=getAllowLocal(); a.push({email,admin:false}); setAllowLocal(a); return null;
+}
+async function dbRemoveAllow(email){
+  if(SUPA){ const { error } = await SB.from('allowed_emails').delete().eq('email', email); return error; }
+  setAllowLocal(getAllowLocal().filter(x=>x.email.toLowerCase()!==email.toLowerCase())); return null;
+}
+async function dbSetAdmin(email, val){
+  if(SUPA){ const { error } = await SB.from('allowed_emails').update({is_admin:val}).eq('email', email); return error; }
+  const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.admin=val; setAllowLocal(a); return null;
+}
+async function dbCheckAccess(email){
+  email=(email||'').toLowerCase();
+  if(SUPA){
+    const { data } = await SB.from('allowed_emails').select('is_admin,is_owner').eq('email', email).maybeSingle();
+    if(!data) return {allowed:false, admin:false, owner:false};
+    return {allowed:true, admin: !!(data.is_admin||data.is_owner), owner: !!data.is_owner};
+  }
+  if(!domainOk(email)) return {allowed:false, admin:false, owner:false};
+  if(email===OWNER) return {allowed:true, admin:true, owner:true};
+  if(getMode()==='domain') return {allowed:true, admin:false, owner:false};
+  const u=getAllowLocal().find(x=>x.email.toLowerCase()===email);
+  return u ? {allowed:true, admin:!!u.admin, owner:!!u.owner} : {allowed:false, admin:false, owner:false};
+}
+function isAdmin(){ return !!(SESSION && SESSION.admin); }
+function refreshAdminState(){ document.body.classList.toggle('is-admin', isAdmin()); }
+
+function enterHub(sess){
+  SESSION = sess;
+  store.set('session',{email:sess.email});
   document.body.classList.remove('locked');
-  document.body.classList.toggle('is-admin', isAdmin(email));
-  document.getElementById('me-mail').textContent=email;
+  document.body.classList.toggle('is-admin', !!sess.admin);
+  document.getElementById('me-mail').textContent=sess.email;
   renderAccess();
+  if(typeof refreshAtt==='function') refreshAtt();
   showTab('dashboard');
 }
-function signOut(){
+async function signOut(){
+  SESSION=null;
   store.set('session',null);
+  if(SUPA){ try{ await SB.auth.signOut(); }catch(e){} }
   document.body.classList.add('locked');
   document.body.classList.remove('is-admin');
   const e=document.getElementById('gate-email'); if(e) e.value='';
-  const m=document.getElementById('gate-msg'); if(m) m.textContent='';
+  const m=document.getElementById('gate-msg'); if(m){ m.className='gate-msg'; m.textContent=''; }
 }
-function gateSubmit(){
+async function gateSubmit(){
   const email=(document.getElementById('gate-email').value||'').trim().toLowerCase();
   const msg=document.getElementById('gate-msg');
   if(!email||!email.includes('@')){ msg.className='gate-msg err'; msg.textContent='Enter your work email.'; return; }
   if(!domainOk(email)){ msg.className='gate-msg err'; msg.textContent='Use your @alpha.school or @trilogy.com email.'; return; }
-  if(!canAccess(email)){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — ask Zara to add you."; return; }
+  if(SUPA){
+    msg.className='gate-msg'; msg.textContent='Sending your sign-in link…';
+    const { error } = await SB.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } });
+    if(error){ msg.className='gate-msg err'; msg.textContent=error.message||'Could not send link — try again.'; return; }
+    msg.className='gate-msg ok'; msg.textContent='Check your email for a one-time sign-in link ✉️';
+    return;
+  }
+  const acc = await dbCheckAccess(email);
+  if(!acc.allowed){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — ask Zara to add you."; return; }
   msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
-  setTimeout(()=>enterHub(email),250);
+  setTimeout(()=>enterHub({email, ...acc}),250);
 }
-function renderAccess(){
-  const seg=document.getElementById('mode-seg'); if(!seg) return;
-  const mode=getMode();
-  seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
-  const a=getAllow();
+async function tryEnter(email){
+  const acc = await dbCheckAccess(email);
+  if(acc.allowed){ enterHub({email, ...acc}); return; }
+  document.body.classList.add('locked');
+  const msg=document.getElementById('gate-msg');
+  if(msg){ msg.className='gate-msg err'; msg.textContent='Signed in as '+email+", but you're not on the access list yet — ask Zara to add you."; }
+  if(SUPA){ try{ await SB.auth.signOut(); }catch(e){} }
+}
+async function renderAccess(){
+  const seg=document.getElementById('mode-seg');
+  if(seg){
+    const modeCard=seg.closest('.card');
+    if(SUPA && modeCard){ modeCard.style.display='none'; }
+    else { const mode=getMode(); seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode)); }
+  }
+  const a=await dbGetAllow();
   const head=`<thead><tr><th>Email</th><th>Role</th><th>Admin</th><th></th></tr></thead>`;
-  const body=a.map((u,i)=>`<tr>
+  const body=a.map((u)=>`<tr>
     <td class="role-cell">${esc(u.email)}</td>
     <td>${u.owner?'<span class="pill ok">Owner</span>':(u.admin?'<span class="pill">Admin</span>':'<span class="pill">Member</span>')}</td>
-    <td>${u.owner?'<span class="blank">—</span>':`<button class="health-toggle ${u.admin?'flag':''}" data-act="admin" data-i="${i}">${u.admin?'Admin ✓':'Make admin'}</button>`}</td>
-    <td>${u.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove" data-i="${i}" title="Remove">×</button>`}</td>
+    <td>${u.owner?'<span class="blank">—</span>':`<button class="health-toggle ${u.admin?'flag':''}" data-act="admin" data-email="${escAttr(u.email)}" data-admin="${u.admin?1:0}">${u.admin?'Admin ✓':'Make admin'}</button>`}</td>
+    <td>${u.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove" data-email="${escAttr(u.email)}" title="Remove">×</button>`}</td>
   </tr>`).join('');
   document.getElementById('access-table').innerHTML=head+`<tbody>${body}</tbody>`;
-  document.querySelectorAll('#access-table [data-act=admin]').forEach(b=>b.addEventListener('click',()=>{
-    const arr=getAllow(); const i=+b.dataset.i; arr[i].admin=!arr[i].admin; setAllow(arr); refreshAdminState(); renderAccess();
+  document.querySelectorAll('#access-table [data-act=admin]').forEach(b=>b.addEventListener('click',async()=>{
+    const err=await dbSetAdmin(b.dataset.email, b.dataset.admin!=='1'); if(err){ alert(err.message||'Update failed'); }
+    renderAccess();
   }));
-  document.querySelectorAll('#access-table [data-act=remove]').forEach(b=>b.addEventListener('click',()=>{
-    const arr=getAllow(); arr.splice(+b.dataset.i,1); setAllow(arr); renderAccess();
+  document.querySelectorAll('#access-table [data-act=remove]').forEach(b=>b.addEventListener('click',async()=>{
+    const err=await dbRemoveAllow(b.dataset.email); if(err){ alert(err.message||'Remove failed'); }
+    renderAccess();
   }));
 }
-function authInit(){
+async function addEmailHandler(){
+  const email=(document.getElementById('add-email').value||'').trim().toLowerCase();
+  const m=document.getElementById('add-msg');
+  if(!domainOk(email)){ m.className='gate-msg err'; m.textContent='Must be an @alpha.school or @trilogy.com email.'; return; }
+  const cur=await dbGetAllow();
+  if(cur.find(x=>x.email.toLowerCase()===email)){ m.className='gate-msg err'; m.textContent='Already on the list.'; return; }
+  const err=await dbAddAllow(email);
+  if(err){ m.className='gate-msg err'; m.textContent=err.message||'Could not add.'; return; }
+  document.getElementById('add-email').value=''; m.className='gate-msg ok'; m.textContent='Added ✓'; renderAccess();
+}
+async function authInit(){
   document.getElementById('gate-go').addEventListener('click',gateSubmit);
   document.getElementById('gate-email').addEventListener('keydown',e=>{ if(e.key==='Enter') gateSubmit(); });
   document.getElementById('signout').addEventListener('click',signOut);
-  // access management controls
-  document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
-  document.getElementById('add-email-btn').addEventListener('click',()=>{
-    const email=(document.getElementById('add-email').value||'').trim().toLowerCase();
-    const m=document.getElementById('add-msg');
-    if(!domainOk(email)){ m.className='gate-msg err'; m.textContent='Must be an @alpha.school or @trilogy.com email.'; return; }
-    if(findAllow(email)){ m.className='gate-msg err'; m.textContent='Already on the list.'; return; }
-    const a=getAllow(); a.push({email,admin:false}); setAllow(a);
-    document.getElementById('add-email').value=''; m.className='gate-msg ok'; m.textContent='Added ✓'; renderAccess();
-  });
-  document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('add-email-btn').click(); });
-  renderAccess();
-  const s=store.get('session');
-  if(s&&s.email&&canAccess(s.email)) enterHub(s.email);
-  else document.body.classList.add('locked');
+  document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ if(SUPA) return; setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
+  document.getElementById('add-email-btn').addEventListener('click',addEmailHandler);
+  document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter') addEmailHandler(); });
+
+  if(SUPA){
+    const go=document.getElementById('gate-go'); if(go) go.textContent='Email me a sign-in link';
+    const banner=document.getElementById('demo-banner');
+    if(banner) banner.textContent='Protected sign-in — you’ll get a one-time magic link by email. The allow-list and student health are stored securely with row-level security; only approved staff can read them.';
+    const note=document.getElementById('access-note');
+    if(note) note.innerHTML='<b>Live access control.</b> Everyone here signs in with a magic link and only sees data if their email is on this list. Student health is protected by row-level security on the server.';
+    const { data:{ session } } = await SB.auth.getSession();
+    if(session && session.user && session.user.email){ await tryEnter(session.user.email); }
+    else { document.body.classList.add('locked'); }
+    SB.auth.onAuthStateChange(async (_ev, sess)=>{
+      if(sess && sess.user && sess.user.email && !SESSION){ await tryEnter(sess.user.email); }
+    });
+  } else {
+    const s=store.get('session');
+    if(s&&s.email){ const acc=await dbCheckAccess(s.email); if(acc.allowed){ enterHub({email:s.email, ...acc}); return; } }
+    document.body.classList.add('locked');
+  }
 }
 
 /* =================== INIT =================== */

@@ -31,28 +31,39 @@ Every `git push` to `main` auto-redeploys.
 
 ---
 
-## 3. Access today (preview mode)
+## 3. Preview mode (the `local` fallback)
 
-Out of the box the hub gates entry to **@alpha.school / @trilogy.com** emails and an **allow-list you manage** (Access tab — visible only to you as owner, `zara.raheem@alpha.school`).
+> The hub now ships in **`supabase` mode** (step 4) — real sign-in is on. This section describes the **`local`** fallback you get by setting `CONFIG.mode = 'local'`, useful for offline demos.
+
+In `local` mode the hub gates entry to **@alpha.school / @trilogy.com** emails and an **allow-list you manage** (Access tab — visible only to you as owner, `zara.raheem@alpha.school`).
 
 This check runs in the browser, so treat it as a **soft gate, not real security**. The allow-list is stored per-browser, and student health data stays on the device that entered it.
 
-> ⚠️ **Before any real student data (names, allergies, medications) goes on a public URL, do step 4.** Until then, keep that data in your own browser only.
+> ⚠️ **In `local` mode, don't put real student data (names, allergies, medications) on a public URL** — keep it in your own browser only. For shared, protected data, use `supabase` mode (step 4, already wired).
 
 ---
 
-## 4. Real sign-in + shared access (Supabase)
+## 4. Real sign-in + shared access (Supabase) — ✅ wired
 
-You already have Supabase connected. This swaps the browser gate for proper magic-link login and a shared, server-side allow-list with student data protected by row-level security.
+The hub now ships in **`supabase` mode** (see the `CONFIG` block at the top of `index.html`). The browser gate is replaced by **magic-link login** plus a **shared, server-side allow-list** and **student health protected by row-level security (RLS)**.
 
-What it takes:
+**What's already done** (Supabase project `supabase-rose-school`):
 
-1. **A Supabase project** (free tier is fine) — its **Project URL** and **anon public key** (safe to ship in the page).
-2. **Email (magic link) auth** enabled, with sign-ups restricted to your two domains.
-3. Two tables: `allowed_emails` (the list you curate) and `student_health` (allergies/meds), both behind RLS so only signed-in, approved staff can read them.
-4. Drop the URL + anon key into a small `CONFIG` block at the top of the hub and switch it from "local" to "supabase" mode.
+- `CONFIG` block wired with the Project URL + anon public key (safe to ship).
+- Two tables created, both with RLS:
+  - `allowed_emails` — the list you curate (`email`, `is_admin`, `is_owner`).
+  - `student_health` — allergies/meds, keyed by week + roster index.
+- RLS policies (verified): a signed-in user sees data **only if their email is in `allowed_emails`**. A signed-in stranger sees **zero rows**. Admins/owner manage the list; the owner row is protected from deletion.
+- You're seeded as **owner + admin** (`zara.raheem@alpha.school`).
 
-I can drive most of this for you through the Supabase connector — creating the tables, seeding you as owner/admin, and wiring the page. The two things only you can do are confirming the Supabase project/plan and (if you want Google "Sign in with Google" instead of magic links) creating the Google OAuth client. Say the word and I'll set up the backend.
+**Two manual steps only you can do** (both in the Supabase dashboard, ~2 min):
+
+1. **Auth → URL Configuration:** set **Site URL** to your live URL (e.g. `https://hamptonshub.vercel.app`) and add it under **Redirect URLs** (plus `http://localhost:3000` / wherever you open it locally). Magic-link sign-in won't redirect back until this matches your domain.
+2. **Auth → Providers → Email:** confirm **Email** is enabled (magic link works by default). Optional: turn on a custom SMTP sender if you expect more than a handful of logins per hour — Supabase's built-in email is rate-limited.
+
+> **Note on domain restriction:** entry to data is enforced by RLS membership in `allowed_emails` (the real security layer). The page also checks `@alpha.school` / `@trilogy.com` client-side. Supabase doesn't restrict *who can request a magic link* by domain out of the box — but anyone not on the allow-list who signs in sees nothing. To add Google "Sign in with Google" later, create a Google OAuth client and add it under Auth → Providers.
+
+To go back to the browser-only preview at any time, set `CONFIG.mode` to `'local'` in `index.html`.
 
 ---
 

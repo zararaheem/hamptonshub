@@ -715,13 +715,10 @@
       <div class="att-stats" id="dq-stats" style="margin:6px 0 18px"></div>
 
       <div class="card" style="margin-bottom:20px">
-        <div class="eyebrow" style="margin-bottom:8px">Add a car to the line</div>
-        <p class="lc-desc" style="margin:0 0 10px">Tap the student(s) in the car, add an optional label (e.g. "Blue SUV"), then add to the line.</p>
+        <div class="eyebrow" style="margin-bottom:8px">Add to the line</div>
+        <p class="lc-desc" style="margin:0 0 10px">Tap a student as their car pulls up — they go straight into the line. Optionally type a car label first (e.g. "Blue SUV") to tag your next tap.</p>
+        <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:240px;margin-bottom:12px">
         <div id="dq-picker" class="dq-picker"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center">
-          <input class="cell-input" id="dq-label" placeholder="Car label (optional)" style="min-width:200px">
-          <button class="btn" id="dq-add" disabled>Add car to line</button>
-        </div>
       </div>
 
       <div class="section-title"><span class="num">↓</span>Carpool line</div>
@@ -1724,7 +1721,6 @@ function attInit(){
 /* Shared queue in Supabase: curb staff add a car (one+ students); inside staff
    tap Dismiss. Live across devices via realtime; localStorage fallback. */
 let DQ_ROWS = [];           // queue rows for the selected day
-let DQ_PICK = [];           // student ids selected to add as the next car
 let DQ_CHAN = null;         // realtime channel
 function dqDay(){ return document.getElementById('dq-date').value; }
 function dqWeek(){ return document.getElementById('dq-week').value; }
@@ -1740,9 +1736,9 @@ async function dqFetch(){
   }
 }
 function dqPersistLocal(){ store.set(dqLocalKey(), DQ_ROWS); }
-async function dqAddCar(){
-  if(!DQ_PICK.length) return;
-  const studs = DQ_PICK.map(id=>{ const s=findStudent(id); return {id, name: s?`${s.first} ${s.last}`:'Student'}; });
+async function dqAddStudents(ids){
+  if(!ids.length) return;
+  const studs = ids.map(id=>{ const s=findStudent(id); return {id, name: s?`${s.first} ${s.last}`:'Student'}; });
   const label = (document.getElementById('dq-label').value||'').trim();
   const rec = { day:dqDay(), week:+dqWeek(), students:studs, label, status:'waiting', queued_at:new Date().toISOString() };
   if(SUPA){
@@ -1751,7 +1747,7 @@ async function dqAddCar(){
   } else {
     rec.id='loc-'+Date.now(); DQ_ROWS.push(rec); dqPersistLocal();
   }
-  DQ_PICK=[]; document.getElementById('dq-label').value='';
+  document.getElementById('dq-label').value='';
   await dqFetch(); renderDismissal();
 }
 async function dqDismiss(id){
@@ -1815,18 +1811,13 @@ function renderDismissal(){
       <span class="dq-sub">${r.dismissed_at?esc(new Date(r.dismissed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''} <button class="lk" data-undo="${escAttr(r.id)}">undo</button></span>
     </div>`).join('') : '';
   log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
-  // student picker (not already queued/dismissed)
+  // student picker — tap to add straight into the line, sorted by last name
   const picker=document.getElementById('dq-picker');
-  const avail=studs.filter(s=>!dqStudentInQueue(s.id));
-  picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick ${DQ_PICK.includes(s.id)?'on':''}" data-pick="${escAttr(s.id)}">${esc(s.first)} ${esc(s.last)}</button>`).join('')
+  const avail=studs.filter(s=>!dqStudentInQueue(s.id))
+    .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick" data-pick="${escAttr(s.id)}">${esc(s.last)}, ${esc(s.first)}</button>`).join('')
     : `<span class="note-row">Everyone is in the line or dismissed.</span>`;
-  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
-    const id=b.dataset.pick; const i=DQ_PICK.indexOf(id);
-    if(i>=0) DQ_PICK.splice(i,1); else DQ_PICK.push(id);
-    b.classList.toggle('on');
-    document.getElementById('dq-add').disabled = !DQ_PICK.length;
-  }));
-  document.getElementById('dq-add').disabled = !DQ_PICK.length;
+  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
 }
 function dqExport(){
   const rows=[["Students","Label","Status","Queued","Dismissed","Date"]];
@@ -1839,17 +1830,15 @@ function dqSubscribe(){
     .on('postgres_changes', {event:'*', schema:'public', table:'dismissal_queue'}, async ()=>{ await dqFetch(); renderDismissal(); })
     .subscribe();
 }
-async function refreshDismissal(){ DQ_PICK=[]; await dqFetch(); renderDismissal(); dqSubscribe(); }
+async function refreshDismissal(){ await dqFetch(); renderDismissal(); dqSubscribe(); }
 function dismissalInit(){
   fillWeekSelect(document.getElementById('dq-week'));
   document.getElementById('dq-date').value = todayISO();
   document.getElementById('dq-week').addEventListener('change',()=>{ renderDismissal(); });
   document.getElementById('dq-date').addEventListener('change',refreshDismissal);
-  document.getElementById('dq-add').addEventListener('click',dqAddCar);
   document.getElementById('dq-dismissall').addEventListener('click',dqDismissAll);
   document.getElementById('dq-export').addEventListener('click',dqExport);
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
-  document.getElementById('dq-label').addEventListener('keydown',e=>{ if(e.key==='Enter') dqAddCar(); });
 }
 
 /* =================== REFERENCES =================== */

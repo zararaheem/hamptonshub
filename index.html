@@ -311,6 +311,13 @@
   .del{background:none;border:0;color:var(--muted-2);cursor:pointer;font-size:18px;line-height:1;padding:2px 7px;border-radius:6px}
   .del:hover{color:var(--coral);background:var(--panel)}
   .add-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:16px}
+  .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
+  .gradein{max-width:74px}
+  /* roster admin-only controls (self-contained so layout is preserved) */
+  #ros-addrow{display:none}
+  body.is-admin #ros-addrow{display:flex}
+  #ros-io-admin{display:none}
+  body.is-admin #ros-io-admin{display:flex}
 
   /* ---------- References ---------- */
   .refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:4px}
@@ -439,6 +446,7 @@
       <button class="nav-item active" data-tab="dashboard">Dashboard</button>
       <button class="nav-item" data-tab="staffing">Staffing</button>
       <button class="nav-item" data-tab="attendance">Attendance</button>
+      <button class="nav-item" data-tab="roster">Students</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item" data-tab="weekly">Weekly Supplies</button>
@@ -480,6 +488,7 @@
       <div class="grid g3">
         <a class="linkcard" data-jump="staffing"><div class="tag">Roster</div><h3>Staffing &amp; Housing</h3><p class="lc-desc">Weekly crew, bed assignments, constraints.</p><div class="go">Open tab →</div></a>
         <a class="linkcard" data-jump="attendance"><div class="tag">Daily</div><h3>Attendance</h3><p class="lc-desc">Check students in, export the day's roll.</p><div class="go">Open tab →</div></a>
+        <a class="linkcard" data-jump="roster"><div class="tag">Enrollment</div><h3>Students</h3><p class="lc-desc">Add, edit &amp; import the roster per week; mark laptops assigned/ready.</p><div class="go">Open tab →</div></a>
         <a class="linkcard" data-jump="guide"><div class="tag">Curriculum</div><h3>Guide Hub</h3><p class="lc-desc">Daily field guides for all nine themed weeks.</p><div class="go">Open tab →</div></a>
         <a class="linkcard" data-jump="tech"><div class="tag">Logistics</div><h3>Tech Onboarding</h3><p class="lc-desc">Laptop &amp; iPad assignments by student — asset tags, setup status.</p><div class="go">Open tab →</div></a>
         <a class="linkcard" data-jump="weekly"><div class="tag">Logistics</div><h3>Weekly Supplies</h3><p class="lc-desc">Per-week supply checklist — separate from the ordering site.</p><div class="go">Open tab →</div></a>
@@ -582,14 +591,50 @@
         <button class="btn ghost" id="att-export">Export CSV</button>
         <span class="saved-note" id="att-saved"></span>
       </div>
-      <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Only the Week 1 roster is loaded; later weeks slot in here too.</div>
+      <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Pick the week above — students come from the shared <b>Students</b> roster; add or import them there.</div>
+    </section>
+
+    <!-- ===== STUDENT ROSTER ===== -->
+    <section class="view" id="view-roster" hidden>
+      <div class="eyebrow">Enrollment · DRI: Campus Coordinator / Admissions</div>
+      <h1 class="page-title">Student roster</h1>
+      <p class="page-lead">Add, edit, review, and bulk-import students for each week — and mark whether each laptop is assigned and ready. This is the source of truth that feeds the Attendance and Tech tabs. Saved to the shared database, so everyone sees the same roster.</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="ros-week">Week</label><select id="ros-week"></select></div>
+        <div class="att-stats" id="ros-stats"></div>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
+      <div class="levels" id="ros-levels"></div>
+
+      <div class="add-row" id="ros-addrow">
+        <div class="field"><label for="ros-first">First name</label><input class="cell-input" id="ros-first" placeholder="First" style="min-width:140px"></div>
+        <div class="field"><label for="ros-last">Last name</label><input class="cell-input" id="ros-last" placeholder="Last" style="min-width:140px"></div>
+        <div class="field"><label for="ros-grade">Grade</label><input class="cell-input" id="ros-grade" placeholder="PK, K, 1–12" style="min-width:90px"></div>
+        <button class="btn" id="ros-add">Add student</button>
+      </div>
+
+      <div class="tablewrap"><table id="ros-table"></table></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+        <button class="btn ghost" id="ros-export">Export CSV</button>
+        <div id="ros-io-admin" style="gap:10px;flex-wrap:wrap;align-items:center">
+          <label class="btn" for="ros-file" style="cursor:pointer;margin:0">Import CSV…</label>
+          <input id="ros-file" type="file" accept=".csv,text/csv" style="display:none">
+          <button class="btn ghost" id="ros-template">Download template</button>
+        </div>
+        <span class="saved-note" id="ros-saved"></span>
+        <span class="gate-msg" id="ros-io-msg"></span>
+      </div>
+      <div class="callout" style="margin-top:18px"><b>CSV format:</b> columns <code>First, Last, Grade</code> — optionally <code>Laptop assigned, Laptop ready</code> (yes/no). A header row is auto-detected, and a single <code>Full Name, Grade</code> layout also works. Grades PK · K · 1–12 map to levels Wonderlab / LL / L1 / L2 / MS / HS. Editing is limited to admins; everyone can view.</div>
     </section>
 
     <!-- ===== TECH ONBOARDING ===== -->
     <section class="view" id="view-tech" hidden>
       <div class="eyebrow">Technology · DRI: Campus Coordinator · Robbie (screens)</div>
       <h1 class="page-title">Tech onboarding</h1>
-      <p class="page-lead">Laptop and iPad assignments by student — asset tags, setup status, and who has what. Edits save per roster in this browser.</p>
+      <p class="page-lead">Laptop and iPad assignments by student — asset tags, notes, and whether each laptop is assigned &amp; ready. The assigned/ready flags are shared with the Students roster; device, tag &amp; notes save per week on this device.</p>
 
       <div class="att-bar">
         <div class="field"><label for="tech-week">Roster</label>
@@ -603,7 +648,7 @@
         <button class="btn ghost" id="tech-export">Export CSV</button>
         <span class="saved-note" id="tech-saved"></span>
       </div>
-      <div class="callout" style="margin-top:18px">Devices return to the cart each afternoon — set status to <b>Returned</b> at dismissal to keep the count clean. Only the Week 1 roster is loaded; later weeks slot in here too.</div>
+      <div class="callout" style="margin-top:18px"><b>Laptop assigned</b> and <b>Ready</b> are the same shared flags shown in the <b>Students</b> tab — tick them here or there. Device type, asset tag &amp; notes save per week on this device. Students come from the shared roster; pick the week above.</div>
     </section>
 
     <!-- ===== WEEKLY SUPPLIES ===== -->
@@ -920,7 +965,7 @@ const SUPPLY_TEMPLATE = [
   "Sports & outdoor gear","First aid / nurse supplies","Sunscreen",
   "Signage & decor refresh","Swag for the week (shirts, towels, bottles)","Lunch headcount confirmed",
 ];
-function studentEmail(s){ return `${s[0].toLowerCase()}.${s[1].toLowerCase()}@alpha.school`; }
+function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); return `${String(f).toLowerCase()}.${String(l).toLowerCase()}@alpha.school`; }
 function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
 function csvDownload(name, rows){
@@ -929,6 +974,95 @@ function csvDownload(name, rows){
   const a = document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function flash(id){ const el=document.getElementById(id); if(el) el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+/* =================== STUDENT ROSTER (shared, per week) ===================
+   Source of truth for students across Attendance + Tech. Persisted to the
+   Supabase `students` table (one row per student per week); falls back to
+   localStorage when Supabase isn't connected. */
+let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
+function studentsForWeek(w){ return (ROSTER_DATA[+w]||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)); }
+function rosterLocalKey(){ return 'roster_local_v1'; }
+function persistLocalRoster(){ store.set(rosterLocalKey(), ROSTER_DATA); }
+function seedLocalRoster(){
+  ROSTER_DATA = {1: STUDENTS_W1.map((s,i)=>({id:'loc-w1-'+i, week:1, first:s[0], last:s[1], grade:s[2], laptop_assigned:false, laptop_ready:false, allergies:'', meds:'', sort_order:i}))};
+  persistLocalRoster(); return ROSTER_DATA;
+}
+async function hydrateRoster(){
+  if(SUPA){
+    const { data, error } = await SB.from('students')
+      .select('id,week,first,last,grade,laptop_assigned,laptop_ready,allergies,meds,sort_order')
+      .order('week').order('sort_order');
+    ROSTER_DATA = {};
+    if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
+    else if(error){ console.warn('roster load failed:', error); }
+  } else {
+    ROSTER_DATA = store.get(rosterLocalKey()) || seedLocalRoster();
+  }
+}
+function nextSort(w){ return (ROSTER_DATA[+w]||[]).reduce((m,s)=>Math.max(m,s.sort_order||0), -1) + 1; }
+function findStudent(id){ for(const w in ROSTER_DATA){ const s=ROSTER_DATA[w].find(x=>x.id===id); if(s) return s; } return null; }
+async function dbAddStudent(week, first, last, grade){
+  week=+week;
+  const rec={week, first:(first||'').trim(), last:(last||'').trim(), grade:(grade||'').trim(), laptop_assigned:false, laptop_ready:false, allergies:'', meds:'', sort_order:nextSort(week)};
+  if(SUPA){
+    const { data, error } = await SB.from('students').insert(rec).select().single();
+    if(error){ console.warn('add student failed:', error); return error; }
+    (ROSTER_DATA[week]=ROSTER_DATA[week]||[]).push(data);
+  } else {
+    rec.id='loc-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+    (ROSTER_DATA[week]=ROSTER_DATA[week]||[]).push(rec); persistLocalRoster();
+  }
+  return null;
+}
+async function dbBulkAddStudents(week, arr){
+  week=+week; const base=nextSort(week);
+  const recs=arr.map((s,i)=>({week, first:(s.first||'').trim(), last:(s.last||'').trim(), grade:(s.grade||'').trim(), laptop_assigned:!!s.laptop_assigned, laptop_ready:!!s.laptop_ready, allergies:'', meds:'', sort_order:base+i}));
+  if(!recs.length) return null;
+  if(SUPA){
+    const { data, error } = await SB.from('students').insert(recs).select();
+    if(error){ console.warn('bulk add failed:', error); return error; }
+    (ROSTER_DATA[week]=ROSTER_DATA[week]||[]).push(...data);
+  } else {
+    recs.forEach(r=>r.id='loc-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
+    (ROSTER_DATA[week]=ROSTER_DATA[week]||[]).push(...recs); persistLocalRoster();
+  }
+  return null;
+}
+async function dbUpdateStudent(id, patch){
+  const s=findStudent(id); if(s) Object.assign(s, patch);
+  if(SUPA){
+    const { error } = await SB.from('students').update({...patch, updated_at:new Date().toISOString()}).eq('id', id);
+    if(error){ console.warn('update student failed:', error); return error; }
+  } else { persistLocalRoster(); }
+  return null;
+}
+async function dbDeleteStudent(id){
+  for(const w in ROSTER_DATA){ const i=ROSTER_DATA[w].findIndex(x=>x.id===id); if(i>=0){ ROSTER_DATA[w].splice(i,1); break; } }
+  if(SUPA){ const { error } = await SB.from('students').delete().eq('id', id); if(error){ console.warn('delete failed', error); return error; } }
+  else persistLocalRoster();
+  return null;
+}
+/* Parse a CSV string → [{first,last,grade,laptop_assigned,laptop_ready}]. Tolerates a
+   header row and either "First,Last,Grade[,Laptop assigned,Laptop ready]" or
+   "Full Name,Grade". */
+function parseRosterCSV(text){
+  const lines=text.replace(/\r/g,'').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return [];
+  const splitRow=l=>{ const out=[]; let cur='',q=false; for(let i=0;i<l.length;i++){ const c=l[i];
+    if(c==='"'){ if(q&&l[i+1]==='"'){cur+='"';i++;} else q=!q; }
+    else if(c===','&&!q){ out.push(cur); cur=''; } else cur+=c; } out.push(cur); return out.map(x=>x.trim()); };
+  const truthy=v=>/^(1|y|yes|true|x|✓|done|ready)$/i.test(String(v||'').trim());
+  let rows=lines.map(splitRow);
+  const head=rows[0].map(h=>h.toLowerCase());
+  const looksHeader=head.some(h=>/first|last|name|grade|laptop/.test(h));
+  if(looksHeader) rows=rows.slice(1);
+  return rows.map(c=>{
+    if(c.length===1){ return {first:c[0], last:'', grade:''}; }
+    // Heuristic: if 2 cols and 2nd looks like a grade, treat as Name,Grade
+    if(c.length===2 && /^(pk|k|\d{1,2})$/i.test(c[1])){ const parts=c[0].split(/\s+/); return {first:parts[0]||'', last:parts.slice(1).join(' '), grade:c[1]}; }
+    return {first:c[0]||'', last:c[1]||'', grade:c[2]||'', laptop_assigned:truthy(c[3]), laptop_ready:truthy(c[4])};
+  }).filter(s=>s.first||s.last);
+}
 
 /* program levels */
 const LEVELS = [
@@ -1102,51 +1236,29 @@ function flashSaved(){
   const el=document.getElementById('att-saved');
   el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
-let HEALTH_CACHE = {}; // { [week]: { [idx]: {allergies, meds} } }
 function curWeek(){ return document.getElementById('att-week').value; }
-function loadHealth(){ return HEALTH_CACHE[curWeek()] || {}; }
-async function hydrateHealth(){
-  const w=curWeek();
-  if(SUPA){
-    const { data, error } = await SB.from('student_health').select('idx,allergies,meds').eq('week', +w);
-    const obj={}; if(!error && data){ data.forEach(r=>{ obj[r.idx]={allergies:r.allergies||'', meds:r.meds||''}; }); }
-    HEALTH_CACHE[w]=obj;
-  } else {
-    HEALTH_CACHE[w]=store.get(`health:w${w}`)||{};
-  }
-}
-async function refreshAtt(){ await hydrateHealth(); renderAtt(); }
-async function persistHealth(idx, field, value){
-  const w=curWeek();
-  HEALTH_CACHE[w]=HEALTH_CACHE[w]||{}; HEALTH_CACHE[w][idx]=HEALTH_CACHE[w][idx]||{};
-  HEALTH_CACHE[w][idx][field]=value;
-  if(SUPA){
-    const r=HEALTH_CACHE[w][idx];
-    const { error } = await SB.from('student_health')
-      .upsert({week:+w, idx:+idx, allergies:r.allergies||'', meds:r.meds||''}, {onConflict:'week,idx'});
-    if(error) console.warn('health save failed:', error);
-  } else {
-    store.set(`health:w${w}`, HEALTH_CACHE[w]);
-  }
-}
+async function refreshAtt(){ if(SUPA){ await hydrateRoster(); } renderAtt(); }
 function renderAtt(){
   const data = loadAtt();
-  const health = loadHealth();
   const list = document.getElementById('att-list');
-  list.innerHTML = STUDENTS_W1.map((s,idx)=>{
-    const st = data[idx]||'';
-    const init = (s[0][0]+s[1][0]).toUpperCase();
-    const h = health[idx]||{};
-    const hasAllergy = !!(h.allergies && h.allergies.trim());
-    const hasMed = !!(h.meds && h.meds.trim());
+  const studs = studentsForWeek(curWeek());
+  if(!studs.length){
+    list.innerHTML = `<div class="callout">No students on the Week ${esc(curWeek())} roster yet. Add or import them in the <b>Students</b> tab — they'll appear here automatically.</div>`;
+    renderAttStats(); renderLevels(); renderHealthSummary(); return;
+  }
+  list.innerHTML = studs.map(s=>{
+    const st = data[s.id]||'';
+    const init = ((s.first[0]||'?')+(s.last[0]||'')).toUpperCase();
+    const hasAllergy = !!(s.allergies && s.allergies.trim());
+    const hasMed = !!(s.meds && s.meds.trim());
     const flag = hasAllergy || hasMed;
-    return `<div class="student-block" data-idx="${idx}">
+    return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
-        <div class="avatar">${init}</div>
-        <div><div class="nm">${esc(s[0])} ${esc(s[1])}${hasAllergy?`<span class="allergy-chip">⚠ ${esc((h.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:''}</div>
-          <div class="gr">Grade ${esc(s[2])}<span class="lvlbadge">${levelOf(s[2])}</span></div></div>
+        <div class="avatar">${esc(init)}</div>
+        <div><div class="nm">${esc(s.first)} ${esc(s.last)}${hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:''}</div>
+          <div class="gr">Grade ${esc(s.grade)}<span class="lvlbadge">${levelOf(s.grade)}</span></div></div>
         <button class="health-toggle ${flag?'flag':''}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
-        <div class="seg" data-idx="${idx}">
+        <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
           <button data-s="l" class="${st==='l'?'sel-l':''}">Late</button>
           <button data-s="a" class="${st==='a'?'sel-a':''}">Absent</button>
@@ -1154,47 +1266,45 @@ function renderAtt(){
       </div>
       <div class="health-panel">
         <div class="hgrid">
-          <div><label>Allergies</label><input class="cell-input" data-h="allergies" value="${escAttr(h.allergies)}" placeholder="e.g. peanuts, bee stings — or NKA"></div>
-          <div><label>Medications</label><input class="cell-input" data-h="meds" value="${escAttr(h.meds)}" placeholder="e.g. EpiPen, inhaler, daily Rx"></div>
+          <div><label>Allergies</label><input class="cell-input" data-h="allergies" value="${escAttr(s.allergies)}" placeholder="e.g. peanuts, bee stings — or NKA"></div>
+          <div><label>Medications</label><input class="cell-input" data-h="meds" value="${escAttr(s.meds)}" placeholder="e.g. EpiPen, inhaler, daily Rx"></div>
         </div>
       </div>
     </div>`;
   }).join('');
   list.querySelectorAll('.seg button').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      const idx=btn.parentElement.dataset.idx, s=btn.dataset.s;
+      const id=btn.closest('.student-block').dataset.id, s=btn.dataset.s;
       const d=loadAtt();
-      if(d[idx]===s){ delete d[idx]; } else { d[idx]=s; }
-      saveAtt(d); renderAtt(); renderLevels();
+      if(d[id]===s){ delete d[id]; } else { d[id]=s; }
+      saveAtt(d); renderAtt();
     });
   });
   list.querySelectorAll('[data-act=htoggle]').forEach(btn=>{
     btn.addEventListener('click',()=>{ btn.closest('.student-block').querySelector('.health-panel').classList.toggle('open'); });
   });
   list.querySelectorAll('[data-h]').forEach(inp=>{
-    inp.addEventListener('change',()=>{
-      const block=inp.closest('.student-block'); const idx=block.dataset.idx;
-      persistHealth(idx, inp.dataset.h, inp.value);
-      const hh=loadHealth()[idx]||{};
-      const hasAllergy=!!(hh.allergies&&hh.allergies.trim());
-      const flag=hasAllergy||!!(hh.meds&&hh.meds.trim());
+    inp.addEventListener('change',async ()=>{
+      const block=inp.closest('.student-block'); const id=block.dataset.id;
+      await dbUpdateStudent(id, {[inp.dataset.h]: inp.value});
+      const s=findStudent(id)||{};
+      const hasAllergy=!!(s.allergies&&s.allergies.trim());
+      const flag=hasAllergy||!!(s.meds&&s.meds.trim());
       const tgl=block.querySelector('[data-act=htoggle]');
       tgl.classList.toggle('flag',flag); tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      const base=`${esc(STUDENTS_W1[idx][0])} ${esc(STUDENTS_W1[idx][1])}`;
-      nm.innerHTML=base+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((hh.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
-      renderHealthSummary();
+      nm.innerHTML=`${esc(s.first)} ${esc(s.last)}`+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
+      flashSaved(); renderHealthSummary();
     });
   });
   renderAttStats(); renderLevels(); renderHealthSummary();
 }
 function renderHealthSummary(){
   const el=document.getElementById('att-health'); if(!el) return;
-  const health=loadHealth();
   const flagged=[];
-  STUDENTS_W1.forEach((s,idx)=>{
-    const h=health[idx]||{}; const a=(h.allergies||'').trim(), m=(h.meds||'').trim();
-    if(a||m) flagged.push({name:`${s[0]} ${s[1]}`, grade:s[2], level:levelOf(s[2]), a, m});
+  studentsForWeek(curWeek()).forEach(s=>{
+    const a=(s.allergies||'').trim(), m=(s.meds||'').trim();
+    if(a||m) flagged.push({name:`${s.first} ${s.last}`, grade:s.grade, level:levelOf(s.grade), a, m});
   });
   if(!flagged.length){
     el.innerHTML=`<div class="callout">No allergies or medications recorded for this roster yet. Tap <b>＋ health</b> on a student below to add details — they'll roll up here and flag red on the roll.</div>`;
@@ -1211,9 +1321,9 @@ function renderHealthSummary(){
   el.innerHTML=`<div class="meta-line" style="margin-bottom:8px"><span><b>${flagged.length}</b> student${flagged.length>1?'s':''} flagged</span><span><b>${allergyN}</b> with allergies</span><span><b>${medN}</b> on medication</span></div><div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>`;
 }
 function renderAttStats(){
-  const d=loadAtt(); let p=0,l=0,a=0;
-  Object.values(d).forEach(v=>{ if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
-  const total=STUDENTS_W1.length, unmarked=total-p-l-a;
+  const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0;
+  studs.forEach(s=>{ const v=d[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
+  const unmarked=studs.length-p-l-a;
   document.getElementById('att-stats').innerHTML = `
     <div class="ministat p"><div class="n">${p}</div><div class="l">Present</div></div>
     <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
@@ -1223,7 +1333,7 @@ function renderAttStats(){
 function renderLevels(){
   const data=loadAtt();
   const counts={}; LEVELS.forEach(l=>counts[l.key]={enr:0,pres:0});
-  STUDENTS_W1.forEach((s,i)=>{ const lv=levelOf(s[2]); counts[lv].enr++; if(data[i]==='p'||data[i]==='l') counts[lv].pres++; });
+  studentsForWeek(curWeek()).forEach(s=>{ const lv=levelOf(s.grade); counts[lv].enr++; if(data[s.id]==='p'||data[s.id]==='l') counts[lv].pres++; });
   let totE=0,totP=0;
   const cards=LEVELS.map(l=>{ const c=counts[l.key]; totE+=c.enr; totP+=c.pres;
     return `<div class="lvl"><div class="ln">${c.enr}</div><div class="ll">${l.label}</div><div class="lr">Gr ${l.range}</div><div class="lp">${c.pres} in</div></div>`;
@@ -1232,21 +1342,27 @@ function renderLevels(){
   document.getElementById('att-levels').innerHTML=cards+total;
 }
 function attExport(){
-  const d=loadAtt(); const h=loadHealth(); const labels={p:'Present',l:'Late',a:'Absent'};
+  const d=loadAtt(); const labels={p:'Present',l:'Late',a:'Absent'};
   const rows=[["First","Last","Grade","Level","Email","Status","Allergies","Medications","Date"]];
-  STUDENTS_W1.forEach((s,idx)=>{ const hh=h[idx]||{};
-    rows.push([s[0],s[1],s[2],levelOf(s[2]),studentEmail(s),labels[d[idx]]||"Unmarked",hh.allergies||'',hh.meds||'',document.getElementById('att-date').value]);
+  studentsForWeek(curWeek()).forEach(s=>{
+    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[d[s.id]]||"Unmarked",s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
   });
   csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
 }
+function fillWeekSelect(sel){
+  if(!sel) return; const cur=sel.value;
+  sel.innerHTML = WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
+  sel.value = cur || WEEKS[NOW].n;
+}
 function attInit(){
+  fillWeekSelect(document.getElementById('att-week'));
   const dateEl=document.getElementById('att-date');
   // default to next active week's Monday, else today
   dateEl.value = WEEKS[NOW].start;
   dateEl.addEventListener('change',()=>{ renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
-    const d={}; STUDENTS_W1.forEach((s,i)=>d[i]='p'); saveAtt(d); renderAtt();
+    const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]='p'); saveAtt(d); renderAtt();
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
@@ -1261,55 +1377,160 @@ function renderRefs(){
 }
 
 /* =================== TECH ONBOARDING =================== */
-const TECH_STATUS = [["","Not started"],["assigned","Assigned"],["setup","Set up"],["returned","Returned"]];
-function techKey(){ return `tech:w${document.getElementById('tech-week').value}`; }
+function techWeek(){ return document.getElementById('tech-week').value; }
+function techKey(){ return `tech:w${techWeek()}`; }
 function loadTech(){ return store.get(techKey()) || {}; }
 function saveTech(d){ store.set(techKey(), d); flash('tech-saved'); }
 function renderTech(){
   const d = loadTech();
-  const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th>Status</th><th>Notes</th></tr></thead>`;
-  const body = STUDENTS_W1.map((s,i)=>{
-    const r = d[i]||{}; const dev = r.device||'Laptop';
-    return `<tr data-i="${i}">
-      <td class="role-cell">${esc(s[0])} ${esc(s[1])}</td><td>${esc(s[2])}</td>
+  const studs = studentsForWeek(techWeek());
+  const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th>Laptop assigned</th><th>Ready</th><th>Notes</th></tr></thead>`;
+  if(!studs.length){
+    document.getElementById('tech-table').innerHTML = head+`<tbody><tr><td colspan="7" class="note-row">No students on the Week ${esc(techWeek())} roster yet — add or import them in the <b>Students</b> tab.</td></tr></tbody>`;
+    renderTechStats(); return;
+  }
+  const body = studs.map(s=>{
+    const r = d[s.id]||{}; const dev = r.device||'Laptop';
+    return `<tr data-id="${escAttr(s.id)}">
+      <td class="role-cell">${esc(s.first)} ${esc(s.last)}</td><td>${esc(s.grade)}</td>
       <td><select class="cell-select" data-f="device">
         <option ${dev==='Laptop'?'selected':''}>Laptop</option>
         <option ${dev==='iPad'?'selected':''}>iPad</option></select></td>
       <td><input class="cell-input" data-f="tag" value="${escAttr(r.tag)}" placeholder="ALPHA-…"></td>
-      <td><select class="cell-select" data-f="status">${TECH_STATUS.map(t=>`<option value="${t[0]}" ${(r.status||'')===t[0]?'selected':''}>${t[1]}</option>`).join('')}</select></td>
+      <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
+      <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_ready" ${s.laptop_ready?'checked':''}></td>
       <td><input class="cell-input" data-f="notes" value="${escAttr(r.notes)}" placeholder="—"></td>
     </tr>`;
   }).join('');
   document.getElementById('tech-table').innerHTML = head+`<tbody>${body}</tbody>`;
   document.querySelectorAll('#tech-table [data-f]').forEach(el=>{
     el.addEventListener('change',()=>{
-      const i=el.closest('tr').dataset.i; const d=loadTech();
-      d[i]=d[i]||{}; d[i][el.dataset.f]=el.value; saveTech(d); renderTechStats();
+      const id=el.closest('tr').dataset.id; const d=loadTech();
+      d[id]=d[id]||{}; d[id][el.dataset.f]=el.value; saveTech(d);
+    });
+  });
+  document.querySelectorAll('#tech-table [data-flag]').forEach(el=>{
+    el.addEventListener('change',async ()=>{
+      const id=el.closest('tr').dataset.id;
+      await dbUpdateStudent(id,{[el.dataset.flag]: el.checked});
+      flash('tech-saved'); renderTechStats();
     });
   });
   renderTechStats();
 }
 function renderTechStats(){
-  const d=loadTech(); let as=0,su=0,re=0;
-  Object.values(d).forEach(r=>{ if(r.status==='assigned')as++; else if(r.status==='setup')su++; else if(r.status==='returned')re++; });
+  const studs=studentsForWeek(techWeek());
+  const assigned=studs.filter(s=>s.laptop_assigned).length;
+  const ready=studs.filter(s=>s.laptop_ready).length;
   document.getElementById('tech-stats').innerHTML = `
-    <div class="ministat"><div class="n">${STUDENTS_W1.length}</div><div class="l">Students</div></div>
-    <div class="ministat l-late"><div class="n">${as}</div><div class="l">Assigned</div></div>
-    <div class="ministat p"><div class="n">${su}</div><div class="l">Set up</div></div>
-    <div class="ministat"><div class="n">${re}</div><div class="l">Returned</div></div>`;
+    <div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>
+    <div class="ministat l-late"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>
+    <div class="ministat p"><div class="n">${ready}</div><div class="l">Ready</div></div>
+    <div class="ministat a"><div class="n">${studs.length-assigned}</div><div class="l">Not assigned</div></div>`;
 }
 function techExport(){
-  const d=loadTech(); const lbl=Object.fromEntries(TECH_STATUS);
-  const rows=[["First","Last","Grade","Email","Device","Asset tag","Status","Notes"]];
-  STUDENTS_W1.forEach((s,i)=>{ const r=d[i]||{};
-    rows.push([s[0],s[1],s[2],studentEmail(s),r.device||'Laptop',r.tag||'',lbl[r.status||'']||'Not started',r.notes||'']);
+  const d=loadTech();
+  const rows=[["First","Last","Grade","Email","Device","Asset tag","Laptop assigned","Laptop ready","Notes"]];
+  studentsForWeek(techWeek()).forEach(s=>{ const r=d[s.id]||{};
+    rows.push([s.first,s.last,s.grade,studentEmail(s),r.device||'Laptop',r.tag||'',s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No',r.notes||'']);
   });
-  csvDownload(`tech-onboarding-w${document.getElementById('tech-week').value}.csv`, rows);
+  csvDownload(`tech-onboarding-w${techWeek()}.csv`, rows);
 }
 function techInit(){
-  document.getElementById('tech-week').addEventListener('change',renderTech);
+  fillWeekSelect(document.getElementById('tech-week'));
+  document.getElementById('tech-week').addEventListener('change',async ()=>{ if(SUPA) await hydrateRoster(); renderTech(); });
   document.getElementById('tech-export').addEventListener('click',techExport);
   renderTech();
+}
+
+/* =================== STUDENT ROSTER TAB =================== */
+function rosWeek(){ return document.getElementById('ros-week').value; }
+async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
+function renderRosterTab(){
+  const ed = isAdmin();
+  const studs = studentsForWeek(rosWeek());
+  const tbl = document.getElementById('ros-table');
+  const head = `<thead><tr><th>#</th><th>First</th><th>Last</th><th>Grade</th><th>Level</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
+  const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
+      <td class="role-cell">${i+1}</td>
+      <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}></td>
+      <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
+      <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
+      <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
+      <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
+      <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_ready" ${s.laptop_ready?'checked':''}></td>
+      ${ed?`<td><button class="del" data-act="del" title="Remove">×</button></td>`:''}
+    </tr>`).join('') : `<tr><td colspan="${ed?8:7}" class="note-row">No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}</td></tr>`;
+  tbl.innerHTML = head+`<tbody>${body}</tbody>`;
+  tbl.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('change',async ()=>{
+    const id=el.closest('tr').dataset.id;
+    await dbUpdateStudent(id, {[el.dataset.f]: el.value});
+    flash('ros-saved'); renderRosterTab();
+  }));
+  tbl.querySelectorAll('[data-flag]').forEach(el=>el.addEventListener('change',async ()=>{
+    const id=el.closest('tr').dataset.id;
+    await dbUpdateStudent(id, {[el.dataset.flag]: el.checked});
+    flash('ros-saved'); renderRosStats();
+  }));
+  tbl.querySelectorAll('[data-act=del]').forEach(b=>b.addEventListener('click',async ()=>{
+    const tr=b.closest('tr'); const id=tr.dataset.id;
+    const s=findStudent(id);
+    if(!confirm(`Remove ${s?(s.first+' '+s.last):'this student'} from Week ${rosWeek()}?`)) return;
+    await dbDeleteStudent(id); flash('ros-saved'); renderRosterTab();
+  }));
+  renderRosStats();
+}
+function renderRosStats(){
+  const studs=studentsForWeek(rosWeek());
+  const assigned=studs.filter(s=>s.laptop_assigned).length;
+  const ready=studs.filter(s=>s.laptop_ready).length;
+  document.getElementById('ros-stats').innerHTML = `
+    <div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>
+    <div class="ministat l-late"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>
+    <div class="ministat p"><div class="n">${ready}</div><div class="l">Laptop ready</div></div>`;
+  // count by level
+  const counts={}; LEVELS.forEach(l=>counts[l.key]=0);
+  studs.forEach(s=>counts[levelOf(s.grade)]++);
+  document.getElementById('ros-levels').innerHTML = LEVELS.map(l=>
+    `<div class="lvl"><div class="ln">${counts[l.key]}</div><div class="ll">${l.label}</div><div class="lr">Gr ${l.range}</div></div>`
+  ).join('') + `<div class="lvl total"><div class="ln">${studs.length}</div><div class="ll">Total</div><div class="lr">all levels</div></div>`;
+}
+function rosExport(){
+  const rows=[["First","Last","Grade","Level","Email","Laptop assigned","Laptop ready"]];
+  studentsForWeek(rosWeek()).forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No']));
+  csvDownload(`roster-w${rosWeek()}.csv`, rows);
+}
+async function rosImport(file){
+  const msg=document.getElementById('ros-io-msg');
+  try{
+    const text=await file.text();
+    const parsed=parseRosterCSV(text);
+    if(!parsed.length){ msg.className='gate-msg err'; msg.textContent='No rows found — check the file has First, Last, Grade columns.'; return; }
+    if(!confirm(`Import ${parsed.length} student${parsed.length>1?'s':''} into Week ${rosWeek()}? They'll be added to the existing list.`)) return;
+    msg.className='gate-msg'; msg.textContent='Importing…';
+    const err=await dbBulkAddStudents(rosWeek(), parsed);
+    if(err){ msg.className='gate-msg err'; msg.textContent=err.message||'Import failed.'; return; }
+    msg.className='gate-msg ok'; msg.textContent=`Imported ${parsed.length} student${parsed.length>1?'s':''} ✓`;
+    renderRosterTab();
+  }catch(e){ msg.className='gate-msg err'; msg.textContent='Could not read that file.'; }
+}
+function rosterInit(){
+  fillWeekSelect(document.getElementById('ros-week'));
+  document.getElementById('ros-week').addEventListener('change',renderRosterTab);
+  document.getElementById('ros-add').addEventListener('click',async ()=>{
+    const f=document.getElementById('ros-first'), l=document.getElementById('ros-last'), g=document.getElementById('ros-grade');
+    if(!f.value.trim() && !l.value.trim()){ return; }
+    const err=await dbAddStudent(rosWeek(), f.value, l.value, g.value);
+    if(err){ alert(err.message||'Could not add student'); return; }
+    f.value=''; l.value=''; g.value=''; f.focus(); flash('ros-saved'); renderRosterTab();
+  });
+  ['ros-first','ros-last','ros-grade'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('ros-add').click(); }));
+  document.getElementById('ros-export').addEventListener('click',rosExport);
+  document.getElementById('ros-template').addEventListener('click',()=>{
+    csvDownload('roster-template.csv', [["First","Last","Grade","Laptop assigned","Laptop ready"],["Jane","Doe","3","no","no"]]);
+  });
+  document.getElementById('ros-file').addEventListener('change',e=>{ if(e.target.files[0]) rosImport(e.target.files[0]); e.target.value=''; });
+  renderRosterTab();
 }
 
 /* =================== WEEKLY SUPPLIES =================== */
@@ -1481,8 +1702,8 @@ async function nlDelete(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','resources','signage','newsletter','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','tech','weekly','supplies','workstreams','guide','resources','signage','newsletter','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',roster:'Students',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -1492,6 +1713,7 @@ function showTab(t){
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
   if(t==='newsletter') loadNewsletter();
+  if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   closeRail();
   window.scrollTo({top:0});
 }
@@ -1573,7 +1795,7 @@ function enterHub(sess){
   document.body.classList.toggle('is-admin', !!sess.admin);
   document.getElementById('me-mail').textContent=sess.email;
   renderAccess();
-  if(typeof refreshAtt==='function') refreshAtt();
+  hydrateRoster().then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); });
   showTab('dashboard');
 }
 async function signOut(){
@@ -1703,7 +1925,8 @@ async function authInit(){
 renderPorts(); renderCountdown(); renderTiles();
 renderRoster(); renderHousing(); renderStaff(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderGuideWeeks();
-attInit(); techInit(); supInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); authInit();
+hydrateRoster().then(()=>{ renderAtt(); renderTech(); renderRosterTab(); });
 </script>
 </body>
 </html>

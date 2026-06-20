@@ -416,8 +416,9 @@
       <button class="nav-item" data-tab="weekly"><span class="ico">🧺</span>Weekly Supplies</button>
       <button class="nav-item" data-tab="supplies"><span class="ico">📦</span>Supplies &amp; Packing<span class="ext">live ↗</span></button>
       <div class="nav-label">Reference</div>
-      <button class="nav-item" data-tab="workstreams"><span class="ico">🗂️</span>Workstreams</button>
+      <button class="nav-item" data-tab="workstreams"><span class="ico">🗂️</span>Task List</button>
       <button class="nav-item" data-tab="guide"><span class="ico">📖</span>Guide Hub<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="resources"><span class="ico">📚</span>Resources<span class="ext">live ↗</span></button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only" data-tab="access"><span class="ico">🔑</span>Access</button>
     </nav>
@@ -443,10 +444,9 @@
 
       <div class="voyage">
         <div class="voyage-head">
-          <div class="eyebrow">Ports of call</div>
+          <div class="eyebrow">Where we are</div>
           <div class="tline" id="countdown">—</div>
         </div>
-        <div class="ports" id="ports"></div>
       </div>
 
       <div class="tiles" id="tiles"></div>
@@ -634,21 +634,30 @@
       <div class="callout" id="access-note" style="margin-top:18px">This is a preview access layer — the allow-list lives in this browser. For real protected sign-in across devices (magic-link login + a shared list with student data secured), connect Supabase; see the deploy guide that ships with this file.</div>
     </section>
 
+    <!-- ===== RESOURCES (Session0) ===== -->
+    <section class="view" id="view-resources" hidden>
+      <div class="eyebrow">Reference · Session0 Hub</div>
+      <h1 class="page-title">Resources &amp; details</h1>
+      <p class="page-lead">Family rosters, registration details, and program resources from the Session0 Hub — embedded live.</p>
+      <div class="embed-head">
+        <div class="meta-line" style="margin:0"><span>Session0 · resources</span></div>
+        <a class="btn" href="https://alpha-session0.lovable.app/resources" target="_blank" rel="noopener">Open Session0 Hub ↗</a>
+      </div>
+      <div class="embed-frame" id="resources-embed">
+        <div class="embed-fallback">
+          <div>Loading Session0 resources…</div>
+          <a class="btn ghost" href="https://alpha-session0.lovable.app/resources" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== WORKSTREAMS ===== -->
     <section class="view" id="view-workstreams" hidden>
       <div class="eyebrow">Accountability · Who owns what</div>
-      <h1 class="page-title">Workstreams &amp; DRIs</h1>
-      <p class="page-lead">Every workstream across the program, its scope, the directly-responsible individual, linked checklists, and success metric where one's defined.</p>
-      <div class="embed-head">
-        <div class="meta-line" style="margin:0"><span>Source: <b>Hamptons Roles &amp; Responsibilities</b></span></div>
-        <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1bKnVD1XSN4GYbiJKGqZ8pgV_yIenZ4MyglIui9Q6eLQ/edit" target="_blank" rel="noopener">Open master sheet ↗</a>
-      </div>
+      <h1 class="page-title">Pre-launch task list</h1>
+      <p class="page-lead">The final to-dos before opening week, each with its owner. Filter by owner to see just yours.</p>
       <div class="ws-filter" id="ws-filter"></div>
       <div class="grid g2" id="ws-grid"></div>
-
-      <div class="section-title"><span class="num">↳</span>Checklists &amp; references</div>
-      <p class="page-lead" style="margin:-6px 0 14px">Linked docs referenced across the workstreams. These live in the master sheet — open it for the current links.</p>
-      <div class="refs" id="refs"></div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -799,25 +808,17 @@ const OPS = [
 ];
 
 const WORKSTREAMS = [
-  {name:"Overall Logistics", dri:"Ops · Robbie", scope:"Housing (staff), transportation (staff & student), food (lunch), cleaning, furnishings, HVAC.", links:["Hampton Staff Site Guide","JCOH Rules of the Road","Staff Driver / Auto Policy"], metric:""},
-  {name:"Compliance & Permitting", dri:"Ops · Robbie", scope:"Insurance, Health Department, fire safety, JCC comms & escalations.", links:[], metric:""},
-  {name:"Supplemental Personnel", dri:"Ops · Robbie", scope:"Aquatics director (2× lifeguards), nurse, armed security w/ Raptor check-in system.", links:[], metric:""},
-  {name:"Outdoor Facilities", dri:"Ops · Robbie", scope:"Ninja Warrior course, pool area, soccer, gaga ball, basketball, pickleball, volleyball, cornhole, flag football, frisbee, spikeball.", links:["Ninja Warrior Renderings"], metric:""},
-  {name:"Inventory", dri:"Campus Coordinator", scope:"Snacks, emporium items, AV equipment (mics, JBL speakers), moving everything there & back.", links:[], metric:""},
-  {name:"Technology", dri:"Campus Coordinator", scope:"Laptops, iPads, screens (outdoor projection), onboarding tech.", links:[], metric:""},
-  {name:"Pre-Summer Comms", dri:"Zara", scope:"Email reminders, registration forms (allergies, medications), drop-off/pickup, what to bring.", links:[], metric:""},
-  {name:"One-off Comms", dri:"Campus Coordinator", scope:"Emergencies, logistical changes.", links:[], metric:""},
-  {name:"Weekly / Daily Comms", dri:"Jenna", scope:"Weekly Plan and Daily Digest, pictures.", links:[], metric:"Open: ADoP / Nancy / Tasha?"},
-  {name:"Daily Logistics", dri:"Campus Coordinator", scope:"Attendance, dismissals, deliveries, vendor arrivals.", links:[], metric:""},
-  {name:"Admissions Activities", dri:"Nancy", scope:"Coffee & Conversations, events, closing 1:1s, in-person tours, one-off parent comms.", links:[], metric:"Conversion rate"},
-  {name:"ADoP Activities", dri:"Nancy", scope:"AlphaTest showcases (Event Collective + Vivia last week).", links:[], metric:"Open: Nancy or Tasha?"},
-  {name:"Workshops — Definition", dri:"Kate", scope:"Workshop creation, sourcing vendors & initial coordination, playbooks.", links:["Workshop Plans"], metric:""},
-  {name:"Workshops — Execution", dri:"Lead Guide · Jenna", scope:"Vendor management, adjustments.", links:[], metric:""},
-  {name:"Programming", dri:"Lead Guide · Jenna", scope:"Guide responsibilities & coverage, managing the floor, staffing coordination, where-to-be-when. Daily flow-of-day now lives in the Guide Hub.", links:[], metric:"", guideRef:true},
-  {name:"Academics", dri:"Lead Guide · Jenna", scope:"Everyone set up in the correct apps, support.", links:[], metric:""},
-  {name:"Decorations & Signage", dri:"Ops · Alice", scope:"Popup banners, decals, cultural messaging (shout-out language, calls to attention). Support from Chauncey.", links:["Decor & Signage Wish List"], metric:""},
-  {name:"Swag & Merch", dri:"Emily", scope:"Shirts, Julianne's beads, beach towels, water bottles, backpack/tote, hat/cap.", links:[], metric:""},
-  {name:"Staffing", dri:"Emily", scope:"Guide staffing for each week.", links:["Staffing List"], metric:""},
+  {task:"Confirm garage dimensions and availability for Manuel storage", owners:["Robbie"], note:""},
+  {task:"Finalize and send updated enrollment forms to families", owners:["Robbie","Zara"], note:"Robbie → Zara"},
+  {task:"Publish centralized Hamptons operations hub with rosters, attendance, staffing", owners:["Zara"], note:""},
+  {task:"Confirm medical staffing (EMT/nurse) schedule and regular on-site coverage", owners:["Robbie"], note:""},
+  {task:"Finalize pool schedule and lifeguard hires for summer", owners:["Robbie"], note:"Pool hours: 11–1:30 Mon–Thu · 11–12 Friday"},
+  {task:"Prepare and label weekly merch bins; confirm shipping cadence", owners:["Emily"], note:""},
+  {task:"Create grab-and-go side-quest kits and large display check chart", owners:["Julianne","Jenna","Chauncey"], note:""},
+  {task:"Test AV and speaker coverage on-site Wednesday; decide whether to rent extra equipment", owners:["Julianne"], note:""},
+  {task:"Confirm catering approach (buffet vs. packaged) and arrange shaded lunch seating", owners:["Jim","Robbie"], note:""},
+  {task:"Coordinate beach permit details and buoy/obstacle plan with Manuel", owners:["Robbie","Manuel"], note:""},
+  {task:"Draft and send week-one parent communication (tick prevention, timeline, showcase arrival time)", owners:["Nancy"], note:"Zara to notify Nancy"},
 ];
 
 const STUDENTS_W1 = [
@@ -894,8 +895,9 @@ const store = {
 
 /* =================== RENDER: DASHBOARD =================== */
 function renderPorts(){
-  const maxK = Math.max(...WEEKS.map(w=>w.kids));
   const el = document.getElementById('ports');
+  if(!el) return;
+  const maxK = Math.max(...WEEKS.map(w=>w.kids));
   el.innerHTML = WEEKS.map((w,i)=>`
     <a class="port ${i===NOW?'next':''}" href="https://alpha-odyssey-guide-hub.vercel.app/week/${w.n}" target="_blank" rel="noopener">
       ${i===NOW?'<span class="dot"></span>':''}
@@ -986,28 +988,22 @@ function renderSummary(){
 
 /* =================== RENDER: WORKSTREAMS =================== */
 function renderWorkstreams(filter){
-  const dris = [...new Set(WORKSTREAMS.map(w=>w.dri.split(' · ')[0]))];
-  // build filter once
+  // build owner filter once
   const fwrap = document.getElementById('ws-filter');
   if(!fwrap.dataset.built){
-    const all = ['All', ...[...new Set(WORKSTREAMS.map(w=>{
-      const d=w.dri; if(d.startsWith('Ops')) return 'Ops'; if(d.startsWith('Lead')) return 'Lead Guide'; if(d.startsWith('Campus')) return 'Campus Coordinator'; return d;
-    }))]];
-    fwrap.innerHTML = all.map((d,i)=>`<button class="fbtn ${i===0?'active':''}" data-f="${d}">${d}</button>`).join('');
+    const all = ['All', ...[...new Set(WORKSTREAMS.flatMap(w=>w.owners))]];
+    fwrap.innerHTML = all.map((d,i)=>`<button class="fbtn ${i===0?'active':''}" data-f="${escAttr(d)}">${esc(d)}</button>`).join('');
     fwrap.dataset.built="1";
     fwrap.querySelectorAll('.fbtn').forEach(b=>b.addEventListener('click',()=>{
       fwrap.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
       b.classList.add('active'); renderWorkstreams(b.dataset.f);
     }));
   }
-  const match = w => filter==='All'||!filter ? true : w.dri.startsWith(filter) || w.dri.includes(filter);
-  document.getElementById('ws-grid').innerHTML = WORKSTREAMS.filter(match).map(w=>`
+  const match = w => (!filter||filter==='All') ? true : w.owners.includes(filter);
+  document.getElementById('ws-grid').innerHTML = WORKSTREAMS.filter(match).map((w,i)=>`
     <div class="ws-card">
-      <div class="top"><h3>${w.name}</h3><span class="dri">${w.dri}</span></div>
-      <div class="scope">${w.scope}</div>
-      ${w.links.length?`<div class="links">${w.links.map(l=>`<span class="lk">🔗 ${l}</span>`).join('')}</div>`:''}
-      ${w.metric?`<div class="metric">${w.metric}</div>`:''}
-      ${w.guideRef?`<div class="note-guide" onclick="showTab('guide')">Daily flow-of-day → see Guide Hub</div>`:''}
+      <div class="top"><h3>${esc(w.task)}</h3><span class="dri">${w.owners.map(esc).join(' · ')}</span></div>
+      ${w.note?`<div class="metric">${esc(w.note)}</div>`:''}
     </div>`).join('');
 }
 
@@ -1312,13 +1308,14 @@ function lazyEmbed(id,url){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','access'];
+const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','resources','access'];
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
   if(t==='supplies') lazyEmbed('supplies-embed','https://summer-nyc.vercel.app/');
+  if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   closeRail();
   window.scrollTo({top:0});
 }
@@ -1529,7 +1526,7 @@ async function authInit(){
 /* =================== INIT =================== */
 renderPorts(); renderCountdown(); renderTiles();
 renderRoster(); renderHousing(); renderStaff(); renderOps(); renderSummary();
-renderWorkstreams('All'); renderGuideWeeks(); renderRefs();
+renderWorkstreams('All'); renderGuideWeeks();
 attInit(); techInit(); supInit(); authInit();
 </script>
 </body>

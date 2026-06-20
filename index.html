@@ -332,6 +332,10 @@
   .del{background:none;border:0;color:var(--muted-2);cursor:pointer;font-size:18px;line-height:1;padding:2px 7px;border-radius:6px}
   .del:hover{color:var(--coral);background:var(--panel)}
   .add-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:16px}
+  .hd{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:4px}
+  .hd-row{background:var(--navy-2);border:1px solid var(--line-soft);border-radius:9px;padding:9px 12px}
+  .hd-k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .hd-v{font-size:14px;color:var(--oyster);font-weight:600}
   .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
   .gradein{max-width:74px}
   /* roster admin-only controls (self-contained so layout is preserved) */
@@ -570,8 +574,10 @@
       </div>
 
       <div class="subpanel" id="sub-housing">
-        <div class="meta-line"><span><b>248 Blank Ln, Water Mill</b></span><span>5 bedrooms · 5 baseline / 7 surge</span><span>Stays: Coordinator, Lead, Manuel, extra guides</span></div>
-        <div class="callout" style="margin-bottom:16px">Does <b>not</b> stay in housing: Nancy (Admissions), Nurse, Lifeguards.</div>
+        <div class="eyebrow" style="margin-bottom:8px">House details</div>
+        <div class="hd editable-disp" id="house-info"></div>
+        <div class="editor-wrap" id="house-editor"></div>
+        <div class="callout" style="margin:14px 0 16px"><b>Separate / off-site housing:</b> Gaby Guajardo &amp; Nancy (Admissions). Does <b>not</b> stay in housing: Nurse, Lifeguards.</div>
         <div class="tablewrap editable-disp"><table id="housing-table"></table></div>
         <div class="editor-wrap" id="housing-editor"></div>
       </div>
@@ -968,9 +974,10 @@ const HOUSING = [
   {bed:"Bed 5 — BR5 (Guide 2)", tier:"BASELINE", cells:["Liam","","","","","","","",""]},
   {bed:"Bed 6", tier:"SURGE", cells:["Varenya","","","","","","","",""]},
   {bed:"Bed 7", tier:"SURGE", cells:["Julianne","—","—","—","—","—","—","—","—"]},
-  {bed:"Bed 8", tier:"OVERFLOW", cells:["Gaby","","","","","","","",""]},
+  {bed:"Bed 8", tier:"OVERFLOW", cells:["","","","","","","","",""]},
   {bed:"Bed 9", tier:"OVERFLOW", cells:["Emily","","","","","","","",""]},
   {bed:"Bed 10", tier:"OVERFLOW", cells:["Jesse","","","","","","","",""]},
+  {bed:"Separate housing (off-site)", tier:"OFF-SITE", cells:["Gaby Guajardo · Nancy","","","","","","","",""]},
 ];
 
 const STAFF = [
@@ -1226,6 +1233,13 @@ const CONTENT_DEFAULTS = {
   taskDone: {},
   roster: ROSTER,
   housing: HOUSING,
+  houseDetails: [
+    {k:"Address", v:"248 Blank Ln, Water Mill, NY"},
+    {k:"Bed capacity", v:"5 baseline · 7 surge · 10 with overflow"},
+    {k:"Ops DRI", v:"Robbie Forrest"},
+    {k:"Stays in house", v:"Coordinator, Lead Guide, Manuel, extra guides"},
+    {k:"Separate / off-site", v:"Gaby Guajardo, Nancy (Admissions)"},
+  ],
   staff: STAFF,
 };
 let CONTENT = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
@@ -1313,6 +1327,10 @@ function buildAllEditors(){
     [{key:'bed',label:'Bed',w:150},{key:'tier',label:'Tier',w:90},...wcols],
     CONTENT.housing.map(r=>{ const o={bed:r.bed,tier:r.tier}; (r.cells||[]).forEach((c,i)=>o['c'+i]=c); return o; }),
     async rows=>{ CONTENT.housing=rows.map(r=>({bed:r.bed, tier:r.tier, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('housing'); renderHousing(); return e; });
+  mk('house-editor',
+    [{key:'k',label:'Detail',w:170},{key:'v',label:'Value',w:300}],
+    (CONTENT.houseDetails||[]).map(o=>({...o})),
+    async rows=>{ CONTENT.houseDetails=rows; const e=await saveContent('houseDetails'); renderHouseInfo(); return e; });
   mk('staff-editor',
     [{key:'name',label:'Name',w:120},{key:'role',label:'Role',w:140},{key:'status',label:'Status',w:100},{key:'housing',label:'Housing',w:90},{key:'precamp',label:'Pre-camp',w:120},{key:'constraint',label:'Constraint',w:140},{key:'notes',label:'Notes',w:160}],
     CONTENT.staff.map(r=>({name:r[0],role:r[1],status:r[2],housing:r[3],precamp:r[4],constraint:r[5],notes:r[6]})),
@@ -1331,6 +1349,10 @@ function renderJumpCards(){
 function renderRhythm(){
   const el=document.getElementById('flow'); if(!el) return;
   el.innerHTML=(CONTENT.rhythm||[]).map(r=>`<div class="flow-row"><span class="flow-time">${esc(r.time)}</span><span class="flow-act">${esc(r.act)}${r.note?` <span class="flow-note">(${esc(r.note)})</span>`:''}</span></div>`).join('');
+}
+function renderHouseInfo(){
+  const el=document.getElementById('house-info'); if(!el) return;
+  el.innerHTML=(CONTENT.houseDetails||[]).map(r=>`<div class="hd-row"><span class="hd-k">${esc(r.k)}</span><span class="hd-v">${esc(r.v)}</span></div>`).join('');
 }
 
 /* program levels */
@@ -2320,13 +2342,13 @@ async function authInit(){
 
 /* =================== INIT =================== */
 renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
-renderRoster(); renderHousing(); renderStaff(); renderOps(); renderSummary();
+renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks();
 attInit(); techInit(); supInit(); rosterInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();
-  renderRoster(); renderHousing(); renderStaff();
+  renderRoster(); renderHousing(); renderHouseInfo(); renderStaff();
   renderWorkstreams('All'); renderEvents(); buildAllEditors();
 });
 hydrateRoster().then(()=>{ renderAtt(); renderTech(); renderRosterTab(); });

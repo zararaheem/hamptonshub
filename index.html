@@ -945,7 +945,7 @@
       <div class="section-title"><span class="num">↳</span>Shout-outs</div>
       <div id="fh-shouts" class="fh-shouts"></div>
 
-      <div class="callout" style="margin-top:18px"><b>Newsletter posts</b> also appear in the Family Hub automatically — write them in the <a data-jump="newsletter" style="color:var(--brass-bright);cursor:pointer">Newsletter</a> tab. The code is a light gate that keeps the page unlisted; photo files live in public storage, so treat the link as semi-private.</div>
+      <div class="callout" style="margin-top:18px"><b>Newsletter posts</b> also appear in the Family Hub automatically — write them in the <a data-jump="newsletter" style="color:var(--brass-bright);cursor:pointer">Newsletter</a> tab. <b>Privacy:</b> photos live in a private bucket and are shown to parents only through the access code — each image link is signed and expires after an hour, so it can't be opened or indexed without the code.</div>
     </section>
 
     <!-- ===== WORKSTREAMS ===== -->
@@ -2277,8 +2277,9 @@ async function nlDelete(id){
 }
 
 /* =================== FAMILY HUB (admin) =================== */
-let FH_PHOTOS = [];   // pending uploads in the strip
+let FH_PENDING = 0;   // photos currently uploading
 let FH_BOUND = false;
+let FH_CODE = '';     // cached parent code, used to preview the gated feed
 function fhPublicUrl(){ return location.origin + (location.pathname.replace(/[^/]*$/, '')) + 'family.html'; }
 async function loadFamily(){
   const link=document.getElementById('fh-public-link'); if(link) link.href=fhPublicUrl();
@@ -2293,9 +2294,41 @@ async function loadFamily(){
     document.getElementById('fh-code-save').addEventListener('click',fhSaveCode);
     document.getElementById('fh-so-post').addEventListener('click',fhPostShout);
   }
-  // load current access code
-  if(SUPA){ const { data }=await SB.from('family_config').select('access_code').eq('id',1).single(); if(data) document.getElementById('fh-code').value=data.access_code||''; }
-  fhRenderWall(); fhRenderShouts();
+  // the access code is no longer readable with the public key — restore it from
+  // this browser's last save so the preview can call the gated feed function
+  try{ FH_CODE = store.get('fh_code') || ''; }catch(e){ FH_CODE=''; }
+  if(FH_CODE) document.getElementById('fh-code').value=FH_CODE;
+  fhRenderHub();
+}
+// Fetch the same code-gated feed parents see (signed photo URLs included)
+async function fhFetchFeed(){
+  if(!SUPA || !FH_CODE) return null;
+  try{ const res=await SB.functions.invoke('family-feed',{ body:{ code:FH_CODE } }); return (res&&res.data&&res.data.ok)?res.data:null; }
+  catch(e){ return null; }
+}
+async function fhRenderHub(){
+  const wall=document.getElementById('fh-wall'), shouts=document.getElementById('fh-shouts');
+  if(!FH_CODE){
+    const hint='<p class="page-lead" style="margin:0">Set your parent access code above to preview what families see.</p>';
+    if(wall) wall.innerHTML=hint; if(shouts) shouts.innerHTML=''; return;
+  }
+  const feed=await fhFetchFeed();
+  const admin=document.body.classList.contains('is-admin');
+  if(wall){
+    const rows=(feed&&feed.photos)||[];
+    wall.innerHTML = rows.length
+      ? rows.map(p=>`<figure class="fh-tile"><img src="${escAttr(p.url)}" alt="" loading="lazy">${p.caption?`<figcaption>${esc(p.caption)}</figcaption>`:''}${admin?`<button class="del" data-ph="${escAttr(p.id)}" title="Remove">×</button>`:''}</figure>`).join('')
+      : '<p class="page-lead" style="margin:0">No photos on the wall yet.</p>';
+    if(admin) wall.querySelectorAll('[data-ph]').forEach(b=>b.addEventListener('click',()=>fhDelPhoto(b.dataset.ph)));
+  }
+  if(shouts){
+    const rows=(feed&&feed.shoutouts)||[];
+    shouts.innerHTML = rows.length
+      ? rows.map(s=>{ const meta=[s.to_name?`For ${esc(s.to_name)}`:'',s.from_name?`from ${esc(s.from_name)}`:''].filter(Boolean).join(' · ');
+          return `<div class="fh-shout"><div class="msg">🌟 ${esc(s.message)}</div>${meta?`<div class="meta">${meta}</div>`:''}${admin?`<button class="del" data-so="${escAttr(s.id)}" title="Delete">×</button>`:''}</div>`; }).join('')
+      : '<p class="page-lead" style="margin:0">No shout-outs yet.</p>';
+    if(admin) shouts.querySelectorAll('[data-so]').forEach(b=>b.addEventListener('click',()=>fhDelShout(b.dataset.so)));
+  }
 }
 async function fhSaveCode(){
   const msg=document.getElementById('fh-code-msg');
@@ -2303,7 +2336,9 @@ async function fhSaveCode(){
   if(!code){ if(msg){msg.className='gate-msg err';msg.textContent='Pick a code first.';} return; }
   if(SUPA){ const { error }=await SB.from('family_config').update({access_code:code}).eq('id',1);
     if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not save.';} return; } }
+  FH_CODE=code; try{ store.set('fh_code', code); }catch(e){}
   if(msg){ msg.className='gate-msg ok'; msg.textContent='Saved ✓'; setTimeout(()=>msg.textContent='',1500); }
+  fhRenderHub();
 }
 async function fhAddPhotos(files){
   if(!files||!files.length) return;
@@ -2311,40 +2346,29 @@ async function fhAddPhotos(files){
   const cap=(document.getElementById('fh-cap').value||'').trim();
   for(const f of files){
     if(!f.type.startsWith('image/')) continue;
-    const ph={url:'', up:true}; FH_PHOTOS.push(ph); fhRenderStrip();
+    FH_PENDING++; fhRenderStrip();
     if(SUPA){
       try{
-        const path=`family/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${f.name.replace(/[^\w.\-]/g,'_')}`;
-        const { error }=await SB.storage.from('newsletter').upload(path,f,{cacheControl:'3600',upsert:false});
+        const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}-${f.name.replace(/[^\w.\-]/g,'_')}`;
+        const { error }=await SB.storage.from('family').upload(path,f,{cacheControl:'3600',upsert:false});
         if(error) throw error;
-        const url=SB.storage.from('newsletter').getPublicUrl(path).data.publicUrl;
-        const { error:ie }=await SB.from('family_photos').insert({url, caption:cap, author:(SESSION&&SESSION.email)||null});
+        const { error:ie }=await SB.from('family_photos').insert({path, caption:cap, author:(SESSION&&SESSION.email)||null});
         if(ie) throw ie;
-        FH_PHOTOS=FH_PHOTOS.filter(x=>x!==ph);
-      }catch(err){ console.warn('photo failed',err); FH_PHOTOS=FH_PHOTOS.filter(x=>x!==ph); if(msg){msg.className='gate-msg err';msg.textContent='A photo failed to upload.';} }
-    } else { FH_PHOTOS=FH_PHOTOS.filter(x=>x!==ph); }
-    fhRenderStrip();
+      }catch(err){ console.warn('photo failed',err); if(msg){msg.className='gate-msg err';msg.textContent='A photo failed to upload.';} }
+    }
+    FH_PENDING--; fhRenderStrip();
   }
   document.getElementById('fh-file').value='';
-  fhRenderWall();
+  fhRenderHub();
 }
 function fhRenderStrip(){
   const strip=document.getElementById('fh-photo-strip'); if(!strip) return;
-  strip.innerHTML=FH_PHOTOS.filter(p=>p.up).map(()=>`<div class="thumb up">uploading…</div>`).join('');
-}
-async function fhRenderWall(){
-  const wrap=document.getElementById('fh-wall'); if(!wrap) return;
-  let rows=[];
-  if(SUPA){ const { data }=await SB.from('family_photos').select('*').order('created_at',{ascending:false}); rows=data||[]; }
-  if(!rows.length){ wrap.innerHTML='<p class="page-lead" style="margin:0">No photos on the wall yet.</p>'; return; }
-  const admin=document.body.classList.contains('is-admin');
-  wrap.innerHTML=rows.map(p=>`<figure class="fh-tile"><img src="${escAttr(p.url)}" alt="" loading="lazy">${p.caption?`<figcaption>${esc(p.caption)}</figcaption>`:''}${admin?`<button class="del" data-ph="${escAttr(p.id)}" title="Remove">×</button>`:''}</figure>`).join('');
-  if(admin) wrap.querySelectorAll('[data-ph]').forEach(b=>b.addEventListener('click',()=>fhDelPhoto(b.dataset.ph)));
+  strip.innerHTML=Array.from({length:FH_PENDING}).map(()=>`<div class="thumb up">uploading…</div>`).join('');
 }
 async function fhDelPhoto(id){
   if(!confirm('Remove this photo from the wall?')) return;
   if(SUPA){ await SB.from('family_photos').delete().eq('id',id); }
-  fhRenderWall();
+  fhRenderHub();
 }
 async function fhPostShout(){
   const msg=document.getElementById('fh-so-msg2');
@@ -2354,23 +2378,12 @@ async function fhPostShout(){
   if(SUPA){ const { error }=await SB.from('family_shoutouts').insert(rec); if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not post.';} return; } }
   document.getElementById('fh-so-msg').value=''; document.getElementById('fh-so-to').value=''; document.getElementById('fh-so-from').value='';
   if(msg){ msg.className='gate-msg ok'; msg.textContent='Posted ✓'; setTimeout(()=>msg.textContent='',1500); }
-  fhRenderShouts();
-}
-async function fhRenderShouts(){
-  const wrap=document.getElementById('fh-shouts'); if(!wrap) return;
-  let rows=[];
-  if(SUPA){ const { data }=await SB.from('family_shoutouts').select('*').order('created_at',{ascending:false}); rows=data||[]; }
-  if(!rows.length){ wrap.innerHTML='<p class="page-lead" style="margin:0">No shout-outs yet.</p>'; return; }
-  const admin=document.body.classList.contains('is-admin');
-  wrap.innerHTML=rows.map(s=>{ const meta=[s.to_name?`For ${esc(s.to_name)}`:'',s.from_name?`from ${esc(s.from_name)}`:''].filter(Boolean).join(' · ');
-    return `<div class="fh-shout"><div class="msg">🌟 ${esc(s.message)}</div>${meta?`<div class="meta">${meta}</div>`:''}${admin?`<button class="del" data-so="${escAttr(s.id)}" title="Delete">×</button>`:''}</div>`;
-  }).join('');
-  if(admin) wrap.querySelectorAll('[data-so]').forEach(b=>b.addEventListener('click',()=>fhDelShout(b.dataset.so)));
+  fhRenderHub();
 }
 async function fhDelShout(id){
   if(!confirm('Delete this shout-out?')) return;
   if(SUPA){ await SB.from('family_shoutouts').delete().eq('id',id); }
-  fhRenderShouts();
+  fhRenderHub();
 }
 
 /* =================== TAB NAV =================== */

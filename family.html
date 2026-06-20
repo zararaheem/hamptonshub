@@ -109,16 +109,10 @@
       return `<div class="shout"><div class="star">🌟</div><div class="msg">${esc(s.message)}</div><div class="meta">${to}${from}</div></div>`;
     }
 
-    async function loadHub(){
+    async function renderHub(payload){
       const hub=document.getElementById('hub');
       hub.hidden=false;
-      hub.innerHTML='<div class="loading">Loading the latest…</div>';
-      const [ph,nl,so]=await Promise.all([
-        sb.from('family_photos').select('*').order('created_at',{ascending:false}),
-        sb.from('newsletter_posts').select('*').order('created_at',{ascending:false}),
-        sb.from('family_shoutouts').select('*').order('created_at',{ascending:false})
-      ]);
-      const photos=ph.data||[], posts=nl.data||[], shouts=so.data||[];
+      const photos=payload.photos||[], posts=payload.posts||[], shouts=payload.shoutouts||[];
       let html='';
       html+=`<div class="sec-head"><span class="eyebrow">📸</span><h2>Camp Moments</h2></div>${photoWall(photos)}`;
       html+=`<div class="sec-head"><span class="eyebrow">📰</span><h2>Latest Updates</h2></div>`;
@@ -132,20 +126,27 @@
     }
     document.getElementById('lb').addEventListener('click',function(){ this.classList.remove('on'); });
 
-    async function tryUnlock(code){
+    async function tryUnlock(code, fromCache){
       const err=document.getElementById('gate-err');
       err.textContent='';
-      const { data, error }=await sb.from('family_config').select('access_code').eq('id',1).single();
-      if(error){ err.textContent='Could not reach the hub — please try again.'; return; }
-      if((code||'').trim().toLowerCase()!==(data.access_code||'').toLowerCase()){ err.textContent='That code didn’t match. Try again or ask your team.'; return; }
-      try{ sessionStorage.setItem('family-code', code.trim()); }catch(e){}
+      const c=(code||'').trim();
+      if(!c){ if(!fromCache) err.textContent='Enter the access code.'; return; }
+      let res;
+      try{ res=await sb.functions.invoke('family-feed', { body:{ code:c } }); }
+      catch(e){ err.textContent='Could not reach the hub — please try again.'; return; }
+      const payload=res && res.data;
+      if(!payload || !payload.ok){
+        if(fromCache){ try{ sessionStorage.removeItem('family-code'); }catch(e){} return; }
+        err.textContent='That code didn’t match. Try again or ask your team.'; return;
+      }
+      try{ sessionStorage.setItem('family-code', c); }catch(e){}
       document.getElementById('gate').hidden=true;
-      loadHub();
+      renderHub(payload);
     }
     document.getElementById('enter').addEventListener('click',()=>tryUnlock(document.getElementById('code').value));
     document.getElementById('code').addEventListener('keydown',e=>{ if(e.key==='Enter') tryUnlock(e.target.value); });
     // remember within the session
-    (function(){ try{ const c=sessionStorage.getItem('family-code'); if(c) tryUnlock(c); }catch(e){} })();
+    (function(){ try{ const c=sessionStorage.getItem('family-code'); if(c) tryUnlock(c, true); }catch(e){} })();
   </script>
 </body>
 </html>

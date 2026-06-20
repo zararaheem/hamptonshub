@@ -483,7 +483,7 @@
     </nav>
     <div class="rail-foot">
       <div class="me"><span class="mail" id="me-mail">—</span><button class="out" id="signout">Sign out</button></div>
-      <div style="margin-top:9px">248 Blank Ln · Water Mill</div>
+      <div style="margin-top:9px">Jewish Center of East Hampton</div>
     </div>
   </aside>
   <div class="scrim" id="scrim"></div>
@@ -522,7 +522,7 @@
       <div class="section-title"><span class="num">↗</span>Bus service</div>
       <div class="card" id="bus-card">
         <h3 style="margin:0 0 6px">Daily camp bus</h3>
-        <p class="lc-desc" style="margin:0 0 10px">Door-to-door transport to and from 248 Blank Ln, Water Mill.</p>
+        <p class="lc-desc" style="margin:0 0 10px">Door-to-door transport to and from the Jewish Center of East Hampton.</p>
         <div class="meta-line">
           <span><b>Route / stops</b> — TBD</span>
           <span><b>Morning pickup</b> — TBD</span>
@@ -1169,6 +1169,7 @@ const CONTENT_DEFAULTS = {
     {tag:"Logistics", title:"Weekly Supplies", desc:"Per-week supply checklist — separate from the ordering site.", to:"weekly"},
     {tag:"Ops", title:"DoP Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
     {tag:"Logistics", title:"Supplies & Ordering", desc:"The live ordering / packing site (summer-nyc), embedded in the hub.", to:"supplies"},
+    {tag:"Parents", title:"Parent Newsletter", desc:"Post photos & updates for families and copy the public parent link.", to:"newsletter"},
     {tag:"Parents", title:"Parent FAQ", desc:"The family-facing FAQ — everything parents need to know about the summer.", to:"https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit"},
   ],
   rhythm: [
@@ -2069,14 +2070,14 @@ async function gateSubmit(){
   if(PASSWORD_GATE){
     const pass=(document.getElementById('gate-pass')||{}).value||'';
     if(pass!==CONFIG.accessPassword){ msg.className='gate-msg err'; msg.textContent='Wrong staff password — ask Zara.'; return; }
-    const acc={admin: email===OWNER, owner: email===OWNER};
-    try{ const a=await dbCheckAccess(email); if(a&&(a.admin||a.owner)){ acc.admin=true; acc.owner=a.owner; } }catch(e){}
+    let acc; try{ acc=await dbCheckAccess(email); }catch(e){ acc={allowed:false}; }
+    if(!acc || !acc.allowed){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — reach out to Zara (zara.raheem@alpha.school) to get added."; return; }
     msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
-    setTimeout(()=>enterHub({email, ...acc}),200);
+    setTimeout(()=>enterHub({email, admin:!!acc.admin, owner:!!acc.owner}),200);
     return;
   }
   const acc = await dbCheckAccess(email);
-  if(!acc.allowed){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — ask Zara to add you."; return; }
+  if(!acc.allowed){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — reach out to Zara (zara.raheem@alpha.school) to get added."; return; }
   msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
   setTimeout(()=>enterHub({email, ...acc}),250);
 }
@@ -2146,14 +2147,13 @@ async function authInit(){
     });
   } else if(PASSWORD_GATE){
     const banner=document.getElementById('demo-banner');
-    if(banner) banner.textContent='Enter your @alpha.school / @trilogy.com email and the shared staff password. You stay signed in on this device.';
+    if(banner) banner.textContent='Sign-in is limited to approved emails. Enter your approved @alpha.school / @trilogy.com email and the staff password. Not on the list? Reach out to Zara (zara.raheem@alpha.school).';
     const note=document.getElementById('access-note');
-    if(note) note.innerHTML='<b>Shared staff password.</b> Everyone uses the same password to get in. Allergies & health are live for all staff. This is a soft gate — for hard, per-person security, switch on email sign-in.';
+    if(note) note.innerHTML='<b>Approved emails only.</b> Sign-in is limited to people on the access list below — add their email here and share the staff password. Anyone not on the list is told to reach out to Zara.';
     const s=store.get('session');
     if(s&&s.email){
-      const acc={email:s.email, admin:s.email.toLowerCase()===OWNER, owner:s.email.toLowerCase()===OWNER};
-      try{ const a=await dbCheckAccess(s.email); if(a&&(a.admin||a.owner)){ acc.admin=true; acc.owner=a.owner; } }catch(e){}
-      enterHub(acc); return;
+      try{ const a=await dbCheckAccess(s.email); if(a&&a.allowed){ enterHub({email:s.email, admin:!!a.admin, owner:!!a.owner}); return; } }catch(e){}
+      store.set('session',null);
     }
     document.body.classList.add('locked');
   } else {

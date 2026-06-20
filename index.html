@@ -159,7 +159,8 @@
   /* ---------- Rhythm chips ---------- */
   .rhythm{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .chip{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);
-    border-radius:30px;padding:7px 13px;color:var(--oyster)}
+    border-radius:16px;padding:6px 13px;color:var(--oyster);display:inline-flex;flex-direction:column;align-items:center;line-height:1.35}
+  .chip small{font-size:10.5px;letter-spacing:.04em;color:var(--brass-bright)}
   .arrow{color:var(--brass);font-family:var(--mono)}
 
   /* ---------- Tables ---------- */
@@ -241,6 +242,10 @@
   .fbtn:hover{color:var(--oyster);border-color:var(--teal)}
   .fbtn.active{background:var(--brass);color:var(--navy);border-color:var(--brass);font-weight:700}
   .ws-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px 18px;display:flex;flex-direction:column;gap:9px}
+  .ws-jumps{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+  .ws-jump{font-family:var(--mono);font-size:11.5px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);
+    border-radius:8px;padding:5px 11px;cursor:pointer;transition:.15s}
+  .ws-jump:hover{border-color:var(--brass);color:var(--brass-bright)}
   .ws-card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .ws-card h3{margin:0;font-family:var(--display);font-weight:600;font-size:17px}
   .ws-card .dri{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--navy);
@@ -427,25 +432,25 @@
     <div class="brand">
       <div class="anchor">⚓ Alpha Odyssey</div>
       <h1>Hamptons<br>Ops Console</h1>
-      <div class="sub">Summer 2026 · 9 weeks · East End</div>
+      <div class="sub">Summer 2026 · 9 weeks · East Hampton</div>
     </div>
     <nav class="nav" id="nav">
       <div class="nav-label">Command</div>
-      <button class="nav-item active" data-tab="dashboard"><span class="ico">🧭</span>Dashboard</button>
-      <button class="nav-item" data-tab="staffing"><span class="ico">⚓</span>Staffing</button>
-      <button class="nav-item" data-tab="attendance"><span class="ico">📋</span>Attendance</button>
+      <button class="nav-item active" data-tab="dashboard">Dashboard</button>
+      <button class="nav-item" data-tab="staffing">Staffing</button>
+      <button class="nav-item" data-tab="attendance">Attendance</button>
       <div class="nav-label">Logistics</div>
-      <button class="nav-item" data-tab="tech"><span class="ico">💻</span>Tech Onboarding</button>
-      <button class="nav-item" data-tab="weekly"><span class="ico">🧺</span>Weekly Supplies</button>
-      <button class="nav-item" data-tab="supplies"><span class="ico">📦</span>Supplies &amp; Packing<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="tech">Tech Onboarding</button>
+      <button class="nav-item" data-tab="weekly">Weekly Supplies</button>
+      <button class="nav-item" data-tab="supplies">Supplies &amp; Packing<span class="ext">live ↗</span></button>
       <div class="nav-label">Reference</div>
-      <button class="nav-item" data-tab="workstreams"><span class="ico">🗂️</span>Task List</button>
-      <button class="nav-item" data-tab="guide"><span class="ico">📖</span>Guide Hub<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="resources"><span class="ico">📚</span>Resources<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="signage"><span class="ico">🎨</span>Signage Wish List<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="newsletter"><span class="ico">📰</span>Newsletter</button>
+      <button class="nav-item" data-tab="workstreams">Task List</button>
+      <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="newsletter">Newsletter</button>
       <div class="nav-label admin-only">Admin</div>
-      <button class="nav-item admin-only" data-tab="access"><span class="ico">🔑</span>Access</button>
+      <button class="nav-item admin-only" data-tab="access">Access</button>
     </nav>
     <div class="rail-foot">
       <div class="me"><span class="mail" id="me-mail">—</span><button class="out" id="signout">Sign out</button></div>
@@ -457,16 +462,12 @@
   <!-- ============ MAIN ============ -->
   <div class="main">
     <div class="topbar">
-      <span class="anchor">⚓ ALPHA ODYSSEY</span>
+      <span class="anchor">ALPHA ODYSSEY</span>
       <button class="burger" id="burger" aria-label="Menu">☰</button>
     </div>
 
     <!-- ===== DASHBOARD ===== -->
     <section class="view" id="view-dashboard">
-      <div class="eyebrow">Bridge · Summer 2026</div>
-      <h1 class="page-title">The nine-week voyage</h1>
-      <p class="page-lead">One console for every crew running Alpha Summer in the Hamptons — saltwater, sawdust, and shout-outs. Track who's working, who's present, what to order, and who owns what.</p>
-
       <div class="voyage">
         <div class="voyage-head">
           <div class="eyebrow">Where we are</div>
@@ -476,7 +477,6 @@
 
       <div class="tiles" id="tiles"></div>
 
-      <div class="section-title"><span class="num">↳</span>Jump to</div>
       <div class="grid g3">
         <a class="linkcard" data-jump="staffing"><div class="tag">Roster</div><h3>Staffing &amp; Housing</h3><p class="lc-desc">Weekly crew, bed assignments, constraints.</p><div class="go">Open tab →</div></a>
         <a class="linkcard" data-jump="attendance"><div class="tag">Daily</div><h3>Attendance</h3><p class="lc-desc">Check students in, export the day's roll.</p><div class="go">Open tab →</div></a>
@@ -489,16 +489,17 @@
 
       <div class="section-title"><span class="num">i</span>The daily rhythm</div>
       <div class="rhythm">
-        <span class="chip">Drop-off</span><span class="arrow">→</span>
-        <span class="chip">Core Skills</span><span class="arrow">→</span>
-        <span class="chip">Lunch</span><span class="arrow">→</span>
-        <span class="chip">Physical Adventure</span><span class="arrow">→</span>
-        <span class="chip">Workshop</span><span class="arrow">→</span>
-        <span class="chip">Shout-Outs</span><span class="arrow">→</span>
-        <span class="chip">Out at 4:00</span>
+        <span class="chip">Drop-off<small>8:15–8:45</small></span><span class="arrow">→</span>
+        <span class="chip">Core Skills<small>8:45–10:15</small></span><span class="arrow">→</span>
+        <span class="chip">Physical Adventure<small>10:15–11:00</small></span><span class="arrow">→</span>
+        <span class="chip">Pool<small>11:00–1:30</small></span><span class="arrow">→</span>
+        <span class="chip">Lunch<small>12:00–12:45</small></span><span class="arrow">→</span>
+        <span class="chip">Workshop<small>1:30–3:30</small></span><span class="arrow">→</span>
+        <span class="chip">Shout-Outs<small>3:30–3:45</small></span><span class="arrow">→</span>
+        <span class="chip">Pick-up<small>4:00–4:30</small></span>
       </div>
       <div class="callout" style="margin-top:18px">
-        <b>Pool window</b> — Mon–Thu 9:30 AM–1:30 PM · Fri 9:30 AM–12:00 PM. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
+        <b>Pool window</b> — Mon–Thu <b>11:00 AM–1:30 PM</b> · Fri <b>11:00 AM–12:00 PM</b>. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
       </div>
     </section>
 
@@ -882,16 +883,16 @@ const OPS = [
 
 const WORKSTREAMS = [
   {task:"Confirm garage dimensions and availability for Manuel storage", owners:["Robbie"], note:""},
-  {task:"Finalize and send updated enrollment forms to families", owners:["Robbie","Zara"], note:"Robbie → Zara"},
-  {task:"Publish centralized Hamptons operations hub with rosters, attendance, staffing", owners:["Zara"], note:""},
+  {task:"Finalize and send updated enrollment forms to families", owners:["Robbie","Zara"], note:"Robbie → Zara", tabs:["resources"]},
+  {task:"Publish centralized Hamptons operations hub with rosters, attendance, staffing", owners:["Zara"], note:"", tabs:["staffing","attendance"]},
   {task:"Confirm medical staffing (EMT/nurse) schedule and regular on-site coverage", owners:["Robbie"], note:""},
-  {task:"Finalize pool schedule and lifeguard hires for summer", owners:["Robbie"], note:"Pool hours: 11–1:30 Mon–Thu · 11–12 Friday"},
-  {task:"Prepare and label weekly merch bins; confirm shipping cadence", owners:["Emily"], note:""},
-  {task:"Create grab-and-go side-quest kits and large display check chart", owners:["Julianne","Jenna","Chauncey"], note:""},
+  {task:"Finalize pool schedule and lifeguard hires for summer", owners:["Robbie"], note:"Pool: Mon–Thu 11:00 AM–1:30 PM · Fri 11:00 AM–12:00 PM"},
+  {task:"Prepare and label weekly merch bins; confirm shipping cadence", owners:["Emily"], note:"", tabs:["supplies"]},
+  {task:"Create grab-and-go side-quest kits and large display check chart", owners:["Julianne","Jenna","Chauncey"], note:"", tabs:["supplies"]},
   {task:"Test AV and speaker coverage on-site Wednesday; decide whether to rent extra equipment", owners:["Julianne"], note:""},
   {task:"Confirm catering approach (buffet vs. packaged) and arrange shaded lunch seating", owners:["Jim","Robbie"], note:""},
   {task:"Coordinate beach permit details and buoy/obstacle plan with Manuel", owners:["Robbie","Manuel"], note:""},
-  {task:"Draft and send week-one parent communication (tick prevention, timeline, showcase arrival time)", owners:["Nancy"], note:"Zara to notify Nancy"},
+  {task:"Draft and send week-one parent communication (tick prevention, timeline, showcase arrival time)", owners:["Nancy"], note:"Zara to notify Nancy", tabs:["newsletter"]},
 ];
 
 const STUDENTS_W1 = [
@@ -1077,6 +1078,7 @@ function renderWorkstreams(filter){
     <div class="ws-card">
       <div class="top"><h3>${esc(w.task)}</h3><span class="dri">${w.owners.map(esc).join(' · ')}</span></div>
       ${w.note?`<div class="metric">${esc(w.note)}</div>`:''}
+      ${(w.tabs&&w.tabs.length)?`<div class="ws-jumps">${w.tabs.map(t=>`<button class="ws-jump" onclick="showTab('${t}')">${esc(TAB_LABELS[t]||t)} →</button>`).join('')}</div>`:''}
     </div>`).join('');
 }
 
@@ -1480,6 +1482,7 @@ async function nlDelete(id){
 
 /* =================== TAB NAV =================== */
 const tabs=['dashboard','staffing','attendance','tech','weekly','supplies','workstreams','guide','resources','signage','newsletter','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });

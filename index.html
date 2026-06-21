@@ -81,6 +81,16 @@
   .nav-item .wip{margin-left:auto;font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:6px;padding:1px 5px}
   .wip-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:7px;padding:3px 9px;vertical-align:middle;margin-left:8px;white-space:nowrap}
   .wip-banner{margin:6px 0 14px;background:rgba(226,101,74,.12);border:1px solid var(--coral);border-radius:10px;padding:11px 14px;color:var(--coral);font-size:13.5px}
+  .housing-roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:10px}
+  .hr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+  .hr-row.in{border-color:rgba(95,179,169,.5);background:rgba(95,179,169,.06)}
+  .hr-who{display:flex;flex-direction:column;min-width:0}
+  .hr-name{font-weight:600;font-size:14px}
+  .hr-role{font-size:11px;color:var(--muted);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hr-toggle{flex-shrink:0;border:1px solid var(--line);background:none;color:var(--muted);border-radius:8px;padding:6px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;white-space:nowrap}
+  .hr-toggle.in{border-color:var(--teal);color:var(--teal-bright)}
+  .hr-toggle:disabled{cursor:default;opacity:.8}
+  .hr-toggle:not(:disabled):hover{border-color:var(--brass);color:var(--oyster)}
   .rail-foot{padding:14px 18px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted-2);
     font-family:var(--mono);letter-spacing:.04em}
   .rail-link{display:block;margin-bottom:11px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;
@@ -610,6 +620,10 @@
       </div>
 
       <div class="subpanel" id="sub-housing">
+        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Who stays in housing</div>
+        <p class="lc-desc" style="margin:0 0 12px">The full crew — tap a person to toggle whether they stay in the Water Mill house.</p>
+        <div id="housing-roster" class="housing-roster"></div>
+        <div class="meta-line" style="margin:12px 0 22px"><span id="housing-count">—</span></div>
         <div class="eyebrow" style="margin-bottom:8px">House details</div>
         <div class="hd editable-disp" id="house-info"></div>
         <div class="editor-wrap" id="house-editor"></div>
@@ -1562,6 +1576,23 @@ function renderStaff(){
   </tr>`).join('');
   document.getElementById('staff-table').innerHTML = head+`<tbody>${body}</tbody>`;
 }
+function renderHousingRoster(){
+  const wrap=document.getElementById('housing-roster'); if(!wrap) return;
+  const admin=document.body.classList.contains('is-admin');
+  const stays = r => String(r[3]||'').trim().toLowerCase()==='yes';
+  wrap.innerHTML = CONTENT.staff.map((r,i)=>`<div class="hr-row ${stays(r)?'in':''}">
+    <div class="hr-who"><span class="hr-name">${r[0]==='TBD'?'<span class="tbd">TBD</span>':esc(r[0]||'—')}</span><span class="hr-role">${esc(r[1]||'')}</span></div>
+    <button class="hr-toggle ${stays(r)?'in':'out'}" data-i="${i}" ${admin?'':'disabled'} title="${admin?'Toggle housing':'Sign in as admin to change'}">${stays(r)?'🏠 Stays in housing':'Not in housing'}</button>
+  </div>`).join('');
+  const n=CONTENT.staff.filter(stays).length, total=CONTENT.staff.length;
+  const c=document.getElementById('housing-count'); if(c) c.innerHTML=`<b>${n}</b> staying in housing · <b>${total-n}</b> not`;
+  if(admin) wrap.querySelectorAll('.hr-toggle').forEach(b=>b.addEventListener('click',async()=>{
+    const i=+b.dataset.i;
+    CONTENT.staff[i][3] = stays(CONTENT.staff[i]) ? 'No' : 'Yes';
+    const e=await saveContent('staff'); if(e){ alert('Could not save housing change.'); }
+    renderHousingRoster(); renderStaff();
+  }));
+}
 function renderOps(){
   const head = `<thead><tr><th>Person</th><th>Coverage role</th><th>Notes</th></tr></thead>`;
   const body = OPS.map(r=>`<tr><td class="role-cell">${r[0]}</td><td>${r[1]}</td><td class="note-row">${r[2]}</td></tr>`).join('');
@@ -2505,6 +2536,7 @@ function enterHub(sess){
   document.body.classList.toggle('is-admin', !!sess.admin);
   document.getElementById('me-mail').textContent=sess.email;
   renderAccess();
+  if(typeof renderHousingRoster==='function') renderHousingRoster();
   hydrateRoster().then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
   showTab('dashboard');
@@ -2635,13 +2667,13 @@ async function authInit(){
 
 /* =================== INIT =================== */
 renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
-renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderOps(); renderSummary();
+renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();
-  renderRoster(); renderHousing(); renderHouseInfo(); renderStaff();
+  renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster();
   renderWorkstreams('All'); renderEvents(); buildAllEditors();
 });
 hydrateRoster().then(()=>{ renderAtt(); renderTech(); renderRosterTab(); });

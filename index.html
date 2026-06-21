@@ -78,6 +78,9 @@
   .nav-item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
     background:var(--brass);border-radius:0 3px 3px 0}
   .nav-item .ext{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--muted-2)}
+  .nav-item .wip{margin-left:auto;font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:6px;padding:1px 5px}
+  .wip-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:7px;padding:3px 9px;vertical-align:middle;margin-left:8px;white-space:nowrap}
+  .wip-banner{margin:6px 0 14px;background:rgba(226,101,74,.12);border:1px solid var(--coral);border-radius:10px;padding:11px 14px;color:var(--coral);font-size:13.5px}
   .rail-foot{padding:14px 18px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted-2);
     font-family:var(--mono);letter-spacing:.04em}
 
@@ -504,23 +507,23 @@
       <div class="sub">Summer 2026 · 9 weeks · East Hampton</div>
     </div>
     <nav class="nav" id="nav">
-      <div class="nav-label">Command</div>
       <button class="nav-item active" data-tab="dashboard">Dashboard</button>
-      <button class="nav-item" data-tab="staffing">Staffing</button>
+      <div class="nav-label">Rostering</div>
+      <button class="nav-item" data-tab="staffing">Staff Roster</button>
+      <button class="nav-item" data-tab="roster">Weekly Roster</button>
       <button class="nav-item" data-tab="attendance">Attendance</button>
-      <button class="nav-item" data-tab="roster">Students</button>
       <button class="nav-item" data-tab="dismissal">Dismissal</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item" data-tab="weekly">Weekly Supplies</button>
       <button class="nav-item" data-tab="supplies">Supplies &amp; Packing<span class="ext">live ↗</span></button>
-      <div class="nav-label">Reference</div>
       <button class="nav-item" data-tab="workstreams">Task List</button>
       <button class="nav-item" data-tab="events">Events Team</button>
       <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="newsletter">Newsletter</button>
+      <div class="nav-label">Parent Comms</div>
+      <button class="nav-item" data-tab="newsletter">Parent Newsletter<span class="wip">in progress</span></button>
       <button class="nav-item" data-tab="family">Family Hub</button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only" data-tab="access">Access</button>
@@ -865,7 +868,8 @@
     <!-- ===== NEWSLETTER ===== -->
     <section class="view" id="view-newsletter" hidden>
       <div class="eyebrow">Families · Parent-facing</div>
-      <h1 class="page-title">Parent newsletter</h1>
+      <h1 class="page-title">Parent newsletter <span class="wip-tag">In progress · test only</span></h1>
+      <div class="wip-banner">⚠ This page is a work in progress and currently for testing only — anything posted here is sample content, not a live parent newsletter yet.</div>
       <p class="page-lead">Highlights, photos, and reminders for families. Admins post here; parents read it at the public link below — no password needed.</p>
 
       <div class="embed-head">
@@ -2388,7 +2392,7 @@ async function fhDelShout(id){
 
 /* =================== TAB NAV =================== */
 const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','family','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staffing',attendance:'Attendance',roster:'Students',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Newsletter',family:'Family Hub',access:'Access'};
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });

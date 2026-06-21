@@ -2483,6 +2483,12 @@ async function dbCheckAccess(email){
 }
 function isAdmin(){ return !!(SESSION && SESSION.admin); }
 function refreshAdminState(){ document.body.classList.toggle('is-admin', isAdmin()); }
+/* Is this email explicitly on the access list (used to allow non-domain exceptions)? */
+async function dbIsListed(email){
+  email=(email||'').toLowerCase();
+  if(SUPA){ const { data } = await SB.from('allowed_emails').select('email').eq('email', email).maybeSingle(); return !!data; }
+  return !!getAllowLocal().find(x=>x.email.toLowerCase()===email);
+}
 
 function enterHub(sess){
   SESSION = sess;
@@ -2509,7 +2515,8 @@ async function gateSubmit(){
   const email=(document.getElementById('gate-email').value||'').trim().toLowerCase();
   const msg=document.getElementById('gate-msg');
   if(!email||!email.includes('@')){ msg.className='gate-msg err'; msg.textContent='Enter your work email.'; return; }
-  if(!domainOk(email)){ msg.className='gate-msg err'; msg.textContent='Use your @alpha.school or @trilogy.com email.'; return; }
+  // @alpha.school / @trilogy.com always eligible; other domains only if listed as an exception
+  if(!domainOk(email) && !(await dbIsListed(email))){ msg.className='gate-msg err'; msg.textContent='Use your @alpha.school or @trilogy.com email — or ask Zara to add you as an exception.'; return; }
   if(NEEDS_LOGIN){
     msg.className='gate-msg'; msg.textContent='Sending your sign-in link…';
     const { error } = await SB.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } });
@@ -2550,7 +2557,7 @@ async function renderAccess(){
   const head=`<thead><tr><th>Email</th><th>Role</th><th>Admin</th><th></th></tr></thead>`;
   const body=a.map((u)=>`<tr>
     <td class="role-cell">${esc(u.email)}</td>
-    <td>${u.owner?'<span class="pill ok">Owner</span>':(u.admin?'<span class="pill">Admin</span>':'<span class="pill">Member</span>')}</td>
+    <td>${u.owner?'<span class="pill ok">Owner</span>':(u.admin?'<span class="pill">Admin</span>':(domainOk(u.email)?'<span class="pill">Member</span>':'<span class="pill">Exception</span>'))}</td>
     <td>${u.owner?'<span class="blank">—</span>':`<button class="health-toggle ${u.admin?'flag':''}" data-act="admin" data-email="${escAttr(u.email)}" data-admin="${u.admin?1:0}">${u.admin?'Admin ✓':'Make admin'}</button>`}</td>
     <td>${u.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove" data-email="${escAttr(u.email)}" title="Remove">×</button>`}</td>
   </tr>`).join('');
@@ -2567,7 +2574,8 @@ async function renderAccess(){
 async function addEmailHandler(){
   const email=(document.getElementById('add-email').value||'').trim().toLowerCase();
   const m=document.getElementById('add-msg');
-  if(!domainOk(email)){ m.className='gate-msg err'; m.textContent='Must be an @alpha.school or @trilogy.com email.'; return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ m.className='gate-msg err'; m.textContent='Enter a valid email address.'; return; }
+  if(!domainOk(email)) m.title='Outside @alpha.school / @trilogy.com — added as an exception.';
   const cur=await dbGetAllow();
   if(cur.find(x=>x.email.toLowerCase()===email)){ m.className='gate-msg err'; m.textContent='Already on the list.'; return; }
   const err=await dbAddAllow(email);

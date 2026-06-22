@@ -893,8 +893,9 @@
           <span class="pill" id="sl-status">—</span>
           <a class="btn ghost" id="sl-open" href="#" target="_blank" rel="noopener" hidden style="margin-left:auto">Open in Slack ↗</a>
         </div>
+        <p class="page-lead" id="sl-defnote" style="margin:0 0 10px"></p>
         <label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-weight:600;margin-bottom:8px">
-          <input type="checkbox" id="sl-all" checked> Select all staff
+          <input type="checkbox" id="sl-all"> Select all
         </label>
         <div id="sl-staff" class="grid g2"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
@@ -2265,16 +2266,43 @@ async function loadSlack(){
 function slSelectedEmails(){
   return [...document.querySelectorAll('#sl-staff input[type=checkbox]:checked')].map(c=>c.value);
 }
+// Always include these people in every week's channel, on top of the roster.
+const SLACK_ALWAYS=['Zara','Kate','Robbie','Alice','Tasha','Nancy','Jim','Arthur Michel'];
+// Default the week's channel to roster staff (excluding guide-role staff) + the always list.
+function slackDefaultEmails(week, staff){
+  const set=new Set(); const unresolved=[];
+  ROSTER.forEach(rrow=>{
+    if(/guide/i.test(rrow.role)) return;                 // guides are not in this channel
+    const cell=String(rrow.cells[week-1]||'').trim();
+    if(!cell || /^(tbd|n\/a|—|-)$/i.test(cell)) return;
+    cell.split(/\s+(?:and|&)\s+|\s*,\s*/i).forEach(tok=>{
+      tok=tok.trim(); if(!tok) return;
+      const p=resolveStaffName(tok, staff);
+      if(p&&p.email) set.add(p.email.toLowerCase()); else unresolved.push(tok);
+    });
+  });
+  SLACK_ALWAYS.forEach(n=>{ const p=resolveStaffName(n, staff); if(p&&p.email) set.add(p.email.toLowerCase()); else unresolved.push(n); });
+  return {set, unresolved:[...new Set(unresolved)]};
+}
 async function renderSlack(){
   const week=Number(document.getElementById('sl-week').value);
   const all=await dbGetAllow();
-  const staff=all.filter(u=>u.category==='staff').sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+  const {set:defEmails, unresolved}=slackDefaultEmails(week, all);
+  // Show all staff-category people, plus anyone in the default set (even if categorized external).
+  const byEmail=new Map();
+  all.filter(u=>u.category==='staff').forEach(u=>byEmail.set(u.email.toLowerCase(),u));
+  all.forEach(u=>{ if(defEmails.has(u.email.toLowerCase())) byEmail.set(u.email.toLowerCase(),u); });
+  const people=[...byEmail.values()].sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
   const box=document.getElementById('sl-staff');
-  box.innerHTML=staff.map(u=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:4px 0">
-      <input type="checkbox" value="${escAttr(u.email)}" checked>
+  box.innerHTML=people.map(u=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:4px 0">
+      <input type="checkbox" value="${escAttr(u.email)}" ${defEmails.has(u.email.toLowerCase())?'checked':''}>
       <span>${esc(u.name||u.email)}${u.name?` <span style="color:var(--muted);font-size:12px">${esc(u.email)}</span>`:''}</span>
     </label>`).join('') || '<p class="page-lead" style="margin:0">No staff on the access list yet.</p>';
-  document.getElementById('sl-all').checked=true;
+  document.getElementById('sl-all').checked = people.length>0 && people.every(u=>defEmails.has(u.email.toLowerCase()));
+  const note=document.getElementById('sl-defnote');
+  if(note) note.innerHTML = unresolved.length
+    ? `Defaulted to this week's roster (excluding guides) + the standing group. Couldn't match an email for: <b>${unresolved.map(esc).join(', ')}</b> — add them on the Access tab with their full name to include them.`
+    : `Defaulted to this week's roster staff (excluding guides) plus the standing group. Adjust below if needed.`;
   const row=SLACK_WEEKS.find(r=>Number(r.week)===week);
   const status=document.getElementById('sl-status'), open=document.getElementById('sl-open'), create=document.getElementById('sl-create');
   if(row){

@@ -843,7 +843,7 @@
           <h3>Add someone</h3>
           <p style="margin-bottom:14px">They'll be able to sign in with this email.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <input class="cell-input" id="add-email" placeholder="name@alpha.school" style="flex:1;min-width:180px">
+            <textarea class="cell-input" id="add-email" rows="2" placeholder="name@alpha.school — paste several, separated by commas, spaces, or new lines" style="flex:1;min-width:180px;resize:vertical"></textarea>
             <button class="btn" id="add-email-btn">Add</button>
           </div>
           <p class="gate-msg" id="add-msg" style="margin-top:9px"></p>
@@ -2647,15 +2647,32 @@ async function renderAccess(){
   }));
 }
 async function addEmailHandler(){
-  const email=(document.getElementById('add-email').value||'').trim().toLowerCase();
   const m=document.getElementById('add-msg');
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ m.className='gate-msg err'; m.textContent='Enter a valid email address.'; return; }
-  if(!domainOk(email)) m.title='Outside @alpha.school / @trilogy.com — added as an exception.';
+  const raw=(document.getElementById('add-email').value||'');
+  const parts=raw.split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  if(!parts.length){ m.className='gate-msg err'; m.textContent='Enter one or more email addresses.'; return; }
+  const valid=[], invalid=[], seen=new Set();
+  parts.forEach(e=>{
+    if(seen.has(e)) return; seen.add(e);
+    if(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) valid.push(e); else invalid.push(e);
+  });
   const cur=await dbGetAllow();
-  if(cur.find(x=>x.email.toLowerCase()===email)){ m.className='gate-msg err'; m.textContent='Already on the list.'; return; }
-  const err=await dbAddAllow(email);
-  if(err){ m.className='gate-msg err'; m.textContent=err.message||'Could not add.'; return; }
-  document.getElementById('add-email').value=''; m.className='gate-msg ok'; m.textContent='Added ✓'; renderAccess();
+  const existing=new Set(cur.map(x=>x.email.toLowerCase()));
+  let added=0, dup=0; const failed=[];
+  for(const e of valid){
+    if(existing.has(e)){ dup++; continue; }
+    const err=await dbAddAllow(e);
+    if(err){ failed.push(e); } else { added++; existing.add(e); }
+  }
+  const bits=[];
+  if(added) bits.push(`Added ${added}`);
+  if(dup) bits.push(`${dup} already listed`);
+  if(invalid.length) bits.push(`${invalid.length} invalid`);
+  if(failed.length) bits.push(`${failed.length} failed`);
+  m.className='gate-msg '+(added && !invalid.length && !failed.length ? 'ok' : (added ? 'ok' : 'err'));
+  m.textContent=(bits.join(' · ')||'Nothing to add.')+(invalid.length?' — check: '+invalid.slice(0,3).join(', ')+(invalid.length>3?'…':''):'');
+  if(added){ document.getElementById('add-email').value=''; }
+  renderAccess();
 }
 async function googleSignIn(){
   const msg=document.getElementById('gate-msg');
@@ -2675,7 +2692,7 @@ async function authInit(){
   document.getElementById('signout').addEventListener('click',signOut);
   document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ if(SUPA) return; setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
   document.getElementById('add-email-btn').addEventListener('click',addEmailHandler);
-  document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter') addEmailHandler(); });
+  document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); addEmailHandler(); } });
 
   if(GOOGLE_GATE){
     const g=document.getElementById('gate-google'); const ord=document.getElementById('gate-or');

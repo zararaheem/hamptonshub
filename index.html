@@ -1050,7 +1050,7 @@ const CONFIG = {
   mode: 'supabase',
   googleAuth: true,            // true → "Sign in with Google", gated to whitelisted emails (needs Google provider enabled in Supabase)
   magicLink: false,            // true → magic-link email login. false → shared-password gate below.
-  accessPassword: 'hamptons26', // shared staff password fallback (kept until Google sign-in is verified, then can be removed)
+  accessPassword: '',          // shared staff password fallback — empty = Google sign-in only
   supabaseUrl: 'https://zbduxegkxhgyfvrfkgai.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZHV4ZWdreGhneWZ2cmZrZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTIzOTUsImV4cCI6MjA5MzIyODM5NX0.pTdpdvjkaWFPQdRm7k0xqtAxcUsMo015qRH2_H4spOk'
 };
@@ -2557,7 +2557,7 @@ function enterHub(sess){
 async function signOut(){
   SESSION=null;
   store.set('session',null);
-  if(NEEDS_LOGIN){ try{ await SB.auth.signOut(); }catch(e){} }
+  if(NEEDS_LOGIN || GOOGLE_GATE){ try{ await SB.auth.signOut(); }catch(e){} }
   document.body.classList.add('locked');
   document.body.classList.remove('is-admin');
   const e=document.getElementById('gate-email'); if(e) e.value='';
@@ -2659,6 +2659,13 @@ async function authInit(){
     const g=document.getElementById('gate-google'); const ord=document.getElementById('gate-or');
     if(g){ g.style.display='flex'; g.addEventListener('click', googleSignIn); }
     if(ord && PASSWORD_GATE) ord.style.display='flex';
+    if(!PASSWORD_GATE){
+      // Google-only — hide the manual email / password entry
+      [document.getElementById('gate-email'), document.querySelector('label[for="gate-email"]'),
+       document.getElementById('gate-pass'), document.getElementById('gate-pass-label'),
+       document.getElementById('gate-go')].forEach(el=>{ if(el) el.style.display='none'; });
+      const gp=document.querySelector('.gate-card .gp'); if(gp) gp.innerHTML='Staff access only. Sign in with your approved Google account — only emails on the list get in.';
+    }
     const banner=document.getElementById('demo-banner');
     if(banner) banner.textContent='Protected sign-in — staff sign in with their approved Google account; only whitelisted emails get in. Not on the list? Reach out to Zara (zara.raheem@alpha.school).';
     const note=document.getElementById('access-note');
@@ -2669,6 +2676,7 @@ async function authInit(){
     }catch(e){}
     SB.auth.onAuthStateChange(async (_ev, sess)=>{ if(sess && sess.user && sess.user.email && !SESSION){ await tryEnter(sess.user.email); } });
     if(SESSION) return;  // already signed in via Google
+    if(!PASSWORD_GATE){ document.body.classList.add('locked'); return; }  // Google-only: no other gate
   }
 
   if(NEEDS_LOGIN){

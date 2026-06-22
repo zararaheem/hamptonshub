@@ -44,6 +44,9 @@
   .pill{display:inline-block;background:#eef6f5;color:var(--teal);border:1px solid #cfe6e3;border-radius:8px;padding:3px 9px;font-size:14px;font-weight:600;margin:2px 4px 2px 0}
   .note{background:#fbf4e8;border:1px solid #ecd9b4;border-radius:10px;padding:11px 14px;font-size:14.5px;color:#6b5320;margin:8px 0}
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
+  .contact-role{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:5px}
+  .contact-person{font-size:15.5px;color:#33414e;margin:3px 0}
+  .contact-note{font-size:13.5px;color:var(--muted);margin-top:9px}
   .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
   @media(max-width:520px){ .hero h1{font-size:30px} .card{padding:6px 18px} }
   /* jump-to section nav */
@@ -154,12 +157,18 @@
         <div class="qa"><h3>What should my child wear?</h3><p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for the pool and beach but not for the general day.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">
-        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p>${coordContact}${urgent?`<br><br>${urgent}`:''}</p></div>
-        <div class="qa"><h3>Admissions &amp; questions about Alpha — Nancy Torvund, Director of Admissions</h3><p>${emailA('nancy.torvund@alpha.school')}</p></div>
-        <div class="qa"><h3>Academic &amp; life-skills questions — ${esc(hgName)}, Head Guide</h3><p>${emailA(hgEmail)}</p></div>
-        <div class="qa"><h3>Anything else — Dr. Tasha Arnold, Head of Schools</h3><p>${emailA('tasha.arnold@alpha.school')}</p></div>
-      </div>`;
+      const contacts=[
+        {role:'Logistics — lunch, bussing, attendance', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent},
+        {role:'Admissions &amp; questions about Alpha', people:[{name:'Nancy Torvund, Director of Admissions', email:'nancy.torvund@alpha.school'}]},
+        {role:'Academic &amp; life-skills questions', people:[{name:hgName+', Head Guide', email:hgEmail}]},
+        {role:'Anything else', people:[{name:'Dr. Tasha Arnold, Head of Schools', email:'tasha.arnold@alpha.school'}]}
+      ];
+      const contactHtml = contacts.map(c=>`<div class="qa">
+        <div class="contact-role">${c.role}</div>
+        ${c.people.map(p=>`<div class="contact-person"><b>${esc(p.name)}</b> · ${emailA(p.email)}</div>`).join('')}
+        ${c.note?`<div class="contact-note">${c.note}</div>`:''}
+      </div>`).join('');
+      h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">${contactHtml}</div>`;
 
       h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
         <div class="qa"><h3>Is lunch provided?</h3><p>Yes — an organic lunch and healthy snacks throughout the day. If your child prefers a packed lunch they're welcome to bring one; please label it, as we store them in the refrigerator. ${lunch}</p></div>

@@ -2325,6 +2325,24 @@ async function loadFamGuide(){
 function fgField(label, key, val, ph){
   return `<div class="field"><label>${esc(label)}</label><input class="cell-input" data-fg="${escAttr(key)}" value="${escAttr(val||'')}" placeholder="${escAttr(ph||'')}"></div>`;
 }
+// Editable standard-copy sections — keys MUST match SEC(...) in family/index.html.
+const FG_SECTIONS=[
+  {key:'overview_intro', label:'Overview — intro'},
+  {key:'packing', label:'Daily Logistics — packing list'},
+  {key:'wear', label:'Daily Logistics — what to wear'},
+  {key:'lunch_provided', label:'Lunch — is lunch provided'},
+  {key:'lunch_allergies', label:'Lunch — allergies / dietary'},
+  {key:'swim_test', label:'Swimming — swim test'},
+  {key:'swim_safety', label:'Swimming — water safety'},
+  {key:'swim_bring', label:'Swimming — what to bring'},
+  {key:'ticks', label:'Health — ticks & mosquitoes'},
+  {key:'sun', label:'Health — sun protection'},
+  {key:'meds', label:'Health — medications'},
+  {key:'learning_model', label:'Learning — guide model'},
+  {key:'bus_available', label:'Bus — service available'},
+  {key:'bus_dropoff', label:'Bus — drop-off / pickup'},
+  {key:'timeback_intro', label:'Additional Resources — TimeBack intro'},
+];
 function renderFamGuideForm(){
   const sel=document.getElementById('fg-week'), wrap=document.getElementById('fg-editor');
   if(!sel||!wrap) return;
@@ -2340,7 +2358,7 @@ function renderFamGuideForm(){
         <button class="btn ghost" id="fg-copy">Copy family link</button>
       </div>
       <div class="grid g2">
-        ${fgField('Access code','access_code',w.access_code,'HamptonsWk1')}
+        ${fgField('Access code','access_code',w.access_code,'hamptonswk1')}
         ${fgField('Week dates','dates',w.dates,'Jun 29 – Jul 3')}
         ${fgField('Campus coordinator(s)','coordinators',w.coordinators,'Julianne & Zara')}
         ${fgField('Coordinator emails','coord_emails',w.coord_emails)}
@@ -2360,6 +2378,11 @@ function renderFamGuideForm(){
         ${fgField('Showcase location map URL','friday_showcase_loc_url',w.friday_showcase_loc_url)}
       </div>
       <div class="field"><label>Custom note (optional — shows at the top)</label><textarea class="cell-input" data-fg="custom_note" rows="2" style="resize:vertical">${esc(w.custom_note||'')}</textarea></div>
+      <details style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 14px">
+        <summary style="cursor:pointer;font-weight:600">Edit section wording (optional, per week)</summary>
+        <p class="page-lead" style="margin:8px 0 10px">Leave a box blank to use the standard text. Plain text — blank lines start a new paragraph; lines starting with "- " become bullets. Links and emails become clickable automatically.</p>
+        ${FG_SECTIONS.map(s=>`<div class="field"><label>${esc(s.label)}</label><textarea class="cell-input" data-sec="${escAttr(s.key)}" rows="2" style="resize:vertical" placeholder="Using the standard wording">${esc((w.sections&&w.sections[s.key])||'')}</textarea></div>`).join('')}
+      </details>
       <div style="margin-top:12px"><button class="btn" id="fg-save">Save Week ${esc(w.week)}</button> <span class="gate-msg" id="fg-msg" style="margin-left:8px"></span></div>
     </div>`;
   document.getElementById('fg-copy').addEventListener('click',()=>{
@@ -2370,8 +2393,12 @@ function renderFamGuideForm(){
   document.getElementById('fg-save').addEventListener('click',async()=>{
     const m=document.getElementById('fg-msg'); const patch={};
     wrap.querySelectorAll('[data-fg]').forEach(el=>{ patch[el.dataset.fg]=el.value; });
+    const sections={};
+    wrap.querySelectorAll('[data-sec]').forEach(el=>{ const v=el.value.trim(); if(v) sections[el.dataset.sec]=v; });
+    patch.sections=sections;
     patch.published=document.getElementById('fg-pub').checked;
-    if(!String(patch.access_code||'').trim()){ m.className='gate-msg err'; m.textContent='Access code is required.'; return; }
+    patch.access_code=String(patch.access_code||'').trim().toLowerCase();
+    if(!patch.access_code){ m.className='gate-msg err'; m.textContent='Access code is required.'; return; }
     const err=await dbSaveFamilyWeek(w.week, patch);
     if(err){ m.className='gate-msg err'; m.textContent=(err.message&&/duplicate|unique/i.test(err.message))?'That access code is already used by another week.':(err.message||'Save failed'); return; }
     Object.assign(w, patch);

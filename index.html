@@ -509,11 +509,8 @@
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.68-3.89 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
       Continue with Google
     </button>
-    <div class="gate-or" id="gate-or" style="display:none">or staff password</div>
     <label for="gate-email">Work email</label>
     <input id="gate-email" type="email" autocomplete="email" placeholder="you@alpha.school" />
-    <label for="gate-pass" id="gate-pass-label">Staff password</label>
-    <input id="gate-pass" type="password" autocomplete="current-password" placeholder="••••••••" />
     <button class="btn" id="gate-go">Continue</button>
     <p class="gate-msg" id="gate-msg"></p>
     <div class="gate-foot">Access is managed by Zara Raheem.</div>
@@ -1049,8 +1046,7 @@
 const CONFIG = {
   mode: 'supabase',
   googleAuth: true,            // true → "Sign in with Google", gated to whitelisted emails (needs Google provider enabled in Supabase)
-  magicLink: false,            // true → magic-link email login. false → shared-password gate below.
-  accessPassword: 'hamptons26', // shared staff password fallback — TEMPORARY while Google is being set up; remove (set '') for Google-only
+  magicLink: false,            // true → magic-link email login (optional). Sign-in is Google-only by default.
   supabaseUrl: 'https://qwmetffzspobjamwwhca.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs'
 };
@@ -1063,7 +1059,7 @@ try {
 } catch(e){ console.warn('Supabase init failed — falling back to local preview gate:', e); SUPA = false; }
 const GOOGLE_GATE = SUPA && CONFIG.googleAuth === true;  // "Sign in with Google", whitelist-gated
 const NEEDS_LOGIN = SUPA && CONFIG.magicLink === true;  // magic-link email login
-const PASSWORD_GATE = !NEEDS_LOGIN && !!CONFIG.accessPassword;  // shared-password gate (fallback)
+const PASSWORD_GATE = false;  // staff-password fallback removed — sign-in is Google-only
 
 /* =================== DATA =================== */
 const WEEKS = [
@@ -2577,15 +2573,6 @@ async function gateSubmit(){
     msg.className='gate-msg ok'; msg.textContent='Check your email for a one-time sign-in link ✉️';
     return;
   }
-  if(PASSWORD_GATE){
-    const pass=(document.getElementById('gate-pass')||{}).value||'';
-    if(pass!==CONFIG.accessPassword){ msg.className='gate-msg err'; msg.textContent='Wrong staff password — ask Zara.'; return; }
-    let acc; try{ acc=await dbCheckAccess(email); }catch(e){ acc={allowed:false}; }
-    if(!acc || !acc.allowed){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — reach out to Zara (zara.raheem@alpha.school) to get added."; return; }
-    msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
-    setTimeout(()=>enterHub({email, admin:!!acc.admin, owner:!!acc.owner}),200);
-    return;
-  }
   const acc = await dbCheckAccess(email);
   if(!acc.allowed){ msg.className='gate-msg err'; msg.textContent="You're not on the access list yet — reach out to Zara (zara.raheem@alpha.school) to get added."; return; }
   msg.className='gate-msg ok'; msg.textContent='Welcome aboard ⚓';
@@ -2596,8 +2583,11 @@ async function tryEnter(email){
   if(acc.allowed){ enterHub({email, ...acc}); return; }
   document.body.classList.add('locked');
   const msg=document.getElementById('gate-msg');
-  if(msg){ msg.className='gate-msg err'; msg.textContent='Signed in as '+email+", but you're not on the access list yet — ask Zara to add you."; }
-  if(SUPA){ try{ await SB.auth.signOut(); }catch(e){} }
+  if(msg){ msg.className='gate-msg err'; msg.textContent='Successfully signed in as "'+email+'", but you’re not on the access list yet — Reach out to Zara to add you'; }
+  if(SUPA){
+    try{ await SB.functions.invoke('notify-denied'); }catch(e){}  // alert admins (Slack) before we drop the session
+    try{ await SB.auth.signOut(); }catch(e){}
+  }
 }
 async function renderAccess(){
   const seg=document.getElementById('mode-seg');

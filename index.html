@@ -1257,6 +1257,35 @@ async function hydrateRoster(){
     ROSTER_DATA = store.get(rosterLocalKey()) || seedLocalRoster();
   }
 }
+/* ---- Shared key/value state (attendance, tech, supplies), synced via the app_state table ---- */
+let STATE_CACHE = {};
+async function hydrateState(){
+  if(!SUPA){ return; }
+  try{
+    const { data, error } = await SB.from('app_state').select('key,data');
+    if(error){ console.warn('state load failed:', error); return; }
+    STATE_CACHE = {};
+    (data||[]).forEach(r=>{ STATE_CACHE[r.key] = r.data; });
+  }catch(e){ console.warn('state load failed:', e); }
+}
+async function refreshStateKey(key){
+  if(!SUPA){ return; }
+  try{
+    const { data, error } = await SB.from('app_state').select('data').eq('key', key).maybeSingle();
+    if(error){ console.warn('state refresh failed:', error); return; }
+    STATE_CACHE[key] = data ? data.data : undefined;
+  }catch(e){ console.warn('state refresh failed:', e); }
+}
+function stateGet(key){ return SUPA ? STATE_CACHE[key] : store.get(key); }
+function stateSet(key, val){
+  if(SUPA){
+    STATE_CACHE[key] = val;
+    SB.from('app_state').upsert({ key, data: val, updated_at: new Date().toISOString() })
+      .then(({ error })=>{ if(error) console.warn('state save failed:', error); });
+  } else {
+    store.set(key, val);
+  }
+}
 function nextSort(w){ return (ROSTER_DATA[+w]||[]).reduce((m,s)=>Math.max(m,s.sort_order||0), -1) + 1; }
 function findStudent(id){ for(const w in ROSTER_DATA){ const s=ROSTER_DATA[w].find(x=>x.id===id); if(s) return s; } return null; }
 async function dbAddStudent(week, first, last, grade){
@@ -1692,14 +1721,14 @@ function renderGuideWeeks(){
 /* =================== ATTENDANCE =================== */
 const ATT_STATES = {p:'sel-p', l:'sel-l', a:'sel-a'};
 function attKey(){ return `att:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
-function loadAtt(){ return store.get(attKey()) || {}; }
-function saveAtt(data){ store.set(attKey(), data); flashSaved(); }
+function loadAtt(){ return stateGet(attKey()) || {}; }
+function saveAtt(data){ stateSet(attKey(), data); flashSaved(); }
 function flashSaved(){
   const el=document.getElementById('att-saved');
   el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
 function curWeek(){ return document.getElementById('att-week').value; }
-async function refreshAtt(){ if(SUPA){ await hydrateRoster(); } renderAtt(); }
+async function refreshAtt(){ if(SUPA){ await hydrateRoster(); await refreshStateKey(attKey()); } renderAtt(); }
 function renderAtt(){
   const data = loadAtt();
   const list = document.getElementById('att-list');
@@ -1821,7 +1850,7 @@ function attInit(){
   const dateEl=document.getElementById('att-date');
   // default to next active week's Monday, else today
   dateEl.value = WEEKS[NOW].start;
-  dateEl.addEventListener('change',()=>{ renderAtt(); });
+  dateEl.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(attKey()); renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
     const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]='p'); saveAtt(d); renderAtt();
@@ -1965,8 +1994,8 @@ function renderRefs(){
 /* =================== TECH ONBOARDING =================== */
 function techWeek(){ return document.getElementById('tech-week').value; }
 function techKey(){ return `tech:w${techWeek()}`; }
-function loadTech(){ return store.get(techKey()) || {}; }
-function saveTech(d){ store.set(techKey(), d); flash('tech-saved'); }
+function loadTech(){ return stateGet(techKey()) || {}; }
+function saveTech(d){ stateSet(techKey(), d); flash('tech-saved'); }
 function renderTech(){
   const d = loadTech();
   const studs = studentsForWeek(techWeek());
@@ -2024,7 +2053,7 @@ function techExport(){
 }
 function techInit(){
   fillWeekSelect(document.getElementById('tech-week'));
-  document.getElementById('tech-week').addEventListener('change',async ()=>{ if(SUPA) await hydrateRoster(); renderTech(); });
+  document.getElementById('tech-week').addEventListener('change',async ()=>{ if(SUPA){ await hydrateRoster(); await refreshStateKey(techKey()); } renderTech(); });
   document.getElementById('tech-export').addEventListener('click',techExport);
   renderTech();
 }
@@ -2159,11 +2188,11 @@ function rosterInit(){
 /* =================== WEEKLY SUPPLIES =================== */
 function supKey(){ return `supplies:w${document.getElementById('sup-week').value}`; }
 function loadSup(){
-  let d = store.get(supKey());
-  if(!d){ d = SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",done:false})); store.set(supKey(), d); }
+  let d = stateGet(supKey());
+  if(!d){ d = SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",done:false})); }
   return d;
 }
-function saveSup(d){ store.set(supKey(), d); }
+function saveSup(d){ stateSet(supKey(), d); }
 function renderSup(){
   const d = loadSup(); const list=document.getElementById('sup-list');
   list.innerHTML = d.length ? d.map((it,i)=>`
@@ -2198,7 +2227,7 @@ function supInit(){
   const sel=document.getElementById('sup-week');
   sel.innerHTML = WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
   sel.value = WEEKS[NOW].n;
-  sel.addEventListener('change',renderSup);
+  sel.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(supKey()); renderSup(); });
   document.getElementById('sup-add').addEventListener('click',()=>{
     const nm=document.getElementById('sup-new').value.trim(); if(!nm) return;
     const qt=document.getElementById('sup-newqty').value.trim();
@@ -2449,6 +2478,9 @@ function showTab(t){
   if(t==='family') loadFamily();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
+  if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
+  if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
+  if(t==='weekly' && SUPA){ refreshStateKey(supKey()).then(renderSup); }
   closeRail();
   window.scrollTo({top:0});
 }
@@ -2546,7 +2578,7 @@ function enterHub(sess){
   document.getElementById('me-mail').textContent=sess.email;
   renderAccess();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
-  hydrateRoster().then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); });
+  Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
   showTab('dashboard');
 }
@@ -2716,7 +2748,7 @@ loadContent().then(()=>{
   renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster();
   renderWorkstreams('All'); renderEvents(); buildAllEditors();
 });
-hydrateRoster().then(()=>{ renderAtt(); renderTech(); renderRosterTab(); });
+Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ renderAtt(); renderTech(); renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
 </script>
 </body>
 </html>

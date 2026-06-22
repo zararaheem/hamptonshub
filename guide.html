@@ -46,6 +46,21 @@
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
   .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
   @media(max-width:520px){ .hero h1{font-size:30px} .card{padding:6px 18px} }
+  /* jump-to section nav */
+  html{scroll-behavior:smooth}
+  .guide-layout{display:flex;gap:26px;align-items:flex-start}
+  .guide-toc{position:sticky;top:16px;flex:0 0 168px;display:flex;flex-direction:column;gap:2px;font-size:13.5px}
+  .guide-toc .toc-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:6px}
+  .guide-toc a{color:var(--muted);text-decoration:none;padding:5px 9px;border-radius:8px;border-left:2px solid transparent;line-height:1.3}
+  .guide-toc a:hover{color:var(--navy);background:var(--panel);border-left-color:var(--brass)}
+  .guide-body{flex:1;min-width:0}
+  .sec-head{scroll-margin-top:16px}
+  @media(max-width:760px){
+    .guide-layout{display:block}
+    .guide-toc{position:sticky;top:0;z-index:5;flex-direction:row;overflow-x:auto;background:var(--sand);padding:9px 0;margin:0 0 10px;gap:6px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+    .guide-toc .toc-label{display:none}
+    .guide-toc a{white-space:nowrap;border:1px solid var(--line);border-left:1px solid var(--line);background:var(--panel)}
+  }
 </style>
 </head>
 <body>
@@ -187,8 +202,17 @@
         <iframe src="assets/timeback-parent-guide.pdf" title="TimeBack Parent Guide" loading="lazy" style="width:100%;height:560px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:4px 0 8px"></iframe>
       </div>`;
 
+      // build a "jump to" nav from the section headings
+      let _i=0; const toc=[];
+      h = h.replace(/<div class="sec-head"><h2>([\s\S]*?)<\/h2><\/div>/g, (mm, title) => {
+        const id='sec-'+(++_i);
+        toc.push('<a href="#'+id+'">'+title.replace(/<[^>]+>/g,'').trim()+'</a>');
+        return '<div class="sec-head" id="'+id+'"><h2>'+title+'</h2></div>';
+      });
+      const tocHtml = '<nav class="guide-toc"><div class="toc-label">On this page</div>'+toc.join('')+'</nav>';
       const g=document.getElementById('guide');
-      g.innerHTML=h; g.hidden=false;
+      g.innerHTML = '<div class="guide-layout">'+tocHtml+'<div class="guide-body">'+h+'</div></div>';
+      g.hidden=false;
     }
 
     async function tryUnlock(code, fromCache){

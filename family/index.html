@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
+<title>Alpha Summer · East Hampton — Family Guide</title>
+<meta name="description" content="Your weekly family guide for Alpha Summer in the Hamptons." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0e2233; --panel:#fff; --line:#e6e0d4; --ink:#1f2d3a; --muted:#5d6b78;
+    --brass:#b07a2c; --teal:#1f7a73; --teal-bright:#2aa39a; --sand:#f6f1e7; --shadow:0 8px 30px rgba(20,40,60,.10);
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.55}
+  a{color:var(--brass)}
+  .hero{background:linear-gradient(160deg,#0e2233,#143b4a);color:#fdf8ee;padding:46px 22px 40px;text-align:center}
+  .hero .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7fd4cc;margin-bottom:10px}
+  .hero h1{font-family:var(--display);font-weight:600;font-size:38px;margin:0 0 8px;line-height:1.1}
+  .hero p{margin:6px auto 0;max-width:560px;color:#cdd8de;font-size:15px}
+  .hero .wk{display:inline-block;margin-top:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:5px 14px;border-radius:999px;font-size:13px;letter-spacing:.04em}
+  .wrap{max-width:820px;margin:0 auto;padding:30px 20px 70px}
+  .gate{max-width:420px;margin:60px auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:34px 30px;box-shadow:var(--shadow);text-align:center}
+  .gate h2{font-family:var(--display);font-weight:600;font-size:24px;color:var(--navy);margin:0 0 6px}
+  .gate p{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .gate input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:16px;text-align:center;letter-spacing:.04em;margin-bottom:12px}
+  .gate button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--brass);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+  .gate .err{color:#b23b3b;font-size:13px;min-height:18px;margin-top:6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 26px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .sec-head{display:flex;align-items:baseline;gap:10px;margin:30px 4px 8px}
+  .sec-head .eyebrow{font-size:20px}
+  .sec-head h2{font-family:var(--display);font-weight:600;font-size:25px;color:var(--navy);margin:0}
+  .qa{padding:16px 0;border-bottom:1px solid var(--line)}
+  .qa:last-child{border-bottom:0}
+  .qa h3{font-size:16px;color:var(--navy);margin:0 0 7px}
+  .qa p{margin:0 0 9px;font-size:15.5px;color:#33414e}
+  .qa ul{margin:6px 0 9px;padding-left:20px}
+  .qa li{font-size:15.5px;color:#33414e;margin:3px 0}
+  .pill{display:inline-block;background:#eef6f5;color:var(--teal);border:1px solid #cfe6e3;border-radius:8px;padding:3px 9px;font-size:14px;font-weight:600;margin:2px 4px 2px 0}
+  .note{background:#fbf4e8;border:1px solid #ecd9b4;border-radius:10px;padding:11px 14px;font-size:14.5px;color:#6b5320;margin:8px 0}
+  .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
+  .contact-role{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:5px}
+  .contact-person{font-size:15.5px;color:#33414e;margin:3px 0}
+  .contact-note{font-size:13.5px;color:var(--muted);margin-top:9px}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
+  @media(max-width:520px){ .hero h1{font-size:30px} .card{padding:6px 18px} }
+  /* jump-to section nav */
+  html{scroll-behavior:smooth}
+  .guide-layout{display:flex;gap:26px;align-items:flex-start}
+  .guide-toc{position:sticky;top:16px;flex:0 0 168px;display:flex;flex-direction:column;gap:2px;font-size:13.5px}
+  .guide-toc .toc-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:6px}
+  .guide-toc a{color:var(--muted);text-decoration:none;padding:5px 9px;border-radius:8px;border-left:2px solid transparent;line-height:1.3}
+  .guide-toc a:hover{color:var(--navy);background:var(--panel);border-left-color:var(--brass)}
+  .guide-body{flex:1;min-width:0}
+  .sec-head{scroll-margin-top:16px}
+  @media(max-width:760px){
+    .guide-layout{display:block}
+    .guide-toc{position:sticky;top:0;z-index:5;flex-direction:row;overflow-x:auto;background:var(--sand);padding:9px 0;margin:0 0 10px;gap:6px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+    .guide-toc .toc-label{display:none}
+    .guide-toc a{white-space:nowrap;border:1px solid var(--line);border-left:1px solid var(--line);background:var(--panel)}
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Alpha Summer · East Hampton Experience · 2026</div>
+    <h1>Family Guide</h1>
+    <p>Everything you need to know for your child's week.</p>
+    <div id="hero-wk"></div>
+  </header>
+
+  <main class="wrap">
+    <div id="gate" class="gate">
+      <h2>Welcome, families</h2>
+      <p>Enter the access code your campus team shared with you for this week.</p>
+      <input id="code" type="text" placeholder="e.g. HamptonsWk1" autocomplete="off" autocapitalize="none" />
+      <button id="enter">View the guide</button>
+      <div class="err" id="gate-err"></div>
+    </div>
+    <div id="guide" hidden></div>
+  </main>
+
+  <div class="foot">Alpha Summer · Jewish Center of East Hampton · Questions? Reach out to your campus team.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
+    const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+    const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const mailtoList=s=>String(s||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean)
+      .map(e=>`<a href="mailto:${esc(e)}">${esc(e)}</a>`).join(' · ');
+
+    function renderGuide(w){
+      document.getElementById('hero-wk').innerHTML =
+        `<span class="wk">Week ${esc(w.week)} · ${esc(w.dates)}</span>`;
+      const coord = esc((w.coordinators||'your campus coordinator').replace(/\s*(&|and)\s*/ig,' or '));
+      const nameFromEmail = e => e.split('@')[0].split(/[._]/).filter(Boolean).map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');
+      const coordNames = esc(String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean).map(nameFromEmail).join(' & ') || (w.coordinators||''));
+      const lunch = w.lunch_menu_url
+        ? `The week's lunch menu is here: <a href="${esc(w.lunch_menu_url)}" target="_blank" rel="noopener">${esc(w.lunch_menu_label||'Lunch menu')}</a>.`
+        : `The week's lunch menu will be shared by your campus team.`;
+      const showLoc = w.friday_showcase_loc_url
+        ? `<a href="${esc(w.friday_showcase_loc_url)}" target="_blank" rel="noopener">${esc(w.friday_showcase_loc)}</a>`
+        : esc(w.friday_showcase_loc);
+      const guideTeam = (w.guide_team||'').trim();
+      const headGuide = (w.head_guide||'').trim();
+      const hgName = headGuide || 'Jenna Klemm';
+      const hgEmail = hgName.toLowerCase().trim().split(/\s+/).join('.') + '@alpha.school';
+      const emailA = (addr,label) => `<a href="mailto:${esc(addr)}">${esc(label||'Email')}</a>`;
+      const coordEmails = String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
+      const coordContact = coordEmails.length ? coordEmails.map(e=>`<b>${esc(nameFromEmail(e))}</b> — ${emailA(e)}`).join('<br>') : `<b>${coordNames}</b>`;
+      const urgent = w.coord_phones ? `For any urgent inquiries during the day, please directly contact ${esc(String(w.coord_phones).replace(/\s*·\s*/g,' or '))}.` : '';
+      // ---- Add-to-calendar helpers ----
+      const pad2 = n => String(n).padStart(2,'0');
+      const calParse = (range,dateISO) => {
+        if(!dateISO) return null;
+        const m = String(range||'').match(/(\d{1,2}):(\d{2})\s*[AP]M/gi);
+        if(!m || m.length<2) return null;
+        const to24 = s => { const x=s.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i); let h=+x[1]%12; if(/PM/i.test(x[3])) h+=12; return pad2(h)+pad2(+x[2])+'00'; };
+        const d = String(dateISO).slice(0,10).replace(/-/g,'');
+        return { s:d+'T'+to24(m[0]), e:d+'T'+to24(m[1]) };
+      };
+      const calLinks = (title,dateISO,range,details,loc) => {
+        const t = calParse(range,dateISO); if(!t) return '';
+        const g = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)
+          +'&dates='+t.s+'/'+t.e+'&ctz=America/New_York'
+          +(details?'&details='+encodeURIComponent(details):'')+(loc?'&location='+encodeURIComponent(loc):'');
+        const uid = t.s+'-'+Math.random().toString(36).slice(2,8)+'@hamptonshub';
+        const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Hamptons Hub//EN','BEGIN:VEVENT','UID:'+uid,'DTSTAMP:'+t.s,
+          'DTSTART:'+t.s,'DTEND:'+t.e,'SUMMARY:'+String(title).replace(/[,;\\]/g,' '),
+          (loc?'LOCATION:'+String(loc).replace(/[,;\\]/g,' '):''),'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+        const ich = 'data:text/calendar;charset=utf8,'+encodeURIComponent(ics);
+        return `<div style="margin-top:8px;font-size:13px"><a href="${g}" target="_blank" rel="noopener">Add to Google Calendar ↗</a> · <a href="${ich}" download="${String(title).replace(/[^a-z0-9]+/ig,'-').toLowerCase()}.ics">Download .ics</a></div>`;
+      };
+
+      let h='';
+      if((w.custom_note||'').trim()){ h+=`<div class="note">${esc(w.custom_note)}</div>`; }
+
+      h+=`<div class="sec-head"><h2>Overview</h2></div><div class="card">
+        <div class="qa"><p>This guide highlights everything you need to know for this week — logistics, packing, health &amp; safety, and what to expect each day. Keep it handy.</p></div>
+        <div class="qa"><h3>What else did my email include?</h3><p>A notice New York State requires us to share with every family: <a href="https://drive.google.com/file/d/1TaiFI9JEmUVUHJzyH693OvDy8lyiwGJ0/view" target="_blank" rel="noopener">Regulated Children's Camps in New York State — What Families Need to Know</a>.</p></div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Daily Logistics</h2></div><div class="card">
+        <div class="qa"><h3>Drop-off</h3><p><span class="pill">${esc(w.dropoff_time)}</span> at <b>${esc(w.dropoff_loc)}</b>. On the first morning, plan to arrive a few minutes early so your child can settle in.</p></div>
+        <div class="qa"><h3>Pickup</h3><p><span class="pill">${esc(w.pickup_time)}</span> at <b>${esc(w.pickup_loc)}</b>. Only adults listed on your forms may collect your child; to add someone, reach out to ${coord}. For early pickup, please notify us by <b>${esc(w.early_pickup_cutoff)}</b> at the latest.</p></div>
+        <div class="qa"><h3>What should my child pack each day?</h3><ul>
+          <li>Refillable water bottle</li><li>Hat/cap and/or sunglasses</li><li>Sunscreen (also available on-site)</li>
+          <li>A swimsuit (towels are provided) — <i>optional:</i> flip-flops to change into at the pool</li>
+          <li>Extra change of clothes for our youngest campers</li><li>Closed-toe shoes, like sneakers</li></ul></div>
+        <div class="qa"><h3>What should my child wear?</h3><p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for the pool and beach but not for the general day.</p></div>
+      </div>`;
+
+      const contacts=[
+        {role:'Logistics — lunch, bussing, attendance', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent},
+        {role:'Admissions &amp; questions about Alpha', people:[{name:'Nancy Torvund, Director of Admissions', email:'nancy.torvund@alpha.school'}]},
+        {role:'Academic &amp; life-skills questions', people:[{name:hgName+', Head Guide', email:hgEmail}]},
+        {role:'Anything else', people:[{name:'Dr. Tasha Arnold, Head of Schools', email:'tasha.arnold@alpha.school'}]}
+      ];
+      const contactHtml = contacts.map(c=>`<div class="qa">
+        <div class="contact-role">${c.role}</div>
+        ${c.people.map(p=>`<div class="contact-person"><b>${esc(p.name)}</b> · ${emailA(p.email)}</div>`).join('')}
+        ${c.note?`<div class="contact-note">${c.note}</div>`:''}
+      </div>`).join('');
+
+      h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
+        <div class="qa"><h3>Is lunch provided?</h3><p>Yes — an organic lunch and healthy snacks throughout the day. If your child prefers a packed lunch they're welcome to bring one; please label it, as we store them in the refrigerator. ${lunch}</p></div>
+        <div class="qa"><h3>Allergies or dietary restrictions?</h3><p>Please ensure your child's dietary requirements are noted in your <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">enrollment forms</a>. Questions? Message ${coord}.</p></div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Swimming &amp; Water</h2></div><div class="card">
+        <div class="qa"><h3>Is there a swim test?</h3><p>Yes — every camper takes a short swim test on Monday so our aquatics team can group children by ability and plan water activities safely.</p></div>
+        <div class="qa"><h3>How is water safety handled?</h3><p>Water activities are overseen by our aquatics team with 2 lifeguards on site, whether at the camp pool or the ocean.</p></div>
+        <div class="qa"><h3>What to bring for water days?</h3><p>A swimsuit and optional flip-flops to change into. Towels are provided.</p></div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Health &amp; Safety</h2></div><div class="card">
+        <div class="qa"><h3>Ticks &amp; mosquitoes</h3><p>We take tick prevention very seriously. In the lead up to the summer, we treated the grounds with an eco-friendly spray. The center intentionally keeps grass short, ensures there is no standing water, and we have also placed plants that act as natural deterrents. We will provide all students with long socks for outdoor activities. Families are also encouraged to apply a preferred repellent before drop-off. We also keep kid-safe repellents on-site that children may apply with your permission.</p></div>
+        <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout, and we have an on-site First Aid Professional Rescuer/nurse. As a precaution, we share the CDC's HEADS UP concussion resources:</p>
+          <ul>
+            <li><a href="https://www.cdc.gov/heads-up/" target="_blank" rel="noopener">HEADS UP — concussion overview</a></li>
+            <li><a href="https://www.cdc.gov/heads-up/guidelines/" target="_blank" rel="noopener">Returning to activities after a concussion</a></li>
+          </ul></div>
+        <div class="qa"><h3>Sun protection</h3><p>Please apply sunscreen before drop-off; we have sunscreen stations on-site and shaded spaces, and children are encouraged to reapply during the day.</p></div>
+        <div class="qa"><h3>Medications &amp; medical needs</h3><p>If your child takes medication during the day, please complete the medication form in the <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">Summer Enrollment Portal</a> and notify ${coord} at Monday drop-off so it can be stored safely. Make sure allergies, medical info, and emergency contacts are up to date before Monday. If your child is unwell, please keep them home and let our team know.</p></div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Your Child's Learning Experience</h2></div><div class="card">
+        <div class="qa"><h3>How does the guide model work?</h3><p>Your child's guide is with them every day, fully focused on students — never pulled into admin or meetings. Their role is to understand how your child thinks, what motivates them, and where they're ready to be challenged.${guideTeam?` This week's guide team: <b>${esc(guideTeam)}</b>.`:''}</p></div>
+        <div class="qa"><h3>What will I receive at the end of the week?</h3><ul>
+          <li><b>MAP insights</b> — MAP (Measures of Academic Progress) is a standardized assessment that shows where your child is academically. We use it to target their learning at exactly the right level — their zone of proximal development — so our apps and guides can focus on what each child is ready for.</li>
+          <li><b>An accountability report</b> — these highlight guide insights about your child, from the people who worked with them all week.</li>
+          <li><b>A concrete academic plan</b> — this shows not just where your child is, but how quickly they can grow from where they are.</li></ul></div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
+        <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
+        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week. <i>Location is subject to change depending on weather/ocean conditions.</i></p>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Bus Service</h2></div><div class="card">
+        <div class="qa"><h3>Is bus service available?</h3><p>Yes, for families who require it. Please complete all <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">enrollment forms</a>; bussing details are sent separately to families on the route. For students on the bus service, please list your preferred pickup address.</p></div>
+        <div class="qa"><h3>Where is drop-off and pickup?</h3><p>All drop-off and pickup takes place at <b>44 Woods Lane, East Hampton</b>. Please use this address whether you're driving in or meeting the bus route.</p></div>
+      </div>`;
+
+      h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">${contactHtml}</div>`;
+
+      h+=`<div class="sec-head"><h2>Additional Resources</h2></div><div class="card">
+        <div class="qa"><h3>The TimeBack Learning Model</h3><p>You can learn more about TimeBack — our 2 Hour Learning model — in the parent guide below.</p>
+          <p style="margin-top:8px"><a href="assets/timeback-parent-guide.pdf" target="_blank" rel="noopener">Open the full TimeBack Parent Guide (PDF) ↗</a></p></div>
+        <iframe src="assets/timeback-parent-guide.pdf" title="TimeBack Parent Guide" loading="lazy" style="width:100%;height:560px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:4px 0 8px"></iframe>
+      </div>`;
+
+      // build a "jump to" nav from the section headings
+      let _i=0; const toc=[];
+      h = h.replace(/<div class="sec-head"><h2>([\s\S]*?)<\/h2><\/div>/g, (mm, title) => {
+        const id='sec-'+(++_i);
+        toc.push('<a href="#'+id+'">'+title.replace(/<[^>]+>/g,'').trim()+'</a>');
+        return '<div class="sec-head" id="'+id+'"><h2>'+title+'</h2></div>';
+      });
+      const tocHtml = '<nav class="guide-toc"><div class="toc-label">On this page</div>'+toc.join('')+'</nav>';
+      const g=document.getElementById('guide');
+      g.innerHTML = '<div class="guide-layout">'+tocHtml+'<div class="guide-body">'+h+'</div></div>';
+      g.hidden=false;
+    }
+
+    async function tryUnlock(code, fromCache){
+      const err=document.getElementById('gate-err'); err.textContent='';
+      const c=(code||'').trim();
+      if(!c){ if(!fromCache) err.textContent='Enter the access code.'; return; }
+      let res;
+      try{ res=await sb.functions.invoke('family-guide', { body:{ code:c } }); }
+      catch(e){ err.textContent='Could not reach the guide — please try again.'; return; }
+      const payload=res && res.data;
+      if(!payload || !payload.ok){
+        if(fromCache){ try{ sessionStorage.removeItem('guide-code'); }catch(e){} return; }
+        err.textContent='That code didn’t match a published week. Check with your campus team.'; return;
+      }
+      try{ sessionStorage.setItem('guide-code', c); }catch(e){}
+      document.getElementById('gate').hidden=true;
+      renderGuide(payload.week);
+    }
+    document.getElementById('enter').addEventListener('click',()=>tryUnlock(document.getElementById('code').value));
+    document.getElementById('code').addEventListener('keydown',e=>{ if(e.key==='Enter') tryUnlock(e.target.value); });
+    // ?code= in the URL, or remembered within the session
+    (function(){
+      const u=new URLSearchParams(location.search).get('code');
+      if(u){ document.getElementById('code').value=u; tryUnlock(u); return; }
+      try{ const c=sessionStorage.getItem('guide-code'); if(c) tryUnlock(c, true); }catch(e){}
+    })();
+  </script>
+</body>
+</html>

@@ -67,6 +67,31 @@ To go back to the browser-only preview at any time, set `CONFIG.mode` to `'local
 
 ---
 
-## 5. Adding later weeks
+## 5. Parent Family Guide — its own site (separate URL)
+
+The family-facing guide is kept **off the hub domain** so parents never see `hamptonshub…`. It lives in its own self-contained folder in this same repo:
+
+```
+family/
+  index.html          ← the public guide (gated by each week's access code)
+  assets/
+    timeback-parent-guide.pdf
+```
+
+**One-time Vercel setup (≈2 min):**
+
+1. **vercel.com → Add New → Project** → import this same repo (`zararaheem/hamptonshub`).
+2. **Root Directory:** click *Edit* and set it to **`family`** (this is what makes it a separate site serving the guide at `/`).
+3. Framework preset: **Other**. No build command, no output dir.
+4. **Project Name:** `alpha-summer-guide` → gives `https://alpha-summer-guide.vercel.app`. (Pick a different name if you like — then update `CONFIG.familyGuideUrl` near the top of `index.html`, and the redirect URL inside the root `guide.html`, to match.)
+5. Deploy.
+
+Now there are two Vercel projects from one repo: the **hub** (root dir `/` → `hamptonshub.vercel.app`, staff-only) and the **guide** (root dir `family/` → `alpha-summer-guide.vercel.app`, parents). Every `git push` redeploys both.
+
+The hub's **Family Guide → Copy family link** button builds links against `CONFIG.familyGuideUrl`, so once the project exists those links point parents straight at the new site. The old `guide.html` path now just redirects to the new site for any previously shared links.
+
+---
+
+## 6. Adding later weeks
 
 Attendance, Tech Onboarding, and Weekly Supplies are seeded with the **Week 1** roster. When you have rosters for weeks 2–9 (first name, last name, grade, email), send them over and they'll slot into the same screens with the level breakdown and health flags intact.

@@ -545,7 +545,6 @@
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
       <div class="nav-label">Parent Comms</div>
-      <button class="nav-item" data-tab="newsletter">Parent Newsletter<span class="wip">in progress</span></button>
       <button class="nav-item" data-tab="family">Family Hub</button>
       <button class="nav-item admin-only" data-tab="famguide">Family Guide</button>
       <div class="nav-label admin-only">Admin</div>
@@ -894,38 +893,6 @@
       </div>
     </section>
 
-    <!-- ===== NEWSLETTER ===== -->
-    <section class="view" id="view-newsletter" hidden>
-      <div class="eyebrow">Families · Parent-facing</div>
-      <h1 class="page-title">Parent newsletter <span class="wip-tag">In progress · test only</span></h1>
-      <div class="wip-banner">⚠ This page is a work in progress and currently for testing only — anything posted here is sample content, not a live parent newsletter yet.</div>
-      <p class="page-lead">Highlights, photos, and reminders for families. Admins post here; parents read it at the public link below — no password needed.</p>
-
-      <div class="embed-head">
-        <div class="meta-line" style="margin:0"><span>Public parent link</span></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <a class="btn ghost" id="nl-public-link" href="newsletter.html" target="_blank" rel="noopener">Open public newsletter ↗</a>
-          <button class="btn" id="nl-copy">Copy parent link</button>
-        </div>
-      </div>
-
-      <div class="nl-composer admin-only" id="nl-composer">
-        <h3 style="margin:0 0 10px">Post an update</h3>
-        <input id="nl-title" type="text" placeholder="Title — e.g. Week 1: Sailing &amp; Showcase" />
-        <textarea id="nl-body" rows="5" placeholder="Highlights, reminders, what to bring… (each line becomes a paragraph)"></textarea>
-        <div class="nl-photos" id="nl-photo-strip"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-          <label class="btn ghost" for="nl-file">＋ Add photos</label>
-          <input id="nl-file" type="file" accept="image/*" multiple style="display:none" />
-          <button class="btn" id="nl-publish">Publish update</button>
-          <span class="gate-msg" id="nl-msg" style="margin:0"></span>
-        </div>
-      </div>
-
-      <div class="section-title"><span class="num">↳</span>Posted updates</div>
-      <div id="nl-list" class="nl-list"></div>
-    </section>
-
     <!-- ===== FAMILY HUB (admin) ===== -->
     <section class="view" id="view-family" hidden>
       <div class="eyebrow">Families · Parent-facing</div>
@@ -978,7 +945,7 @@
       <div class="section-title"><span class="num">↳</span>Shout-outs</div>
       <div id="fh-shouts" class="fh-shouts"></div>
 
-      <div class="callout" style="margin-top:18px"><b>Newsletter posts</b> also appear in the Family Hub automatically — write them in the <a data-jump="newsletter" style="color:var(--brass-bright);cursor:pointer">Newsletter</a> tab. <b>Privacy:</b> photos live in a private bucket and are shown to parents only through the access code — each image link is signed and expires after an hour, so it can't be opened or indexed without the code.</div>
+      <div class="callout" style="margin-top:18px"><b>Privacy:</b> photos live in a private bucket and are shown to parents only through the access code — each image link is signed and expires after an hour, so it can't be opened or indexed without the code.</div>
     </section>
 
     <!-- ===== FAMILY GUIDE (weekly, parent-facing) ===== -->
@@ -1410,7 +1377,6 @@ const CONTENT_DEFAULTS = {
     {tag:"Logistics", title:"Weekly Supplies", desc:"Per-week supply checklist — separate from the ordering site.", to:"weekly"},
     {tag:"Ops", title:"DoP Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
     {tag:"Logistics", title:"Supplies & Ordering", desc:"The live ordering / packing site (summer-nyc), embedded in the hub.", to:"supplies"},
-    {tag:"Parents", title:"Parent Newsletter", desc:"Post photos & updates for families and copy the public parent link.", to:"newsletter"},
     {tag:"Parents", title:"Parent FAQ", desc:"The family-facing FAQ — everything parents need to know about the summer.", to:"https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit"},
   ],
   rhythm: [
@@ -2584,8 +2550,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','family','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','family','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',family:'Family Hub',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -2594,7 +2560,6 @@ function showTab(t){
   if(t==='supplies') lazyEmbed('supplies-embed','https://summer-nyc.vercel.app/');
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
-  if(t==='newsletter') loadNewsletter();
   if(t==='family') loadFamily();
   if(t==='famguide') loadFamGuide();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();

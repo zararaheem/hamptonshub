@@ -47,6 +47,7 @@
   .alert-soft::before{content:"!";flex:0 0 18px;height:18px;border-radius:50%;background:#d9534f;color:#fff;font-weight:700;font-size:12px;text-align:center;line-height:18px}
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
   .contact-role{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:5px}
+  .contact-title{color:var(--teal)}
   .contact-person{font-size:15.5px;color:#33414e;margin:3px 0}
   .contact-note{font-size:13.5px;color:var(--muted);margin-top:9px}
   .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
@@ -206,13 +207,13 @@
       </div>`;
 
       const contacts=[
-        {role:'Campus Coordinator', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent, inline:true},
-        {role:'Admissions &amp; questions about Alpha', people:[{name:'Nancy Torvund, Director of Admissions', email:'nancy.torvund@alpha.school'}]},
-        {role:'Academic &amp; life-skills questions', people:[{name:hgName+', Head Guide', email:hgEmail}]},
-        {role:'Anything else', people:[{name:'Dr. Tasha Arnold, Head of Schools', email:'tasha.arnold@alpha.school'}]}
+        {desc:'Logistics — bussing, lunch, attendance', title:'Campus Coordinator', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent, inline:true},
+        {desc:'Questions about admissions or Alpha', title:'Director of Admissions', people:[{name:'Nancy Torvund', email:'nancy.torvund@alpha.school'}]},
+        {desc:'Academic &amp; life-skills questions', title:'Head Guide', people:[{name:hgName, email:hgEmail}]},
+        {desc:'Anything else', title:'Head of Schools', people:[{name:'Dr. Tasha Arnold', email:'tasha.arnold@alpha.school'}]}
       ];
       const contactHtml = contacts.map(c=>`<div class="qa">
-        <div class="contact-role">${c.role}</div>
+        <div class="contact-role">${c.desc} <span class="contact-title">| ${c.title}</span></div>
         ${c.inline
           ? `<div class="contact-person">${c.people.map(p=>`<b>${esc(p.name)}</b> · ${emailA(p.email)}`).join(' &nbsp;or&nbsp; ')}</div>`
           : c.people.map(p=>`<div class="contact-person"><b>${esc(p.name)}</b> · ${emailA(p.email)}</div>`).join('')}

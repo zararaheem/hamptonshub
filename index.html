@@ -544,6 +544,7 @@
       <div class="nav-label">Parent Comms</div>
       <button class="nav-item" data-tab="newsletter">Parent Newsletter<span class="wip">in progress</span></button>
       <button class="nav-item" data-tab="family">Family Hub</button>
+      <button class="nav-item admin-only" data-tab="famguide">Family Guide</button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only" data-tab="access">Access</button>
     </nav>
@@ -974,6 +975,15 @@
       <div id="fh-shouts" class="fh-shouts"></div>
 
       <div class="callout" style="margin-top:18px"><b>Newsletter posts</b> also appear in the Family Hub automatically — write them in the <a data-jump="newsletter" style="color:var(--brass-bright);cursor:pointer">Newsletter</a> tab. <b>Privacy:</b> photos live in a private bucket and are shown to parents only through the access code — each image link is signed and expires after an hour, so it can't be opened or indexed without the code.</div>
+    </section>
+
+    <!-- ===== FAMILY GUIDE (weekly, parent-facing) ===== -->
+    <section class="view" id="view-famguide" hidden>
+      <div class="eyebrow admin-only">Families · Weekly guide</div>
+      <h1 class="page-title">Family Guide — weekly</h1>
+      <p class="page-lead">Configure each week's parent guide — coordinator, drop-off/pickup, lunch menu, Monday &amp; Friday events — then <b>publish</b> it. Families open it at <code>guide.html</code> using that week's access code. Static sections (packing, safety, swimming, etc.) are built in.</p>
+      <div class="field" style="max-width:300px"><label for="fg-week">Week</label><select id="fg-week"></select></div>
+      <div id="fg-editor"></div>
     </section>
 
     <!-- ===== WORKSTREAMS ===== -->
@@ -2353,6 +2363,88 @@ async function nlDelete(id){
   await nlRenderList();
 }
 
+/* =================== FAMILY GUIDE (weekly, admin) =================== */
+let FAM_WEEKS=[];
+async function dbGetFamilyWeeks(){
+  if(!SUPA) return [];
+  const { data, error } = await SB.from('family_weeks').select('*').order('week');
+  if(error){ console.warn('family_weeks load failed:', error); return []; }
+  return data||[];
+}
+async function dbSaveFamilyWeek(week, patch){
+  if(!SUPA) return {message:'Not connected'};
+  const { error } = await SB.from('family_weeks').update({...patch, updated_at:new Date().toISOString()}).eq('week', week);
+  return error;
+}
+async function loadFamGuide(){
+  const sel=document.getElementById('fg-week'); if(!sel) return;
+  FAM_WEEKS = await dbGetFamilyWeeks();
+  if(!sel.dataset.built){
+    sel.innerHTML = FAM_WEEKS.map(w=>`<option value="${w.week}">Week ${w.week} · ${esc(w.dates)}</option>`).join('');
+    sel.value = String((WEEKS[NOW]&&WEEKS[NOW].n)||1);
+    sel.addEventListener('change', renderFamGuideForm);
+    sel.dataset.built='1';
+  }
+  renderFamGuideForm();
+}
+function fgField(label, key, val, ph){
+  return `<div class="field"><label>${esc(label)}</label><input class="cell-input" data-fg="${escAttr(key)}" value="${escAttr(val||'')}" placeholder="${escAttr(ph||'')}"></div>`;
+}
+function renderFamGuideForm(){
+  const sel=document.getElementById('fg-week'), wrap=document.getElementById('fg-editor');
+  if(!sel||!wrap) return;
+  const w=FAM_WEEKS.find(x=>String(x.week)===String(sel.value));
+  if(!w){ wrap.innerHTML='<div class="callout">No data for this week yet.</div>'; return; }
+  const link='guide.html?code='+encodeURIComponent(w.access_code||'');
+  wrap.innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <label style="display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer"><input type="checkbox" id="fg-pub" ${w.published?'checked':''}> Published</label>
+        <span class="pill ${w.published?'ok':''}">${w.published?'Live for families':'Draft — not visible'}</span>
+        <a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Preview / open ↗</a>
+        <button class="btn ghost" id="fg-copy">Copy family link</button>
+      </div>
+      <div class="grid g2">
+        ${fgField('Access code','access_code',w.access_code,'HamptonsWk1')}
+        ${fgField('Week dates','dates',w.dates,'Jun 29 – Jul 3')}
+        ${fgField('Campus coordinator(s)','coordinators',w.coordinators,'Julianne & Zara')}
+        ${fgField('Coordinator emails','coord_emails',w.coord_emails)}
+        ${fgField('Coordinator phones','coord_phones',w.coord_phones)}
+        ${fgField('Drop-off time','dropoff_time',w.dropoff_time)}
+        ${fgField('Drop-off location','dropoff_loc',w.dropoff_loc)}
+        ${fgField('Pickup time','pickup_time',w.pickup_time)}
+        ${fgField('Pickup location','pickup_loc',w.pickup_loc)}
+        ${fgField('Early-pickup cutoff','early_pickup_cutoff',w.early_pickup_cutoff)}
+        ${fgField('Lunch menu label','lunch_menu_label',w.lunch_menu_label,'Week of Jun 29')}
+        ${fgField('Lunch menu URL','lunch_menu_url',w.lunch_menu_url)}
+        ${fgField('Guide team (this week)','guide_team',w.guide_team,'names / short bios')}
+        ${fgField('Head guide','head_guide',w.head_guide)}
+        ${fgField('Monday Coffee time','monday_event_time',w.monday_event_time)}
+        ${fgField('Friday Showcase time','friday_showcase_time',w.friday_showcase_time)}
+        ${fgField('Friday Showcase location','friday_showcase_loc',w.friday_showcase_loc)}
+        ${fgField('Showcase location map URL','friday_showcase_loc_url',w.friday_showcase_loc_url)}
+      </div>
+      <div class="field"><label>Custom note (optional — shows at the top)</label><textarea class="cell-input" data-fg="custom_note" rows="2" style="resize:vertical">${esc(w.custom_note||'')}</textarea></div>
+      <div style="margin-top:12px"><button class="btn" id="fg-save">Save Week ${esc(w.week)}</button> <span class="gate-msg" id="fg-msg" style="margin-left:8px"></span></div>
+    </div>`;
+  document.getElementById('fg-copy').addEventListener('click',()=>{
+    const url=location.origin+location.pathname.replace(/[^/]*$/,'')+link;
+    const m=document.getElementById('fg-msg');
+    navigator.clipboard.writeText(url).then(()=>{ m.className='gate-msg ok'; m.textContent='Link copied'; },()=>{ m.className='gate-msg'; m.textContent=url; });
+  });
+  document.getElementById('fg-save').addEventListener('click',async()=>{
+    const m=document.getElementById('fg-msg'); const patch={};
+    wrap.querySelectorAll('[data-fg]').forEach(el=>{ patch[el.dataset.fg]=el.value; });
+    patch.published=document.getElementById('fg-pub').checked;
+    if(!String(patch.access_code||'').trim()){ m.className='gate-msg err'; m.textContent='Access code is required.'; return; }
+    const err=await dbSaveFamilyWeek(w.week, patch);
+    if(err){ m.className='gate-msg err'; m.textContent=(err.message&&/duplicate|unique/i.test(err.message))?'That access code is already used by another week.':(err.message||'Save failed'); return; }
+    Object.assign(w, patch);
+    const opt=[...sel.options].find(o=>o.value===String(w.week)); if(opt) opt.textContent=`Week ${w.week} · ${w.dates}`;
+    m.className='gate-msg ok'; m.textContent='Saved ✓'; renderFamGuideForm();
+  });
+}
+
 /* =================== FAMILY HUB (admin) =================== */
 let FH_PENDING = 0;   // photos currently uploading
 let FH_BOUND = false;
@@ -2464,8 +2556,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','family','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','family','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -2476,6 +2568,7 @@ function showTab(t){
   if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
   if(t==='newsletter') loadNewsletter();
   if(t==='family') loadFamily();
+  if(t==='famguide') loadFamGuide();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }

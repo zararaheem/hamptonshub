@@ -522,6 +522,8 @@
       <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
+      <div class="nav-label admin-only">Team Comms</div>
+      <button class="nav-item admin-only" data-tab="slack">Weekly Slack</button>
       <div class="nav-label">Parent Comms</div>
       <button class="nav-item admin-only" data-tab="famguide">Family Guide</button>
       <div class="nav-label admin-only">Admin</div>
@@ -871,6 +873,32 @@
     </section>
 
     <!-- ===== FAMILY GUIDE (weekly, parent-facing) ===== -->
+    <section class="view" id="view-slack" hidden>
+      <div class="eyebrow">Team Comms</div>
+      <h1 class="page-title">Weekly Slack</h1>
+      <p class="page-lead">Create this week's <b>private</b> staff channel and pull people in from the roster in one click. The bot posts a structured daily summary each morning — those land in the digest below.</p>
+
+      <div class="card" style="margin-bottom:18px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <div class="field" style="max-width:240px;margin:0"><label for="sl-week">Week</label><select id="sl-week"></select></div>
+          <span class="pill" id="sl-status">—</span>
+          <a class="btn ghost" id="sl-open" href="#" target="_blank" rel="noopener" hidden style="margin-left:auto">Open in Slack ↗</a>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-weight:600;margin-bottom:8px">
+          <input type="checkbox" id="sl-all" checked> Select all staff
+        </label>
+        <div id="sl-staff" class="grid g2"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px">
+          <button class="btn" id="sl-create">Create channel &amp; invite</button>
+          <button class="btn ghost" id="sl-daily">Post today's summary</button>
+        </div>
+        <p class="gate-msg" id="sl-msg" style="margin-top:10px"></p>
+      </div>
+
+      <div class="section-title"><span class="num">#</span>Daily summary</div>
+      <div class="card"><div id="sl-digest"><p class="page-lead" style="margin:0">No daily summaries yet for this week.</p></div></div>
+    </section>
+
     <section class="view" id="view-famguide" hidden>
       <div class="eyebrow admin-only">Families · Weekly guide</div>
       <h1 class="page-title">Family Guide — weekly</h1>
@@ -2183,6 +2211,93 @@ function lazyEmbed(id,url){
   box.appendChild(ifr);
 }
 
+/* =================== WEEKLY SLACK (admin) =================== */
+let SLACK_WEEKS=[];
+async function dbGetSlackWeeks(){
+  if(!SUPA) return [];
+  const { data, error } = await SB.from('slack_weeks').select('*');
+  if(error){ console.warn('slack_weeks load failed:', error); return []; }
+  return data||[];
+}
+async function loadSlack(){
+  const wsel=document.getElementById('sl-week'); if(!wsel) return;
+  if(!wsel.options.length){
+    wsel.innerHTML=WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${esc(w.range)}</option>`).join('');
+    const cur=WEEKS.find(w=>TODAY>=new Date(w.start) && TODAY<=new Date(w.end+'T23:59'));
+    wsel.value=String((cur||WEEKS[0]).n);
+    wsel.addEventListener('change',renderSlack);
+    document.getElementById('sl-all').addEventListener('change',e=>{
+      document.querySelectorAll('#sl-staff input[type=checkbox]').forEach(c=>{ c.checked=e.target.checked; });
+    });
+    document.getElementById('sl-create').addEventListener('click',slCreate);
+    document.getElementById('sl-daily').addEventListener('click',slPostDaily);
+  }
+  SLACK_WEEKS=await dbGetSlackWeeks();
+  await renderSlack();
+}
+function slSelectedEmails(){
+  return [...document.querySelectorAll('#sl-staff input[type=checkbox]:checked')].map(c=>c.value);
+}
+async function renderSlack(){
+  const week=Number(document.getElementById('sl-week').value);
+  const all=await dbGetAllow();
+  const staff=all.filter(u=>u.category==='staff').sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+  const box=document.getElementById('sl-staff');
+  box.innerHTML=staff.map(u=>`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding:4px 0">
+      <input type="checkbox" value="${escAttr(u.email)}" checked>
+      <span>${esc(u.name||u.email)}${u.name?` <span style="color:var(--muted);font-size:12px">${esc(u.email)}</span>`:''}</span>
+    </label>`).join('') || '<p class="page-lead" style="margin:0">No staff on the access list yet.</p>';
+  document.getElementById('sl-all').checked=true;
+  const row=SLACK_WEEKS.find(r=>Number(r.week)===week);
+  const status=document.getElementById('sl-status'), open=document.getElementById('sl-open'), create=document.getElementById('sl-create');
+  if(row){
+    status.textContent='#'+row.channel_name+' · live'; status.classList.add('ok');
+    open.hidden=false; open.href='https://app.slack.com/client/-/'+row.channel_id;
+    create.textContent='Sync / invite selected';
+  } else {
+    status.textContent='No channel yet'; status.classList.remove('ok');
+    open.hidden=true; create.textContent='Create channel & invite';
+  }
+  await renderDigest(week);
+}
+async function slCall(action, extra){
+  const week=Number(document.getElementById('sl-week').value);
+  const { data, error } = await SB.functions.invoke('slack-week', { body:{ action, week, ...extra } });
+  if(error){ return { ok:false, error:(error.message||'request failed') }; }
+  return data||{ ok:false, error:'no response' };
+}
+async function slCreate(){
+  const msg=document.getElementById('sl-msg'); const emails=slSelectedEmails();
+  msg.className='gate-msg'; msg.textContent='Working with Slack…';
+  const r=await slCall('create',{ emails });
+  if(!r.ok){ msg.className='gate-msg err'; msg.textContent='Couldn\'t complete — '+(r.error||'try again'); return; }
+  msg.className='gate-msg ok';
+  msg.textContent=`Channel #${r.channel_name} ready · invited ${r.invited.length}`+(r.failed&&r.failed.length?` · skipped ${r.failed.length} (${r.failed.join(', ')})`:'');
+  SLACK_WEEKS=await dbGetSlackWeeks(); await renderSlack();
+}
+async function slPostDaily(){
+  const msg=document.getElementById('sl-msg');
+  msg.className='gate-msg'; msg.textContent='Posting…';
+  const r=await slCall('post-daily',{});
+  if(!r.ok){ msg.className='gate-msg err'; msg.textContent='Couldn\'t post — '+(r.error||'try again'); return; }
+  msg.className='gate-msg ok'; msg.textContent='Posted today\'s summary template.';
+  const week=Number(document.getElementById('sl-week').value); await renderDigest(week);
+}
+async function renderDigest(week){
+  const box=document.getElementById('sl-digest'); if(!box) return;
+  const row=SLACK_WEEKS.find(r=>Number(r.week)===week);
+  if(!row){ box.innerHTML='<p class="page-lead" style="margin:0">Create the channel above to start the daily summary.</p>'; return; }
+  const r=await slCall('digest',{});
+  if(!r.ok){ box.innerHTML='<p class="page-lead" style="margin:0">Couldn\'t load Slack messages — '+esc(r.error||'')+'</p>'; return; }
+  if(!r.posts || !r.posts.length){ box.innerHTML='<p class="page-lead" style="margin:0">No daily summaries posted yet this week.</p>'; return; }
+  box.innerHTML=r.posts.map(p=>{
+    const d=new Date(Number(String(p.ts).split('.')[0])*1000);
+    const when=d.toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    const text=esc(p.text).replace(/\*(.+?)\*/g,'<b>$1</b>').replace(/\n/g,'<br>').replace(/^&gt;\s?/gm,'');
+    return `<div style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-bright);margin-top:6px">${esc(when)}</div><div style="font-size:14.5px;line-height:1.55;margin-bottom:12px">${text}</div>`;
+  }).join('');
+}
+
 /* =================== FAMILY GUIDE (weekly, admin) =================== */
 let FAM_WEEKS=[];
 async function dbGetFamilyWeeks(){
@@ -2376,10 +2491,10 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','slack','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
-  if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
+  if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
@@ -2387,6 +2502,7 @@ function showTab(t){
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
   if(t==='famguide') loadFamGuide();
+  if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }

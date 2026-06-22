@@ -1226,6 +1226,8 @@ const SUPPLY_TEMPLATE = [
   "Signage & decor refresh","Swag for the week (shirts, towels, bottles)","Lunch headcount confirmed",
 ];
 function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); return `${String(f).toLowerCase()}.${String(l).toLowerCase()}@alpha.school`; }
+/* Display name: first name + last initial, e.g. "Maya R." */
+function studentLabel(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); const li=String(l).trim(); return `${String(f).trim()}${li?` ${li[0].toUpperCase()}.`:''}`; }
 function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
 function csvDownload(name, rows){
@@ -1719,7 +1721,7 @@ function renderAtt(){
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(s.first)} ${esc(s.last)}${hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:''}</div>
+        <div><div class="nm">${esc(studentLabel(s))}${hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:''}</div>
           <div class="gr">Grade ${esc(s.grade)}<span class="lvlbadge">${levelOf(s.grade)}</span></div></div>
         <button class="health-toggle ${flag?'flag':''}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         <div class="seg">
@@ -1757,7 +1759,7 @@ function renderAtt(){
       const tgl=block.querySelector('[data-act=htoggle]');
       tgl.classList.toggle('flag',flag); tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(s.first)} ${esc(s.last)}`+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
+      nm.innerHTML=`${esc(studentLabel(s))}`+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
       flashSaved(); renderHealthSummary();
     });
   });
@@ -1768,7 +1770,7 @@ function renderHealthSummary(){
   const flagged=[];
   studentsForWeek(curWeek()).forEach(s=>{
     const a=(s.allergies||'').trim(), m=(s.meds||'').trim();
-    if(a||m) flagged.push({name:`${s.first} ${s.last}`, grade:s.grade, level:levelOf(s.grade), a, m});
+    if(a||m) flagged.push({name:studentLabel(s), grade:s.grade, level:levelOf(s.grade), a, m});
   });
   if(!flagged.length){
     el.innerHTML=`<div class="callout">No allergies or medications recorded for this roster yet. Tap <b>＋ health</b> on a student below to add details — they'll roll up here and flag red on the roll.</div>`;
@@ -1854,7 +1856,7 @@ async function dqFetch(){
 function dqPersistLocal(){ store.set(dqLocalKey(), DQ_ROWS); }
 async function dqAddStudents(ids){
   if(!ids.length) return;
-  const studs = ids.map(id=>{ const s=findStudent(id); return {id, name: s?`${s.first} ${s.last}`:'Student'}; });
+  const studs = ids.map(id=>{ const s=findStudent(id); return {id, name: s?studentLabel(s):'Student'}; });
   const label = (document.getElementById('dq-label').value||'').trim();
   const rec = { day:dqDay(), week:+dqWeek(), students:studs, label, status:'waiting', queued_at:new Date().toISOString() };
   if(SUPA){
@@ -1931,7 +1933,7 @@ function renderDismissal(){
   const picker=document.getElementById('dq-picker');
   const avail=studs.filter(s=>!dqStudentInQueue(s.id))
     .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
-  picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick" data-pick="${escAttr(s.id)}">${esc(s.last)}, ${esc(s.first)}</button>`).join('')
+  picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick" data-pick="${escAttr(s.id)}">${esc(studentLabel(s))}</button>`).join('')
     : `<span class="note-row">Everyone is in the line or dismissed.</span>`;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
 }
@@ -1980,7 +1982,7 @@ function renderTech(){
   const body = studs.map(s=>{
     const r = d[s.id]||{}; const dev = r.device||'Laptop';
     return `<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell">${esc(s.first)} ${esc(s.last)}</td><td>${esc(s.grade)}</td>
+      <td class="role-cell">${esc(studentLabel(s))}</td><td>${esc(s.grade)}</td>
       <td><select class="cell-select" data-f="device">
         <option ${dev==='Laptop'?'selected':''}>Laptop</option>
         <option ${dev==='iPad'?'selected':''}>iPad</option></select></td>

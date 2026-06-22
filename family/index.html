@@ -43,6 +43,8 @@
   .qa li{font-size:15.5px;color:#33414e;margin:3px 0}
   .pill{display:inline-block;background:#eef6f5;color:var(--teal);border:1px solid #cfe6e3;border-radius:8px;padding:3px 9px;font-size:14px;font-weight:600;margin:2px 4px 2px 0}
   .note{background:#fbf4e8;border:1px solid #ecd9b4;border-radius:10px;padding:11px 14px;font-size:14.5px;color:#6b5320;margin:8px 0}
+  .alert-soft{display:flex;gap:8px;align-items:flex-start;background:#fdeceb;border:1px solid #f3c6c2;border-radius:10px;padding:10px 13px;font-size:14px;color:#9b3a33;margin:10px 0}
+  .alert-soft::before{content:"!";flex:0 0 18px;height:18px;border-radius:50%;background:#d9534f;color:#fff;font-weight:700;font-size:12px;text-align:center;line-height:18px}
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
   .contact-role{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:5px}
   .contact-person{font-size:15.5px;color:#33414e;margin:3px 0}
@@ -231,7 +233,7 @@
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
         <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
-        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week. <i>Location is subject to change depending on weather/ocean conditions.</i></p>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
+        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week.</p><div class="alert-soft">Location is subject to change depending on weather/ocean conditions.</div>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Bus Service</h2></div><div class="card">

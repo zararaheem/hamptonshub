@@ -1554,7 +1554,7 @@ function levelOf(grade){
 /* access config */
 const OWNER = 'zara.raheem@alpha.school';
 const DOMAINS = ['alpha.school','trilogy.com'];
-const TODAY = new Date("2026-06-19");
+const TODAY = new Date(); TODAY.setHours(0,0,0,0); // real current date (local midnight)
 function activeWeekIndex(){
   for(let i=0;i<WEEKS.length;i++){
     if(TODAY <= new Date(WEEKS[i].end+"T23:59:59")) return i;
@@ -1587,7 +1587,7 @@ function renderPorts(){
 }
 function renderCountdown(){
   const w = WEEKS[NOW];
-  const days = Math.ceil((new Date(w.start) - TODAY)/86400000);
+  const days = Math.round((new Date(w.start+"T00:00:00") - TODAY)/86400000);
   const el = document.getElementById('countdown');
   if(days>0) el.innerHTML = `T-minus <b>${days} days</b> to Week ${w.n} · ${w.theme} (${w.range})`;
   else el.innerHTML = `Now sailing · <b>Week ${w.n} · ${w.theme}</b> (${w.range})`;

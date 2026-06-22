@@ -282,7 +282,6 @@
           <div class="ph-dates">${esc(w.dates)}</div>
         </div>`;
       const actions = `<div class="pdf-actions">
-          <button type="button" id="switch-week" class="pdf-btn ghost">Switch week</button>
           <button type="button" id="dl-pdf" class="pdf-btn">Download this week as PDF ↓</button>
         </div>`;
       const body = printHead + actions + h;
@@ -290,18 +289,6 @@
       g.innerHTML = '<div class="guide-layout">'+tocHtml+'<div class="guide-body">'+body+'</div></div>';
       g.hidden=false;
       document.title = 'Alpha Summer Family Guide — Week '+w.week;
-      const sw=document.getElementById('switch-week');
-      if(sw) sw.addEventListener('click', ()=>{
-        try{ sessionStorage.removeItem('guide-code'); }catch(e){}
-        try{ history.replaceState(null,'',location.pathname); }catch(e){}
-        g.hidden=true; g.innerHTML='';
-        document.getElementById('hero-wk').innerHTML='';
-        const gate=document.getElementById('gate'); gate.hidden=false;
-        const ge=document.getElementById('gate-err'); if(ge) ge.textContent='';
-        const ci=document.getElementById('code'); if(ci){ ci.value=''; ci.focus(); }
-        document.title='Alpha Summer · East Hampton — Family Guide';
-        window.scrollTo({top:0});
-      });
       const dl=document.getElementById('dl-pdf');
       if(dl) dl.addEventListener('click', ()=>window.print());
     }

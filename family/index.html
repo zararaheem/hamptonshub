@@ -206,14 +206,16 @@
       </div>`;
 
       const contacts=[
-        {role:'Logistics — lunch, bussing, attendance', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent},
+        {role:'Campus Coordinator', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent, inline:true},
         {role:'Admissions &amp; questions about Alpha', people:[{name:'Nancy Torvund, Director of Admissions', email:'nancy.torvund@alpha.school'}]},
         {role:'Academic &amp; life-skills questions', people:[{name:hgName+', Head Guide', email:hgEmail}]},
         {role:'Anything else', people:[{name:'Dr. Tasha Arnold, Head of Schools', email:'tasha.arnold@alpha.school'}]}
       ];
       const contactHtml = contacts.map(c=>`<div class="qa">
         <div class="contact-role">${c.role}</div>
-        ${c.people.map(p=>`<div class="contact-person"><b>${esc(p.name)}</b> · ${emailA(p.email)}</div>`).join('')}
+        ${c.inline
+          ? `<div class="contact-person">${c.people.map(p=>`<b>${esc(p.name)}</b> · ${emailA(p.email)}`).join(' &nbsp;or&nbsp; ')}</div>`
+          : c.people.map(p=>`<div class="contact-person"><b>${esc(p.name)}</b> · ${emailA(p.email)}</div>`).join('')}
         ${c.note?`<div class="contact-note">${c.note}</div>`:''}
       </div>`).join('');
 

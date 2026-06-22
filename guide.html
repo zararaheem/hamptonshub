@@ -94,6 +94,32 @@
       const headGuide = (w.head_guide||'').trim();
       const hgName = headGuide || 'Jenna Klemm';
       const hgEmail = hgName.toLowerCase().trim().split(/\s+/).join('.') + '@alpha.school';
+      const emailA = (addr,label) => `<a href="mailto:${esc(addr)}">${esc(label||'Email')}</a>`;
+      const coordEmails = String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
+      const coordContact = coordEmails.length ? coordEmails.map(e=>`<b>${esc(nameFromEmail(e))}</b> — ${emailA(e)}`).join('<br>') : `<b>${coordNames}</b>`;
+      const urgent = w.coord_phones ? `For any urgent inquiries during the day, please directly contact ${esc(String(w.coord_phones).replace(/\s*·\s*/g,' or '))}.` : '';
+      // ---- Add-to-calendar helpers ----
+      const pad2 = n => String(n).padStart(2,'0');
+      const calParse = (range,dateISO) => {
+        if(!dateISO) return null;
+        const m = String(range||'').match(/(\d{1,2}):(\d{2})\s*[AP]M/gi);
+        if(!m || m.length<2) return null;
+        const to24 = s => { const x=s.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i); let h=+x[1]%12; if(/PM/i.test(x[3])) h+=12; return pad2(h)+pad2(+x[2])+'00'; };
+        const d = String(dateISO).slice(0,10).replace(/-/g,'');
+        return { s:d+'T'+to24(m[0]), e:d+'T'+to24(m[1]) };
+      };
+      const calLinks = (title,dateISO,range,details,loc) => {
+        const t = calParse(range,dateISO); if(!t) return '';
+        const g = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)
+          +'&dates='+t.s+'/'+t.e+'&ctz=America/New_York'
+          +(details?'&details='+encodeURIComponent(details):'')+(loc?'&location='+encodeURIComponent(loc):'');
+        const uid = t.s+'-'+Math.random().toString(36).slice(2,8)+'@hamptonshub';
+        const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Hamptons Hub//EN','BEGIN:VEVENT','UID:'+uid,'DTSTAMP:'+t.s,
+          'DTSTART:'+t.s,'DTEND:'+t.e,'SUMMARY:'+String(title).replace(/[,;\\]/g,' '),
+          (loc?'LOCATION:'+String(loc).replace(/[,;\\]/g,' '):''),'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+        const ich = 'data:text/calendar;charset=utf8,'+encodeURIComponent(ics);
+        return `<div style="margin-top:8px;font-size:13px"><a href="${g}" target="_blank" rel="noopener">Add to Google Calendar ↗</a> · <a href="${ich}" download="${String(title).replace(/[^a-z0-9]+/ig,'-').toLowerCase()}.ics">Download .ics</a></div>`;
+      };
 
       let h='';
       if((w.custom_note||'').trim()){ h+=`<div class="note">${esc(w.custom_note)}</div>`; }
@@ -114,10 +140,10 @@
       </div>`;
 
       h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">
-        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p><b>${coordNames}</b><br>${mailtoList(w.coord_emails)}${w.coord_phones?`<br>${esc(w.coord_phones)}`:''}</p></div>
-        <div class="qa"><h3>Admissions &amp; questions about Alpha — Nancy Torvund, Director of Admissions</h3><p>${mailtoList('nancy.torvund@alpha.school')}</p></div>
-        <div class="qa"><h3>Academic &amp; life-skills questions — ${esc(hgName)}, Head Guide</h3><p>${mailtoList(hgEmail)}</p></div>
-        <div class="qa"><h3>Anything else — Dr. Tasha Arnold, Head of Schools</h3><p>${mailtoList('tasha.arnold@alpha.school')}</p></div>
+        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p>${coordContact}${urgent?`<br><br>${urgent}`:''}</p></div>
+        <div class="qa"><h3>Admissions &amp; questions about Alpha — Nancy Torvund, Director of Admissions</h3><p>${emailA('nancy.torvund@alpha.school')}</p></div>
+        <div class="qa"><h3>Academic &amp; life-skills questions — ${esc(hgName)}, Head Guide</h3><p>${emailA(hgEmail)}</p></div>
+        <div class="qa"><h3>Anything else — Dr. Tasha Arnold, Head of Schools</h3><p>${emailA('tasha.arnold@alpha.school')}</p></div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
@@ -147,8 +173,8 @@
       </div>`;
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
-        <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come.</p></div>
-        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week. <i>Location is subject to change depending on weather/ocean conditions.</i></p></div>
+        <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
+        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week. <i>Location is subject to change depending on weather/ocean conditions.</i></p>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Getting Here</h2></div><div class="card">

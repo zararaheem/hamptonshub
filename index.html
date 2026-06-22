@@ -1050,7 +1050,7 @@ const CONFIG = {
   mode: 'supabase',
   googleAuth: true,            // true → "Sign in with Google", gated to whitelisted emails (needs Google provider enabled in Supabase)
   magicLink: false,            // true → magic-link email login. false → shared-password gate below.
-  accessPassword: 'hamptons26', // shared staff password fallback — TEMPORARY while Google is being set up; remove (set '') for Google-only
+  accessPassword: '', // Google-only sign-in; whitelist-gated. (Set a value here to re-enable the shared-password fallback.)
   supabaseUrl: 'https://qwmetffzspobjamwwhca.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs'
 };

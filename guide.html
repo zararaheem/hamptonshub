@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
 <title>Alpha Summer · East Hampton — Family Guide</title>
 <meta name="description" content="Your weekly family guide for Alpha Summer in the Hamptons." />
 <meta name="robots" content="noindex" />
@@ -80,7 +81,9 @@
     function renderGuide(w){
       document.getElementById('hero-wk').innerHTML =
         `<span class="wk">Week ${esc(w.week)} · ${esc(w.dates)}</span>`;
-      const coord = esc(w.coordinators||'your campus coordinator');
+      const coord = esc((w.coordinators||'your campus coordinator').replace(/\s*(&|and)\s*/ig,' or '));
+      const nameFromEmail = e => e.split('@')[0].split(/[._]/).filter(Boolean).map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');
+      const coordNames = esc(String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean).map(nameFromEmail).join(' & ') || (w.coordinators||''));
       const lunch = w.lunch_menu_url
         ? `The week's lunch menu is here: <a href="${esc(w.lunch_menu_url)}" target="_blank" rel="noopener">${esc(w.lunch_menu_label||'Lunch menu')}</a>.`
         : `The week's lunch menu will be shared by your campus team.`;
@@ -93,12 +96,12 @@
       let h='';
       if((w.custom_note||'').trim()){ h+=`<div class="note">${esc(w.custom_note)}</div>`; }
 
-      h+=`<div class="sec-head"><span class="eyebrow">📋</span><h2>Overview</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Overview</h2></div><div class="card">
         <div class="qa"><h3>What is this guide?</h3><p>Your reference for the full week of Alpha Summer — logistics, packing, health & safety, and what to expect each day. Keep it handy.</p></div>
         <div class="qa"><h3>What else did my email include?</h3><p>A notice New York State requires us to share with every family: <a href="https://drive.google.com/file/d/1TaiFI9JEmUVUHJzyH693OvDy8lyiwGJ0/view" target="_blank" rel="noopener">Regulated Children's Camps in New York State — What Families Need to Know</a>.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">🚗</span><h2>Daily Logistics</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Daily Logistics</h2></div><div class="card">
         <div class="qa"><h3>Drop-off</h3><p><span class="pill">${esc(w.dropoff_time)}</span> at <b>${esc(w.dropoff_loc)}</b>. On the first morning, plan to arrive a few minutes early so your child can settle in.</p></div>
         <div class="qa"><h3>Pickup</h3><p><span class="pill">${esc(w.pickup_time)}</span> at <b>${esc(w.pickup_loc)}</b>. Only adults listed on your forms may collect your child; to add someone, reach out to ${coord}. For early pickup, please notify us by <b>${esc(w.early_pickup_cutoff)}</b> at the latest.</p></div>
         <div class="qa"><h3>What should my child pack each day?</h3><ul>
@@ -108,25 +111,25 @@
         <div class="qa"><h3>What should my child wear?</h3><p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for the pool and beach but not for the general day.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">🍎</span><h2>Lunch &amp; Food</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
         <div class="qa"><h3>Is lunch provided?</h3><p>Yes — an organic lunch and healthy snacks throughout the day. If your child prefers a packed lunch they're welcome to bring one; please label it, as we store them in the refrigerator. ${lunch}</p></div>
         <div class="qa"><h3>Allergies or dietary restrictions?</h3><p>Please ensure your child's dietary requirements are noted in your enrollment forms. Questions? Message ${coord}.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">🌊</span><h2>Swimming &amp; Water</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Swimming &amp; Water</h2></div><div class="card">
         <div class="qa"><h3>Is there a swim test?</h3><p>Yes — every camper takes a short swim test on Monday so our aquatics team can group children by ability and plan water activities safely.</p></div>
         <div class="qa"><h3>How is water safety handled?</h3><p>Water activities are overseen by our aquatics team with 2 lifeguards on site, whether at the camp pool or the ocean.</p></div>
         <div class="qa"><h3>What to bring for water days?</h3><p>A swimsuit and optional flip-flops to change into. Towels are provided.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">🩺</span><h2>Health &amp; Safety</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Health &amp; Safety</h2></div><div class="card">
         <div class="qa"><h3>Ticks &amp; mosquitoes</h3><p>We treat the grounds with an eco-friendly spray, keep grass short, remove standing water, and plant natural deterrents. We provide long socks for outdoor activities; families are encouraged to apply a preferred repellent before drop-off. We also keep kid-safe repellents on-site that children may apply with your permission.</p></div>
         <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout. As a precaution we share the CDC's HEADS UP concussion resources: <a href="https://www.cdc.gov/heads-up/" target="_blank" rel="noopener">overview</a> and <a href="https://www.cdc.gov/heads-up/guidelines/" target="_blank" rel="noopener">returning to activities</a>. We have an on-site First Aid Professional Rescuer/nurse.</p></div>
         <div class="qa"><h3>Sun protection</h3><p>Please apply sunscreen before drop-off; we have sunscreen stations on-site and shaded spaces, and children are encouraged to reapply during the day.</p></div>
         <div class="qa"><h3>Medications &amp; medical needs</h3><p>If your child takes medication during the day, please complete the medication form at registration and notify ${coord} at Monday drop-off so it can be stored safely. Make sure allergies, medical info, and emergency contacts are up to date before Monday. If your child is unwell, please keep them home and let our team know.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">🎓</span><h2>Your Child's Learning Experience</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Your Child's Learning Experience</h2></div><div class="card">
         <div class="qa"><h3>How does the guide model work?</h3><p>Your child's guide is with them every day, fully focused on students — never pulled into admin or meetings. Their role is to understand how your child thinks, what motivates them, and where they're ready to be challenged.${guideTeam?` This week's guide team: <b>${esc(guideTeam)}</b>.`:''}</p></div>
         <div class="qa"><h3>What will I receive at the end of the week?</h3><ul>
           <li><b>MAP insights</b> — where your child is academically, so we can target learning at the right level.</li>
@@ -134,19 +137,19 @@
           <li><b>A concrete academic plan</b> — where your child is and how quickly they can grow.</li></ul></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">📅</span><h2>Events to Note</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
         <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come.</p></div>
         <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week. <i>Location is subject to change depending on weather/ocean conditions.</i></p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">🚌</span><h2>Getting Here</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Getting Here</h2></div><div class="card">
         <div class="qa"><h3>Is bus service available?</h3><p>Yes, for families who require it. Please complete all enrollment forms; bussing details are sent separately to families on the route.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><span class="eyebrow">✉️</span><h2>Contact</h2></div><div class="card contact-card">
-        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p>${coord}<br>${mailtoList(w.coord_emails)}${w.coord_phones?`<br>${esc(w.coord_phones)}`:''}</p></div>
+      h+=`<div class="sec-head"><h2>Contact</h2></div><div class="card contact-card">
+        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p><b>${coordNames}</b><br>${mailtoList(w.coord_emails)}${w.coord_phones?`<br>${esc(w.coord_phones)}`:''}</p></div>
         <div class="qa"><h3>Admissions &amp; questions about Alpha — Nancy Torvund</h3><p>${mailtoList('nancy.torvund@alpha.school')}</p></div>
-        ${headGuide?`<div class="qa"><h3>Academic &amp; life-skills questions — Head Guide</h3><p>${esc(headGuide)}</p></div>`:''}
+        ${headGuide?`<div class="qa"><h3>Academic &amp; life-skills questions — Head Guide</h3><p><b>${esc(headGuide)}</b></p></div>`:''}
         <div class="qa"><h3>Anything else — Dr. Tasha Arnold, Head of Schools</h3><p>${mailtoList('tasha.arnold@alpha.school')}</p></div>
       </div>`;
 

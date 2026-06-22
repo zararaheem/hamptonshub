@@ -707,6 +707,7 @@
 
       <div class="att-bar">
         <div class="field"><label for="ros-week">Week</label><select id="ros-week"></select></div>
+        <div class="field"><label for="ros-sort">Sort by</label><select id="ros-sort"><option value="roster">Roster order</option><option value="first">First name</option><option value="last">Last name</option></select></div>
         <div class="att-stats" id="ros-stats"></div>
       </div>
 
@@ -1268,7 +1269,13 @@ function flash(id){ const el=document.getElementById(id); if(el) el.textContent=
    Supabase `students` table (one row per student per week); falls back to
    localStorage when Supabase isn't connected. */
 let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
-function studentsForWeek(w){ return (ROSTER_DATA[+w]||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)); }
+let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last'
+function studentsForWeek(w){
+  const arr=(ROSTER_DATA[+w]||[]).slice();
+  if(STUDENT_SORT==='first') return arr.sort((a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''));
+  if(STUDENT_SORT==='last')  return arr.sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+}
 function rosterLocalKey(){ return 'roster_local_v1'; }
 function persistLocalRoster(){ store.set(rosterLocalKey(), ROSTER_DATA); }
 function seedLocalRoster(){
@@ -2197,6 +2204,7 @@ async function rosImport(file){
 function rosterInit(){
   fillWeekSelect(document.getElementById('ros-week'));
   document.getElementById('ros-week').addEventListener('change',renderRosterTab);
+  { const ss=document.getElementById('ros-sort'); if(ss) ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); }); }
   document.getElementById('ros-add').addEventListener('click',async ()=>{
     const f=document.getElementById('ros-first'), l=document.getElementById('ros-last'), g=document.getElementById('ros-grade');
     if(!f.value.trim() && !l.value.trim()){ return; }

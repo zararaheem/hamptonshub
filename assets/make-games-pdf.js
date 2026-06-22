@@ -46,7 +46,7 @@ function wrap(str, size, maxw){
 }
 
 // title block
-text(MX, y, 'Summer Camp Games', 'F2', 24); y -= 22;
+text(MX, y, 'Summer Games', 'F2', 24); y -= 22;
 text(MX, y, 'Quick-reference card - minimal setup, maximum fun', 'F3', 11, [0.42,0.47,0.53]); y -= 16;
 c += `0.23 0.62 0.88 RG 1.5 w ${MX} ${y} m ${RIGHT} ${y} l S\n`; y -= 26;
 

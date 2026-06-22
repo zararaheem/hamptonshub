@@ -2594,7 +2594,7 @@ function showTab(t){
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
   if(t==='weekly' && SUPA){ refreshStateKey(supKey()).then(renderSup); }
-  try{ history.replaceState(null,'', t==='dashboard' ? (location.pathname+location.search) : ('#'+t)); }catch(e){}
+  try{ history.replaceState(null,'', t==='dashboard' ? (location.pathname+location.search) : ('#'+(t==='guide'?'weeklybrief':t))); }catch(e){}
   closeRail();
   window.scrollTo({top:0});
 }
@@ -2619,7 +2619,8 @@ function routeHash(){
   }
   if(!h) return false;
   if(h==='games'||h==='filler-games'){ showTab('guide'); setGuideView('games'); try{ history.replaceState(null,'','#games'); }catch(e){} return true; }
-  if(tabs.includes(h)){ showTab(h); if(h==='guide') setGuideView('brief'); return true; }
+  if(h==='weeklybrief'||h==='guide'){ showTab('guide'); setGuideView('brief'); return true; }
+  if(tabs.includes(h)){ showTab(h); return true; }
   return false;
 }
 window.addEventListener('hashchange',()=>{ if(SESSION) routeHash(); });
@@ -3043,7 +3044,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
 (function(){ const seg=document.getElementById('guide-seg'); if(!seg) return;
   seg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
     setGuideView(b.dataset.gv);
-    try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#guide'); }catch(e){}
+    try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();

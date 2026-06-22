@@ -415,6 +415,10 @@
     border-radius:10px;padding:12px 14px;font-size:15px;font-family:var(--body);margin-bottom:14px}
   .gate-card input:focus{outline:2px solid var(--brass);outline-offset:1px}
   .gate-card .btn{width:100%;justify-content:center;padding:13px;font-size:15px;display:block}
+  .gate-card .google-btn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f2d3a;border:1px solid #dadce0;font-weight:600;margin-bottom:6px}
+  .gate-card .google-btn:hover{background:#f7f8fa}
+  .gate-or{display:flex;align-items:center;text-align:center;color:var(--muted-2);font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;margin:14px 0 8px}
+  .gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:var(--line);margin:0 10px}
   .gate-msg{font-size:13px;min-height:18px}
   .gate-msg.err{color:var(--coral)} .gate-msg.ok{color:var(--ok)}
   .gate-foot{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--muted-2)}
@@ -500,7 +504,12 @@
   <div class="gate-card">
     <div class="anchor">⚓ Alpha Odyssey</div>
     <h1>Hamptons Hub</h1>
-    <p class="gp">Staff access only. Sign in with your <b>@alpha.school</b> or <b>@trilogy.com</b> email.</p>
+    <p class="gp">Staff access only. Sign in with your <b>@alpha.school</b> or <b>@trilogy.com</b> Google account — only approved emails get in.</p>
+    <button class="btn google-btn" id="gate-google" type="button" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.68-3.89 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+      Continue with Google
+    </button>
+    <div class="gate-or" id="gate-or" style="display:none">or staff password</div>
     <label for="gate-email">Work email</label>
     <input id="gate-email" type="email" autocomplete="email" placeholder="you@alpha.school" />
     <label for="gate-pass" id="gate-pass-label">Staff password</label>
@@ -1039,8 +1048,9 @@
    mode:'local'    → browser-only preview gate (no backend). */
 const CONFIG = {
   mode: 'supabase',
+  googleAuth: true,            // true → "Sign in with Google", gated to whitelisted emails (needs Google provider enabled in Supabase)
   magicLink: false,            // true → magic-link email login. false → shared-password gate below.
-  accessPassword: 'hamptons26', // shared staff password (used when magicLink is false)
+  accessPassword: 'hamptons26', // shared staff password fallback (kept until Google sign-in is verified, then can be removed)
   supabaseUrl: 'https://zbduxegkxhgyfvrfkgai.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZHV4ZWdreGhneWZ2cmZrZ2FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTIzOTUsImV4cCI6MjA5MzIyODM5NX0.pTdpdvjkaWFPQdRm7k0xqtAxcUsMo015qRH2_H4spOk'
 };
@@ -1051,8 +1061,9 @@ try {
     SUPA = true;
   }
 } catch(e){ console.warn('Supabase init failed — falling back to local preview gate:', e); SUPA = false; }
-const NEEDS_LOGIN = SUPA && CONFIG.magicLink === true;  // true only when real sign-in is enabled
-const PASSWORD_GATE = !NEEDS_LOGIN && !!CONFIG.accessPassword;  // shared-password gate
+const GOOGLE_GATE = SUPA && CONFIG.googleAuth === true;  // "Sign in with Google", whitelist-gated
+const NEEDS_LOGIN = SUPA && CONFIG.magicLink === true;  // magic-link email login
+const PASSWORD_GATE = !NEEDS_LOGIN && !!CONFIG.accessPassword;  // shared-password gate (fallback)
 
 /* =================== DATA =================== */
 const WEEKS = [
@@ -2622,6 +2633,17 @@ async function addEmailHandler(){
   if(err){ m.className='gate-msg err'; m.textContent=err.message||'Could not add.'; return; }
   document.getElementById('add-email').value=''; m.className='gate-msg ok'; m.textContent='Added ✓'; renderAccess();
 }
+async function googleSignIn(){
+  const msg=document.getElementById('gate-msg');
+  if(msg){ msg.className='gate-msg'; msg.textContent='Opening Google sign-in…'; }
+  try{
+    const { error } = await SB.auth.signInWithOAuth({
+      provider:'google',
+      options:{ redirectTo: location.href.split('#')[0].split('?')[0], queryParams:{ prompt:'select_account' } }
+    });
+    if(error){ if(msg){ msg.className='gate-msg err'; msg.textContent = /provider|enabled|unsupported/i.test(error.message||'') ? 'Google sign-in isn’t switched on yet — ask Zara.' : (error.message||'Could not start Google sign-in.'); } }
+  }catch(e){ if(msg){ msg.className='gate-msg err'; msg.textContent='Could not start Google sign-in.'; } }
+}
 async function authInit(){
   document.getElementById('gate-go').addEventListener('click',gateSubmit);
   document.getElementById('gate-email').addEventListener('keydown',e=>{ if(e.key==='Enter') gateSubmit(); });
@@ -2630,6 +2652,22 @@ async function authInit(){
   document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ if(SUPA) return; setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
   document.getElementById('add-email-btn').addEventListener('click',addEmailHandler);
   document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter') addEmailHandler(); });
+
+  if(GOOGLE_GATE){
+    const g=document.getElementById('gate-google'); const ord=document.getElementById('gate-or');
+    if(g){ g.style.display='flex'; g.addEventListener('click', googleSignIn); }
+    if(ord && PASSWORD_GATE) ord.style.display='flex';
+    const banner=document.getElementById('demo-banner');
+    if(banner) banner.textContent='Protected sign-in — staff sign in with their approved Google account; only whitelisted emails get in. Not on the list? Reach out to Zara (zara.raheem@alpha.school).';
+    const note=document.getElementById('access-note');
+    if(note) note.innerHTML='<b>Google sign-in.</b> Everyone signs in with their Google account and only gets in if their email is on this list. Add or remove people here.';
+    try{
+      const { data:{ session } } = await SB.auth.getSession();
+      if(session && session.user && session.user.email){ await tryEnter(session.user.email); }
+    }catch(e){}
+    SB.auth.onAuthStateChange(async (_ev, sess)=>{ if(sess && sess.user && sess.user.email && !SESSION){ await tryEnter(sess.user.email); } });
+    if(SESSION) return;  // already signed in via Google
+  }
 
   if(NEEDS_LOGIN){
     const go=document.getElementById('gate-go'); if(go) go.textContent='Email me a sign-in link';
@@ -2644,10 +2682,12 @@ async function authInit(){
       if(sess && sess.user && sess.user.email && !SESSION){ await tryEnter(sess.user.email); }
     });
   } else if(PASSWORD_GATE){
-    const banner=document.getElementById('demo-banner');
-    if(banner) banner.textContent='Sign-in is limited to approved emails. Enter your approved @alpha.school / @trilogy.com email and the staff password. Not on the list? Reach out to Zara (zara.raheem@alpha.school).';
-    const note=document.getElementById('access-note');
-    if(note) note.innerHTML='<b>Approved emails only.</b> Sign-in is limited to people on the access list below — add their email here and share the staff password. Anyone not on the list is told to reach out to Zara.';
+    if(!GOOGLE_GATE){
+      const banner=document.getElementById('demo-banner');
+      if(banner) banner.textContent='Sign-in is limited to approved emails. Enter your approved @alpha.school / @trilogy.com email and the staff password. Not on the list? Reach out to Zara (zara.raheem@alpha.school).';
+      const note=document.getElementById('access-note');
+      if(note) note.innerHTML='<b>Approved emails only.</b> Sign-in is limited to people on the access list below — add their email here and share the staff password. Anyone not on the list is told to reach out to Zara.';
+    }
     const s=store.get('session');
     if(s&&s.email){
       try{ const a=await dbCheckAccess(s.email); if(a&&a.allowed){ enterHub({email:s.email, admin:!!a.admin, owner:!!a.owner}); return; } }catch(e){}

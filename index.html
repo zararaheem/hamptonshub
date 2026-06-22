@@ -874,7 +874,7 @@
     <section class="view" id="view-famguide" hidden>
       <div class="eyebrow admin-only">Families · Weekly guide</div>
       <h1 class="page-title">Family Guide — weekly</h1>
-      <p class="page-lead">Configure each week's parent guide — coordinator, drop-off/pickup, lunch menu, Monday &amp; Friday events — then <b>publish</b> it. Families open it at <code>guide.html</code> using that week's access code. Static sections (packing, safety, swimming, etc.) are built in.</p>
+      <p class="page-lead">Configure each week's parent guide — coordinator, drop-off/pickup, lunch menu, Monday &amp; Friday events — then <b>publish</b> it. Families open it on the parent guide site using that week's access code (use <b>Copy family link</b> below). Static sections (packing, safety, swimming, etc.) are built in.</p>
       <div class="field" style="max-width:300px"><label for="fg-week">Week</label><select id="fg-week"></select></div>
       <div id="fg-editor"></div>
     </section>
@@ -968,7 +968,10 @@ const CONFIG = {
   googleAuth: true,            // true → "Sign in with Google", gated to whitelisted emails (needs Google provider enabled in Supabase)
   magicLink: false,            // true → magic-link email login (optional). Sign-in is Google-only by default.
   supabaseUrl: 'https://qwmetffzspobjamwwhca.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs'
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs',
+  // Public family guide lives on its own Vercel site (separate from the hub).
+  // Update this if you name the Vercel project something else.
+  familyGuideUrl: 'https://alpha-summer-guide.vercel.app'
 };
 let SB = null, SUPA = false;
 try {
@@ -2212,7 +2215,7 @@ function renderFamGuideForm(){
   if(!sel||!wrap) return;
   const w=FAM_WEEKS.find(x=>String(x.week)===String(sel.value));
   if(!w){ wrap.innerHTML='<div class="callout">No data for this week yet.</div>'; return; }
-  const link='guide.html?code='+encodeURIComponent(w.access_code||'');
+  const link=(CONFIG.familyGuideUrl||'').replace(/\/$/,'')+'/?code='+encodeURIComponent(w.access_code||'');
   wrap.innerHTML=`
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
@@ -2245,7 +2248,7 @@ function renderFamGuideForm(){
       <div style="margin-top:12px"><button class="btn" id="fg-save">Save Week ${esc(w.week)}</button> <span class="gate-msg" id="fg-msg" style="margin-left:8px"></span></div>
     </div>`;
   document.getElementById('fg-copy').addEventListener('click',()=>{
-    const url=location.origin+location.pathname.replace(/[^/]*$/,'')+link;
+    const url=link;
     const m=document.getElementById('fg-msg');
     navigator.clipboard.writeText(url).then(()=>{ m.className='gate-msg ok'; m.textContent='Link copied'; },()=>{ m.className='gate-msg'; m.textContent=url; });
   });

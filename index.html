@@ -539,6 +539,7 @@
       <button class="nav-item" data-tab="workstreams">Task List</button>
       <button class="nav-item" data-tab="events">Events Team</button>
       <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
+      <button class="nav-item" data-tab="games">Filler Games</button>
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
       <div class="nav-label">Parent Comms</div>
@@ -1019,6 +1020,14 @@
           <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
         </div>
       </div>
+    </section>
+
+    <!-- ===== FILLER GAMES ===== -->
+    <section class="view" id="view-games" hidden>
+      <div class="eyebrow">Curriculum · Filler games</div>
+      <h1 class="page-title">Filler games</h1>
+      <p class="page-lead">Quick, low-setup games to fill a gap, reset energy, or run a transition — players · time · space at a glance, with how-to. Tip: gold for that 11:58am stretch before lunch.</p>
+      <div id="games-list"></div>
     </section>
 
     <!-- ===== SUPPLIES ===== -->
@@ -2556,8 +2565,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','family','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','games','resources','signage','newsletter','family','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',games:'Filler Games',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -2916,10 +2925,49 @@ async function authInit(){
   if(NEEDS_LOGIN){ const pass=document.getElementById('gate-pass'), passL=document.getElementById('gate-pass-label'); if(pass) pass.style.display='none'; if(passL) passL.style.display='none'; }
 }
 
+/* =================== FILLER GAMES (static reference) =================== */
+const GAMES=[
+  {cat:'Quick-launch · no setup needed', color:'#f6c945', ink:'#3a2e08', items:[
+    {name:"Caught Peekin'", players:'8–30', time:'5–10 min', space:'Any space', desc:"Everyone stands in a circle, heads down, eyes closed. On 'Go!' look up and lock eyes with one person — if you make eye contact with someone looking back, you're both out. No talking, no pointing. Last two stare it down."},
+    {name:"B'gawk!", players:'8–30', time:'10–15 min', space:'Any space', desc:"In a circle, thrust your arms forward like a chicken beak toward a neighbor and shout 'B'GAWK!'; they pass it on. Flap your elbows and squawk to reverse direction. Miss your cue or break rhythm and you're out. Speeds up as it goes."},
+    {name:"Fruit Salad", players:'10–40', time:'10–20 min', space:'Open space', desc:"Sit in a circle, each assigned a fruit (apple/banana/mango). Caller shouts a fruit — those players scramble to new spots while the caller steals one. 'FRUIT SALAD!' = everyone moves. Whoever's left without a spot is the new caller."},
+    {name:"Evolution", players:'10–40', time:'10–15 min', space:'Any open space', desc:"Everyone starts as an egg (crouch, waddle). Win rock-paper-scissors to evolve: egg → chicken → dinosaur → human. You can only challenge your own kind. Goal: evolve to human. Beautiful simultaneous chaos."},
+    {name:"Gorilla, Person, Pistol", players:'6–40', time:'10–20 min', space:'Open space', desc:"Whole-body rock-paper-scissors in two teams. Gorilla beats Person, Person beats Pistol, Pistol beats Gorilla. Teams huddle, pick, act it out on three. Losing team runs to their safe zone before being tagged; tagged players switch sides."},
+    {name:"Five in Ten", players:'5–30', time:'10–20 min', space:'Any space', desc:"Small teams. Caller shouts a category ('Breakfast foods!'); teams have 10 seconds to name five. First to five wins the round. Categories get silly fast — 'Things a seagull would steal.' Endlessly customizable."},
+    {name:"Group Up", players:'10–40', time:'5–10 min', space:'Large open space', desc:"Everyone mills around. Caller shouts a number — players scramble into groups of exactly that size; anyone left out sits. Keep going until two or three remain. Can use categories too ('group up by birth month!'). Great energy-builder."},
+    {name:"Group Juggle / Warp Speed", players:'8–25', time:'10–15 min', space:'Circle space', desc:"Establish a throwing pattern (never to a neighbor) until the ball returns to start, then beat your time. Add a second ball going the other way. The group competes against itself — kids get obsessed with the record. No losers."},
+  ]},
+  {cat:'Water-friendly', color:'#3a9fe0', ink:'#08263a', items:[
+    {name:"Drip, Drip, Drench", players:'8–30', time:'10–20 min', space:'Outdoors', desc:"Duck Duck Goose with water. Caller taps heads ('drip... drip...') then dumps a cup and shouts 'DRENCH!' The drenched player chases the caller around the circle; if the caller reaches the empty spot safely, the drenched player becomes caller."},
+    {name:"Sponge Relay Race", players:'10–40', time:'10–15 min', space:'Outdoors', desc:"Teams of 5–8 with a full bucket at one end, empty at the other. Soak a big sponge, run, squeeze it out, sprint back, tag the next person. Highest bucket in 3 minutes wins. Variation: pass the soaked sponge overhead down the line."},
+    {name:"Water Balloon Numbers", players:'10–30', time:'10–20 min', space:'Outdoors', desc:"Everyone gets a number and spreads out. Caller shouts a number; that player grabs a balloon from the center and tags as many others as possible before it pops. Everyone else sprints away. Fast and unpredictable."},
+    {name:"Freeze Tag with Squirt Guns", players:'8–25', time:'15–20 min', space:'Outdoors', desc:"Classic freeze tag, but you unfreeze a frozen teammate by squirting them with a water gun. One or two are 'it'; if everyone freezes, the taggers win. Swap 'it' roles each few rounds so everyone gets the squirt gun."},
+  ]},
+  {cat:'Calm & transition', color:'#4fae73', ink:'#08321c', items:[
+    {name:"Camouflage", players:'6–20', time:'15–25 min', space:'Wooded / natural space', desc:"A spotter closes their eyes and counts to 30 while everyone hides — but only where the spotter could see without moving their feet. Spotter scans (no moving); spotted players are out. Every 30s the spotter steps forward, shrinking the hiding spots. Last unseen wins."},
+    {name:"Lion's Cub", players:'6–20', time:'10–20 min', space:'Quiet outdoor space', desc:"A blindfolded Lion guards keys at their feet. Others creep silently to steal them. If the Lion hears you and points your way, you freeze for 10 seconds. Steal the keys uncaught and you become the Lion. Tense and quiet."},
+    {name:"Cloud Watching", players:'2–30', time:'10–20 min', space:'Outdoors, open sky', desc:"Lie on your backs and look up. One person names a shape they see; the group discusses; the next person picks a cloud. That's it — gold for slowing a wound-up group, especially right after lunch. No losers, no setup, no noise."},
+    {name:"How Long Is a Minute?", players:'5–40', time:'5–10 min', space:'Any space', desc:"Eyes closed, everyone stands. On 'Go', sit down when you think a minute has passed — no counting or peeking. The facilitator notes who sits when, then reveals who got closest to 60s. A calm, surprising mindfulness moment."},
+    {name:"Crossed or Uncrossed?", players:'8–30', time:'10–15 min', space:'Seated circle', desc:"Pass an object saying 'I'm passing this crossed' or 'uncrossed.' The group works out the secret rule — which is really whether your ankles/arms are crossed, not the object. Those who get it play along quietly. A lovely slow-burn mystery."},
+  ]},
+];
+function renderGames(){
+  const el=document.getElementById('games-list'); if(!el) return;
+  el.innerHTML = GAMES.map(g=>`
+    <div style="display:flex;align-items:center;gap:10px;background:${g.color};color:${g.ink};font-weight:700;padding:9px 16px;border-radius:10px;margin:26px 0 14px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 2px 8px rgba(20,40,60,.12)"><span style="opacity:.8">▪</span>${esc(g.cat)}</div>
+    <div class="grid g2">${g.items.map(it=>`
+      <div class="card" style="border-left:4px solid ${g.color}">
+        <h3 style="margin:0 0 6px">${esc(it.name)}</h3>
+        <div class="meta-line" style="margin:0 0 9px;gap:6px;flex-wrap:wrap"><span class="pill">${esc(it.players)} players</span><span class="pill">${esc(it.time)}</span><span class="pill">${esc(it.space)}</span></div>
+        <p style="margin:0;font-size:14.5px;color:var(--muted)">${esc(it.desc)}</p>
+      </div>`).join('')}</div>`).join('')
+    + `<div class="callout" style="margin-top:22px">Questions about running any of these? Reach out to <b>Jenna Klemm</b> on Slack.</div>`;
+}
+
 /* =================== INIT =================== */
 renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
 renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster(); renderOps(); renderSummary();
-renderWorkstreams('All'); renderEvents(); renderGuideWeeks();
+renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';

@@ -539,7 +539,6 @@
       <button class="nav-item" data-tab="workstreams">Task List</button>
       <button class="nav-item" data-tab="events">Events Team</button>
       <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="games">Filler Games</button>
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
       <div class="nav-label">Parent Comms</div>
@@ -1002,32 +1001,36 @@
     <section class="view" id="view-guide" hidden>
       <div class="eyebrow">Curriculum · Contact Kate Liemandt on Slack</div>
       <h1 class="page-title">Guide Hub</h1>
-      <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Quick activities live in the separate <a data-jump="games" style="color:var(--brass-bright);cursor:pointer"><b>Filler Games</b></a> tab.</p>
+      <div class="seg" id="guide-seg" style="margin:6px 0 18px">
+        <button data-gv="brief" class="on">📘 Weekly brief</button>
+        <button data-gv="games">🎲 Filler games</button>
+      </div>
 
-      <div class="embed-head">
-        <div class="meta-line" style="margin:0"><span>Nine weeks · day-by-day briefs</span></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <a class="btn" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">Open Guide Hub ↗</a>
-          <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/print?auto=1" target="_blank" rel="noopener">Download full PDF ↗</a>
+      <div id="guide-brief">
+        <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Flip to <b>Filler games</b> above.</p>
+
+        <div class="embed-head">
+          <div class="meta-line" style="margin:0"><span>Nine weeks · day-by-day briefs</span></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a class="btn" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">Open Guide Hub ↗</a>
+            <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/print?auto=1" target="_blank" rel="noopener">Download full PDF ↗</a>
+          </div>
+        </div>
+
+        <div class="grid g3" id="guide-weeks" style="margin-bottom:20px"></div>
+
+        <div class="embed-frame" id="guide-embed">
+          <div class="embed-fallback">
+            <div>Loading the live Guide Hub…</div>
+            <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
+          </div>
         </div>
       </div>
 
-      <div class="grid g3" id="guide-weeks" style="margin-bottom:20px"></div>
-
-      <div class="embed-frame" id="guide-embed">
-        <div class="embed-fallback">
-          <div>Loading the live Guide Hub…</div>
-          <a class="btn ghost" href="https://alpha-odyssey-guide-hub.vercel.app/" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
-        </div>
+      <div id="guide-games" hidden>
+        <p class="page-lead"><b>Have extra time? Try these</b> — quick, low-setup games for the gaps in the day. <b>Tap any game</b> to see how to run it; players · time · space are right there. Questions? Reach out to Jenna Klemm. <span style="color:var(--muted-2)">(← Back to the weekly brief anytime with the toggle above.)</span></p>
+        <div id="games-list"></div>
       </div>
-    </section>
-
-    <!-- ===== FILLER GAMES ===== -->
-    <section class="view" id="view-games" hidden>
-      <div class="eyebrow">Curriculum · Have extra time?</div>
-      <h1 class="page-title">Have extra time? Try these</h1>
-      <p class="page-lead">Quick, low-setup games for the gaps in the day — reset energy or run a transition. <b>Tap any game</b> to see how to run it; players · time · space are right there. Gold for that 11:58am stretch before lunch. Questions? Reach out to Jenna Klemm.</p>
-      <div id="games-list"></div>
     </section>
 
     <!-- ===== SUPPLIES ===== -->
@@ -2565,8 +2568,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','games','resources','signage','newsletter','family','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',games:'Filler Games',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','newsletter','family','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',newsletter:'Parent Newsletter',family:'Family Hub',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -2951,25 +2954,64 @@ const GAMES=[
     {name:"Crossed or Uncrossed?", players:'8–30', time:'10–15 min', space:'Seated circle', desc:"Pass an object saying 'I'm passing this crossed' or 'uncrossed.' The group works out the secret rule — which is really whether your ankles/arms are crossed, not the object. Those who get it play along quietly. A lovely slow-burn mystery."},
   ]},
 ];
+let GFILTER={cat:'all', any:false, out:false, quick:false};
+function gUpperMin(t){ const m=String(t).match(/(\d+)\s*[–-]\s*(\d+)/); return m?+m[2]:(parseInt(t)||99); }
+function gameMatch(it){
+  if(GFILTER.any && !/any space/i.test(it.space)) return false;
+  if(GFILTER.out && !/outdoor/i.test(it.space)) return false;
+  if(GFILTER.quick && gUpperMin(it.time)>10) return false;
+  return true;
+}
+function gChip(active,label,key,val){
+  const s = active ? 'background:var(--teal);color:#fff;border:1px solid var(--teal)'
+                   : 'background:transparent;color:var(--muted);border:1px solid var(--line)';
+  return `<button data-fkey="${key}" data-fval="${escAttr(val)}" style="${s};padding:5px 12px;border-radius:999px;font:inherit;font-size:12.5px;cursor:pointer">${esc(label)}</button>`;
+}
 function renderGames(){
   const el=document.getElementById('games-list'); if(!el) return;
-  el.innerHTML = GAMES.map(g=>`
-    <div style="display:flex;align-items:center;gap:10px;background:${g.color};color:${g.ink};font-weight:700;padding:9px 16px;border-radius:10px;margin:26px 0 14px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 2px 8px rgba(20,40,60,.12)"><span style="opacity:.8">▪</span>${esc(g.cat)}</div>
-    <div class="grid g2">${g.items.map(it=>`
-      <details class="card" style="border-left:4px solid ${g.color}">
+  const cats=[['all','All'],['Quick-launch · no setup needed','Quick-launch'],['Water-friendly','Water'],['Calm & transition','Calm']];
+  let bar=`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">`;
+  bar+=cats.map(c=>gChip(GFILTER.cat===c[0],c[1],'cat',c[0])).join('');
+  bar+=`<span style="width:1px;height:20px;background:var(--line);margin:0 3px"></span>`;
+  bar+=gChip(GFILTER.any,'Works anywhere','any','1')+gChip(GFILTER.out,'Outdoors','out','1')+gChip(GFILTER.quick,'≤10 min','quick','1');
+  bar+=`</div>`;
+
+  const cards=it=>`
+      <details class="card" style="border-left:4px solid ${it.__color}">
         <summary style="cursor:pointer;outline:none">
           <span style="font-weight:600;font-size:15.5px;color:var(--oyster)">${esc(it.name)}</span>
           <div class="meta-line" style="margin:8px 0 0;gap:6px;flex-wrap:wrap"><span class="pill">${esc(it.players)} players</span><span class="pill">${esc(it.time)}</span><span class="pill">${esc(it.space)}</span></div>
         </summary>
         <p style="margin:11px 0 0;font-size:14.5px;color:var(--muted)">${esc(it.desc)}</p>
-      </details>`).join('')}</div>`).join('')
-    + `<div class="callout" style="margin-top:22px">Questions about running any of these? Reach out to <b>Jenna Klemm</b> on Slack.</div>`;
+      </details>`;
+  let body=''; let total=0;
+  GAMES.filter(g=>GFILTER.cat==='all'||g.cat===GFILTER.cat).forEach(g=>{
+    const items=g.items.filter(gameMatch); if(!items.length) return; total+=items.length;
+    body+=`<div style="display:flex;align-items:center;gap:10px;background:${g.color};color:${g.ink};font-weight:700;padding:9px 16px;border-radius:10px;margin:24px 0 14px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 2px 8px rgba(20,40,60,.12)"><span style="opacity:.8">▪</span>${esc(g.cat)} <span style="opacity:.7;font-weight:600">· ${items.length}</span></div>`;
+    body+=`<div class="grid g2">`+items.map(it=>cards({...it,__color:g.color})).join('')+`</div>`;
+  });
+  if(!total) body=`<div class="callout">No games match those filters — try clearing one.</div>`;
+  el.innerHTML = bar + body + `<div class="callout" style="margin-top:22px">Questions about running any of these? Reach out to <b>Jenna Klemm</b> on Slack.</div>`;
+  el.querySelectorAll('[data-fkey]').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.fkey, v=b.dataset.fval;
+    if(k==='cat') GFILTER.cat=v; else GFILTER[k]=!GFILTER[k];
+    renderGames();
+  }));
 }
 
 /* =================== INIT =================== */
 renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
 renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
+/* Guide Hub: toggle between the weekly brief and filler games */
+(function(){ const seg=document.getElementById('guide-seg'); if(!seg) return;
+  seg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+    const games = b.dataset.gv==='games';
+    document.getElementById('guide-brief').hidden = games;
+    document.getElementById('guide-games').hidden = !games;
+  });
+})();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';

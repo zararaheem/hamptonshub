@@ -1002,7 +1002,7 @@
     <section class="view" id="view-guide" hidden>
       <div class="eyebrow">Curriculum · Contact Kate Liemandt on Slack</div>
       <h1 class="page-title">Guide Hub</h1>
-      <p class="page-lead">Daily field guides for the summer Odyssey. The Full brief (Master) has every detail; each level tab is your grade's summary — read just that.</p>
+      <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Quick activities live in the separate <a data-jump="games" style="color:var(--brass-bright);cursor:pointer"><b>Filler Games</b></a> tab.</p>
 
       <div class="embed-head">
         <div class="meta-line" style="margin:0"><span>Nine weeks · day-by-day briefs</span></div>
@@ -1024,9 +1024,9 @@
 
     <!-- ===== FILLER GAMES ===== -->
     <section class="view" id="view-games" hidden>
-      <div class="eyebrow">Curriculum · Filler games</div>
-      <h1 class="page-title">Filler games</h1>
-      <p class="page-lead">Quick, low-setup games to fill a gap, reset energy, or run a transition — players · time · space at a glance, with how-to. Tip: gold for that 11:58am stretch before lunch.</p>
+      <div class="eyebrow">Curriculum · Have extra time?</div>
+      <h1 class="page-title">Have extra time? Try these</h1>
+      <p class="page-lead">Quick, low-setup games for the gaps in the day — reset energy or run a transition. <b>Tap any game</b> to see how to run it; players · time · space are right there. Gold for that 11:58am stretch before lunch. Questions? Reach out to Jenna Klemm.</p>
       <div id="games-list"></div>
     </section>
 
@@ -2956,11 +2956,13 @@ function renderGames(){
   el.innerHTML = GAMES.map(g=>`
     <div style="display:flex;align-items:center;gap:10px;background:${g.color};color:${g.ink};font-weight:700;padding:9px 16px;border-radius:10px;margin:26px 0 14px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 2px 8px rgba(20,40,60,.12)"><span style="opacity:.8">▪</span>${esc(g.cat)}</div>
     <div class="grid g2">${g.items.map(it=>`
-      <div class="card" style="border-left:4px solid ${g.color}">
-        <h3 style="margin:0 0 6px">${esc(it.name)}</h3>
-        <div class="meta-line" style="margin:0 0 9px;gap:6px;flex-wrap:wrap"><span class="pill">${esc(it.players)} players</span><span class="pill">${esc(it.time)}</span><span class="pill">${esc(it.space)}</span></div>
-        <p style="margin:0;font-size:14.5px;color:var(--muted)">${esc(it.desc)}</p>
-      </div>`).join('')}</div>`).join('')
+      <details class="card" style="border-left:4px solid ${g.color}">
+        <summary style="cursor:pointer;outline:none">
+          <span style="font-weight:600;font-size:15.5px;color:var(--oyster)">${esc(it.name)}</span>
+          <div class="meta-line" style="margin:8px 0 0;gap:6px;flex-wrap:wrap"><span class="pill">${esc(it.players)} players</span><span class="pill">${esc(it.time)}</span><span class="pill">${esc(it.space)}</span></div>
+        </summary>
+        <p style="margin:11px 0 0;font-size:14.5px;color:var(--muted)">${esc(it.desc)}</p>
+      </details>`).join('')}</div>`).join('')
     + `<div class="callout" style="margin-top:22px">Questions about running any of these? Reach out to <b>Jenna Klemm</b> on Slack.</div>`;
 }
 

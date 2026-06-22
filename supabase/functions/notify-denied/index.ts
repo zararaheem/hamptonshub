@@ -65,17 +65,21 @@ Deno.serve(async (req) => {
       .from("access_attempts")
       .insert({ email, user_id: user.id, full_name: fullName });
 
-    // Notify Slack.
+    // Notify Slack with a themed bot name + anchor icon (Alpha Odyssey).
     const who = fullName ? `${fullName} (${email})` : email;
     const text =
-      `:no_entry: *Hamptons Hub — denied sign-in*\n` +
+      `:anchor: *Hamptons Hub — sign-in attempt*\n` +
       `*${who}* signed in with Google but isn't on the access list.\n` +
-      `<https://hamptonshub.vercel.app|Open the hub> and add them in the Access tab if they belong.`;
+      `<https://hamptonshub.vercel.app|Review access> in the Access tab.`;
 
     const slackRes = await fetch(SLACK_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({
+        text,
+        username: "Hamptons Hub",
+        icon_emoji: ":anchor:",
+      }),
     });
 
     return json({ ok: true, slack: slackRes.status });

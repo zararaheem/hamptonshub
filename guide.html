@@ -168,7 +168,6 @@
         ${c.people.map(p=>`<div class="contact-person"><b>${esc(p.name)}</b> · ${emailA(p.email)}</div>`).join('')}
         ${c.note?`<div class="contact-note">${c.note}</div>`:''}
       </div>`).join('');
-      h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">${contactHtml}</div>`;
 
       h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
         <div class="qa"><h3>Is lunch provided?</h3><p>Yes — an organic lunch and healthy snacks throughout the day. If your child prefers a packed lunch they're welcome to bring one; please label it, as we store them in the refrigerator. ${lunch}</p></div>
@@ -183,7 +182,11 @@
 
       h+=`<div class="sec-head"><h2>Health &amp; Safety</h2></div><div class="card">
         <div class="qa"><h3>Ticks &amp; mosquitoes</h3><p>We take tick prevention very seriously. In the lead up to the summer, we treated the grounds with an eco-friendly spray. The center intentionally keeps grass short, ensures there is no standing water, and we have also placed plants that act as natural deterrents. We will provide all students with long socks for outdoor activities. Families are also encouraged to apply a preferred repellent before drop-off. We also keep kid-safe repellents on-site that children may apply with your permission.</p></div>
-        <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout. As a precaution we share the CDC's HEADS UP concussion resources: <a href="https://www.cdc.gov/heads-up/" target="_blank" rel="noopener">overview</a> and <a href="https://www.cdc.gov/heads-up/guidelines/" target="_blank" rel="noopener">returning to activities</a>. We have an on-site First Aid Professional Rescuer/nurse.</p></div>
+        <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout, and we have an on-site First Aid Professional Rescuer/nurse. As a precaution, we share the CDC's HEADS UP concussion resources:</p>
+          <ul>
+            <li><a href="https://www.cdc.gov/heads-up/" target="_blank" rel="noopener">HEADS UP — concussion overview</a></li>
+            <li><a href="https://www.cdc.gov/heads-up/guidelines/" target="_blank" rel="noopener">Returning to activities after a concussion</a></li>
+          </ul></div>
         <div class="qa"><h3>Sun protection</h3><p>Please apply sunscreen before drop-off; we have sunscreen stations on-site and shaded spaces, and children are encouraged to reapply during the day.</p></div>
         <div class="qa"><h3>Medications &amp; medical needs</h3><p>If your child takes medication during the day, please complete the medication form in the <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">Summer Enrollment Portal</a> and notify ${coord} at Monday drop-off so it can be stored safely. Make sure allergies, medical info, and emergency contacts are up to date before Monday. If your child is unwell, please keep them home and let our team know.</p></div>
       </div>`;
@@ -201,9 +204,12 @@
         <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week. <i>Location is subject to change depending on weather/ocean conditions.</i></p>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
       </div>`;
 
-      h+=`<div class="sec-head"><h2>Getting Here</h2></div><div class="card">
+      h+=`<div class="sec-head"><h2>Bus Service</h2></div><div class="card">
+        <div class="qa"><h3>Where is drop-off and pickup?</h3><p>All drop-off and pickup takes place at <b>44 Woods Lane, East Hampton</b>. Please use this address whether you're driving in or meeting the bus route.</p></div>
         <div class="qa"><h3>Is bus service available?</h3><p>Yes, for families who require it. Please complete all <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">enrollment forms</a>; bussing details are sent separately to families on the route.</p></div>
       </div>`;
+
+      h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">${contactHtml}</div>`;
 
       h+=`<div class="sec-head"><h2>Additional Resources</h2></div><div class="card">
         <div class="qa"><h3>The TimeBack Learning Model</h3><p>You can learn more about TimeBack — our 2 Hour Learning model — in the parent guide below.</p>

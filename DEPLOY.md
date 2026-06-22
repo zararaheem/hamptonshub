@@ -83,7 +83,7 @@ family/
 1. **vercel.com → Add New → Project** → import this same repo (`zararaheem/hamptonshub`).
 2. **Root Directory:** click *Edit* and set it to **`family`** (this is what makes it a separate site serving the guide at `/`).
 3. Framework preset: **Other**. No build command, no output dir.
-4. **Project Name:** `alpha-summer-guide` → gives `https://alpha-summer-guide.vercel.app`. (Pick a different name if you like — then update `CONFIG.familyGuideUrl` near the top of `index.html`, and the redirect URL inside the root `guide.html`, to match.)
+4. **Project Name:** `hamptonsfamilyguide` → gives `https://hamptonsfamilyguide.vercel.app`. (If you rename it, update `CONFIG.familyGuideUrl` near the top of `index.html`, and the redirect URL inside the root `guide.html`, to match.)
 5. Deploy.
 
 Now there are two Vercel projects from one repo: the **hub** (root dir `/` → `hamptonshub.vercel.app`, staff-only) and the **guide** (root dir `family/` → `alpha-summer-guide.vercel.app`, parents). Every `git push` redeploys both.

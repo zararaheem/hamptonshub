@@ -2527,18 +2527,21 @@ function setMode(m){ store.set('accessMode',m); }
 let SESSION = null; // {email, admin, owner}
 
 /* ---- unified allow-list data layer (Supabase or local) ---- */
+const STAFF_DOMAINS=['alpha.school','trilogy.com','2hourlearning.com'];
+function categoryFor(email){ return STAFF_DOMAINS.includes((email.split('@')[1]||'').toLowerCase()) ? 'staff' : 'external'; }
 async function dbGetAllow(){
   if(SUPA){
     const { data, error } = await SB.from('allowed_emails')
-      .select('email,is_admin,is_owner').order('is_owner',{ascending:false}).order('email');
+      .select('email,is_admin,is_owner,full_name,category').order('is_owner',{ascending:false}).order('email');
     if(error){ console.warn('load allow-list failed:', error); return []; }
-    return (data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner}));
+    return (data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner, name:r.full_name||'', category:r.category||'staff'}));
   }
-  return getAllowLocal();
+  return getAllowLocal().map(u=>({email:u.email, admin:u.admin, owner:u.owner, name:u.name||'', category:u.category||categoryFor(u.email)}));
 }
 async function dbAddAllow(email){
-  if(SUPA){ const { error } = await SB.from('allowed_emails').insert({email, is_admin:false}); return error; }
-  const a=getAllowLocal(); a.push({email,admin:false}); setAllowLocal(a); return null;
+  const category=categoryFor(email);
+  if(SUPA){ const { error } = await SB.from('allowed_emails').insert({email, is_admin:false, category}); return error; }
+  const a=getAllowLocal(); a.push({email,admin:false,category}); setAllowLocal(a); return null;
 }
 async function dbRemoveAllow(email){
   if(SUPA){ const { error } = await SB.from('allowed_emails').delete().eq('email', email); return error; }
@@ -2547,6 +2550,14 @@ async function dbRemoveAllow(email){
 async function dbSetAdmin(email, val){
   if(SUPA){ const { error } = await SB.from('allowed_emails').update({is_admin:val}).eq('email', email); return error; }
   const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.admin=val; setAllowLocal(a); return null;
+}
+async function dbSetName(email, name){
+  if(SUPA){ const { error } = await SB.from('allowed_emails').update({full_name:name}).eq('email', email); return error; }
+  const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.name=name; setAllowLocal(a); return null;
+}
+async function dbSetCategory(email, category){
+  if(SUPA){ const { error } = await SB.from('allowed_emails').update({category}).eq('email', email); return error; }
+  const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.category=category; setAllowLocal(a); return null;
 }
 async function dbCheckAccess(email){
   email=(email||'').toLowerCase();
@@ -2576,6 +2587,8 @@ function enterHub(sess){
   document.body.classList.remove('locked');
   document.body.classList.toggle('is-admin', !!sess.admin);
   document.getElementById('me-mail').textContent=sess.email;
+  // record the signed-in person's Google display name (own row only, if not set yet)
+  if(SUPA){ SB.auth.getUser().then(({data})=>{ const u=data&&data.user, md=u&&u.user_metadata||{}; const nm=md.full_name||md.name; if(nm) SB.rpc('claim_my_profile',{p_name:nm}).then(()=>renderAccess()).catch(()=>{}); }).catch(()=>{}); }
   renderAccess();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
   Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
@@ -2629,20 +2642,55 @@ async function renderAccess(){
     else { const mode=getMode(); seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode)); }
   }
   const a=await dbGetAllow();
-  const head=`<thead><tr><th>Email</th><th>Role</th><th>Admin</th><th></th></tr></thead>`;
-  const body=a.map((u)=>`<tr>
-    <td class="role-cell">${esc(u.email)}</td>
-    <td>${u.owner?'<span class="pill ok">Owner</span>':(u.admin?'<span class="pill">Admin</span>':(domainOk(u.email)?'<span class="pill">Member</span>':'<span class="pill">Exception</span>'))}</td>
-    <td>${u.owner?'<span class="blank">—</span>':`<button class="health-toggle ${u.admin?'flag':''}" data-act="admin" data-email="${escAttr(u.email)}" data-admin="${u.admin?1:0}">${u.admin?'Admin ✓':'Make admin'}</button>`}</td>
-    <td>${u.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove" data-email="${escAttr(u.email)}" title="Remove">×</button>`}</td>
-  </tr>`).join('');
+  // group entries by name (each unnamed email is its own group)
+  const groups=new Map();
+  a.forEach(u=>{
+    const key=(u.name&&u.name.trim())?('n:'+u.name.trim().toLowerCase()):('e:'+u.email.toLowerCase());
+    let g=groups.get(key);
+    if(!g){ g={name:u.name||'', category:u.category||'staff', owner:false, admin:false, emails:[]}; groups.set(key,g); }
+    g.emails.push({email:u.email, owner:u.owner});
+    if(u.owner) g.owner=true;
+    if(u.admin) g.admin=true;
+    if(u.category==='external') g.category='external';
+    if(u.name && !g.name) g.name=u.name;
+  });
+  const list=[...groups.values()].sort((x,y)=> (y.owner-x.owner) || (x.name||x.emails[0].email).localeCompare(y.name||y.emails[0].email));
+  const chipStyle="display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:7px;padding:2px 7px;margin:2px 3px 2px 0;font-size:12px";
+  const head=`<thead><tr><th>Name</th><th>Category</th><th>Email(s)</th><th>Admin</th><th></th></tr></thead>`;
+  const body=list.map(g=>{
+    const ids=escAttr(g.emails.map(e=>e.email).join(','));
+    const emailsHtml=g.emails.map(e=>`<span style="${chipStyle}">${esc(e.email)}${e.owner?'':` <button class="del" data-act="remove" data-email="${escAttr(e.email)}" title="Remove this email" style="padding:0 3px">×</button>`}</span>`).join('');
+    return `<tr>
+      <td class="role-cell"><input class="cell-input" data-act="name" data-emails="${ids}" value="${escAttr(g.name)}" placeholder="—" style="min-width:120px"></td>
+      <td><button class="health-toggle ${g.category==='external'?'flag':''}" data-act="cat" data-emails="${ids}" data-cat="${g.category}">${g.category==='external'?'External':'Staff'}</button></td>
+      <td>${emailsHtml}</td>
+      <td>${g.owner?'<span class="pill ok">Owner</span>':`<button class="health-toggle ${g.admin?'flag':''}" data-act="admin" data-emails="${ids}" data-admin="${g.admin?1:0}">${g.admin?'Admin ✓':'Make admin'}</button>`}</td>
+      <td>${g.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove-all" data-emails="${ids}" title="Remove person">×</button>`}</td>
+    </tr>`;
+  }).join('');
   document.getElementById('access-table').innerHTML=head+`<tbody>${body}</tbody>`;
+  const emailsOf=el=>(el.dataset.emails||'').split(',').filter(Boolean);
+  document.querySelectorAll('#access-table [data-act=name]').forEach(inp=>inp.addEventListener('change',async()=>{
+    for(const em of emailsOf(inp)){ await dbSetName(em, inp.value.trim()); }
+    renderAccess();
+  }));
+  document.querySelectorAll('#access-table [data-act=cat]').forEach(b=>b.addEventListener('click',async()=>{
+    const next=b.dataset.cat==='external'?'staff':'external';
+    for(const em of emailsOf(b)){ await dbSetCategory(em, next); }
+    renderAccess();
+  }));
   document.querySelectorAll('#access-table [data-act=admin]').forEach(b=>b.addEventListener('click',async()=>{
-    const err=await dbSetAdmin(b.dataset.email, b.dataset.admin!=='1'); if(err){ alert(err.message||'Update failed'); }
+    const val=b.dataset.admin!=='1';
+    for(const em of emailsOf(b)){ const err=await dbSetAdmin(em, val); if(err){ alert(err.message||'Update failed'); break; } }
     renderAccess();
   }));
   document.querySelectorAll('#access-table [data-act=remove]').forEach(b=>b.addEventListener('click',async()=>{
     const err=await dbRemoveAllow(b.dataset.email); if(err){ alert(err.message||'Remove failed'); }
+    renderAccess();
+  }));
+  document.querySelectorAll('#access-table [data-act=remove-all]').forEach(b=>b.addEventListener('click',async()=>{
+    if(!confirm('Remove this person and all their email(s) from access?')) return;
+    for(const em of emailsOf(b)){ await dbRemoveAllow(em); }
     renderAccess();
   }));
 }

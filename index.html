@@ -2266,13 +2266,13 @@ async function loadSlack(){
 function slSelectedEmails(){
   return [...document.querySelectorAll('#sl-staff input[type=checkbox]:checked')].map(c=>c.value);
 }
-// Always include these people in every week's channel, on top of the roster.
-const SLACK_ALWAYS=['Zara','Kate','Robbie','Alice','Tasha','Nancy','Jim','Arthur Michel'];
-// Default the week's channel to roster staff (excluding guide-role staff) + the always list.
+// Always include these people in every week's channel, on top of the guides.
+const SLACK_ALWAYS=['Zara','Julianne','Tasha'];
+// Default the week's channel to this week's guides + the always list.
 function slackDefaultEmails(week, staff){
   const set=new Set(); const unresolved=[];
   ROSTER.forEach(rrow=>{
-    if(/guide/i.test(rrow.role)) return;                 // guides are not in this channel
+    if(!/guide/i.test(rrow.role)) return;                // guides only in this channel
     const cell=String(rrow.cells[week-1]||'').trim();
     if(!cell || /^(tbd|n\/a|—|-)$/i.test(cell)) return;
     cell.split(/\s+(?:and|&)\s+|\s*,\s*/i).forEach(tok=>{
@@ -2301,8 +2301,8 @@ async function renderSlack(){
   document.getElementById('sl-all').checked = people.length>0 && people.every(u=>defEmails.has(u.email.toLowerCase()));
   const note=document.getElementById('sl-defnote');
   if(note) note.innerHTML = unresolved.length
-    ? `Defaulted to this week's roster (excluding guides) + the standing group. Couldn't match an email for: <b>${unresolved.map(esc).join(', ')}</b> — add them on the Access tab with their full name to include them.`
-    : `Defaulted to this week's roster staff (excluding guides) plus the standing group. Adjust below if needed.`;
+    ? `Defaulted to this week's guides plus Zara, Julianne &amp; Tasha. Couldn't match an email for: <b>${unresolved.map(esc).join(', ')}</b> — add them on the Access tab with their full name to include them.`
+    : `Defaulted to this week's guides plus Zara, Julianne &amp; Tasha. Adjust below if needed.`;
   const row=SLACK_WEEKS.find(r=>Number(r.week)===week);
   const status=document.getElementById('sl-status'), open=document.getElementById('sl-open'), create=document.getElementById('sl-create');
   if(row){

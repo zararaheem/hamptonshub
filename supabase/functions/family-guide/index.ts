@@ -24,8 +24,9 @@ Deno.serve(async (req) => {
     const code = String(body.code ?? "").trim();
     if (!code) return json({ ok: false });
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
+    // Case-insensitive match so links/typing work regardless of case.
     const { data, error } = await sb
-      .from("family_weeks").select("*").eq("access_code", code).eq("published", true).maybeSingle();
+      .from("family_weeks").select("*").ilike("access_code", code).eq("published", true).maybeSingle();
     if (error || !data) return json({ ok: false });
     return json({ ok: true, week: data });
   } catch (_e) {

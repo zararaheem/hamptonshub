@@ -314,14 +314,23 @@
   #tech-table td{min-width:96px}
 
   /* ---------- Weekly Supplies ---------- */
-  .supply-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
+  .supply-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
   .supply-row:last-child{border-bottom:0}
   .supply-row:hover{background:rgba(62,140,132,.06)}
-  .supply-row.done .sname{text-decoration:line-through;color:var(--muted-2)}
+  .supply-row.done .sname{color:var(--muted-2)}
+  .sstage-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .sstage{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--navy-2);color:var(--muted);border-radius:7px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+  .sstage::before{content:"";width:12px;height:12px;border-radius:4px;border:1.5px solid var(--line)}
+  .sstage.on{color:#0e1c26;font-weight:700}
+  .sstage.on::before{content:"✓";font-size:9px;line-height:12px;text-align:center;border-color:transparent}
+  .sstage.on.s0{background:var(--brass);border-color:var(--brass)}
+  .sstage.on.s1{background:var(--teal-bright);border-color:var(--teal-bright)}
+  .sstage.on.s2{background:var(--ok);border-color:var(--ok)}
   .cbox{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);background:var(--navy-2);
     cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:13px;font-weight:700}
   .cbox.on{background:var(--ok);border-color:var(--ok)}
-  .sname{flex:1;font-size:14px}
+  .sname{font-size:14px}
   .sqty{width:90px;flex:none}
   .del{background:none;border:0;color:var(--muted-2);cursor:pointer;font-size:18px;line-height:1;padding:2px 7px;border-radius:6px}
   .del:hover{color:var(--coral);background:var(--panel)}
@@ -776,7 +785,7 @@
     <section class="view" id="view-weekly" hidden>
       <div class="eyebrow">Inventory · DRI: Campus Coordinator</div>
       <h1 class="page-title">Weekly supplies</h1>
-      <p class="page-lead">A per-week ordering &amp; restock checklist, kept separate from the packing system. Tick items as they're sourced, add your own, and export the week's list. Saved per week in this browser.</p>
+      <p class="page-lead">Track each week's supplies through the fulfillment pipeline — <b>Ordered → Packed / Sent → Arrived</b>. Tap a stage to mark it (later stages imply the earlier ones). Add your own items and export the week's list. Shared across the team.</p>
 
       <div class="att-bar">
         <div class="field"><label for="sup-week">Week</label><select id="sup-week"></select></div>
@@ -2142,41 +2151,51 @@ function rosterInit(){
 }
 
 /* =================== WEEKLY SUPPLIES =================== */
+const SUP_STAGES=[{k:'ordered',l:'Ordered'},{k:'packed',l:'Packed / Sent'},{k:'arrived',l:'Arrived'}];
 function supKey(){ return `supplies:w${document.getElementById('sup-week').value}`; }
 function loadSup(){
   let d = stateGet(supKey());
-  if(!d){ d = SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",done:false})); }
+  if(!d){ d = SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",ordered:false,packed:false,arrived:false})); }
+  // migrate the old single-status model ({done}) to the 3-stage pipeline
+  d = d.map(it=> ('ordered' in it) ? it : {name:it.name, qty:it.qty||"", ordered:!!it.done, packed:false, arrived:false});
   return d;
 }
 function saveSup(d){ stateSet(supKey(), d); }
 function renderSup(){
   const d = loadSup(); const list=document.getElementById('sup-list');
   list.innerHTML = d.length ? d.map((it,i)=>`
-    <div class="supply-row ${it.done?'done':''}" data-i="${i}">
-      <div class="cbox ${it.done?'on':''}" data-act="toggle">${it.done?'✓':''}</div>
+    <div class="supply-row ${it.arrived?'done':''}" data-i="${i}">
       <span class="sname">${esc(it.name)}</span>
       <input class="cell-input sqty" data-act="qty" value="${escAttr(it.qty)}" placeholder="qty">
+      <div class="sstage-wrap">${SUP_STAGES.map((s,si)=>`<button class="sstage ${it[s.k]?'on s'+si:''}" data-act="stage" data-s="${s.k}">${s.l}</button>`).join('')}</div>
       <button class="del" data-act="del" title="Remove">×</button>
     </div>`).join('') : `<div style="padding:18px;color:var(--muted)">No items yet — add one below or reset to the template.</div>`;
   list.querySelectorAll('.supply-row').forEach(row=>{
     const i=+row.dataset.i;
-    row.querySelector('[data-act=toggle]').addEventListener('click',()=>{ const d=loadSup(); d[i].done=!d[i].done; saveSup(d); renderSup(); });
+    row.querySelectorAll('[data-act=stage]').forEach(btn=>btn.addEventListener('click',()=>{
+      const d=loadSup(); const idx=SUP_STAGES.findIndex(s=>s.k===btn.dataset.s);
+      if(!d[i][SUP_STAGES[idx].k]){ for(let k=0;k<=idx;k++) d[i][SUP_STAGES[k].k]=true; }   // checking a stage implies all earlier ones
+      else { for(let k=idx;k<SUP_STAGES.length;k++) d[i][SUP_STAGES[k].k]=false; }            // unchecking clears it + all later ones
+      saveSup(d); renderSup();
+    }));
     row.querySelector('[data-act=qty]').addEventListener('change',e=>{ const d=loadSup(); d[i].qty=e.target.value; saveSup(d); });
     row.querySelector('[data-act=del]').addEventListener('click',()=>{ const d=loadSup(); d.splice(i,1); saveSup(d); renderSup(); });
   });
   renderSupStats();
 }
 function renderSupStats(){
-  const d=loadSup(); const done=d.filter(x=>x.done).length;
+  const d=loadSup();
+  const ord=d.filter(x=>x.ordered).length, pk=d.filter(x=>x.packed).length, ar=d.filter(x=>x.arrived).length;
   document.getElementById('sup-stats').innerHTML = `
-    <div class="ministat p"><div class="n">${done}</div><div class="l">Sourced</div></div>
-    <div class="ministat a"><div class="n">${d.length-done}</div><div class="l">To source</div></div>
+    <div class="ministat p"><div class="n">${ord}</div><div class="l">Ordered</div></div>
+    <div class="ministat"><div class="n">${pk}</div><div class="l">Packed / Sent</div></div>
+    <div class="ministat a"><div class="n">${ar}</div><div class="l">Arrived</div></div>
     <div class="ministat"><div class="n">${d.length}</div><div class="l">Items</div></div>`;
 }
 function supExport(){
   const d=loadSup(); const wk=document.getElementById('sup-week').value;
-  const rows=[["Week","Item","Qty / note","Sourced"]];
-  d.forEach(it=>rows.push([`Week ${wk}`,it.name,it.qty||'',it.done?'Yes':'No']));
+  const rows=[["Week","Item","Qty / note","Ordered","Packed / Sent","Arrived"]];
+  d.forEach(it=>rows.push([`Week ${wk}`,it.name,it.qty||'',it.ordered?'Yes':'No',it.packed?'Yes':'No',it.arrived?'Yes':'No']));
   csvDownload(`weekly-supplies-w${wk}.csv`, rows);
 }
 function supInit(){
@@ -2187,14 +2206,14 @@ function supInit(){
   document.getElementById('sup-add').addEventListener('click',()=>{
     const nm=document.getElementById('sup-new').value.trim(); if(!nm) return;
     const qt=document.getElementById('sup-newqty').value.trim();
-    const d=loadSup(); d.push({name:nm,qty:qt,done:false}); saveSup(d);
+    const d=loadSup(); d.push({name:nm,qty:qt,ordered:false,packed:false,arrived:false}); saveSup(d);
     document.getElementById('sup-new').value=''; document.getElementById('sup-newqty').value='';
     renderSup();
   });
   document.getElementById('sup-new').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('sup-add').click(); });
   document.getElementById('sup-export').addEventListener('click',supExport);
   document.getElementById('sup-reset').addEventListener('click',()=>{
-    const d=SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",done:false})); saveSup(d); renderSup();
+    const d=SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",ordered:false,packed:false,arrived:false})); saveSup(d); renderSup();
   });
   renderSup();
 }

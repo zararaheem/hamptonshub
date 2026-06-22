@@ -2597,7 +2597,10 @@ async function tryEnter(email){
   document.body.classList.add('locked');
   const msg=document.getElementById('gate-msg');
   if(msg){ msg.className='gate-msg err'; msg.textContent='Signed in as '+email+", but you're not on the access list yet — ask Zara to add you."; }
-  if(SUPA){ try{ await SB.auth.signOut(); }catch(e){} }
+  if(SUPA){
+    try{ await SB.functions.invoke('notify-denied'); }catch(e){}  // alert admins (Slack) before we drop the session
+    try{ await SB.auth.signOut(); }catch(e){}
+  }
 }
 async function renderAccess(){
   const seg=document.getElementById('mode-seg');

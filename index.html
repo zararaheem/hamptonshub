@@ -801,7 +801,7 @@
         <button class="btn ghost" id="sup-export">Export CSV</button>
         <button class="btn ghost" id="sup-reset">Reset to template</button>
       </div>
-      <div class="callout" style="margin-top:18px">Placing actual orders? The <b>Supplies &amp; Packing</b> tab has the live ordering &amp; clear-tote system. <a href="https://summer-nyc.vercel.app/" target="_blank" rel="noopener" style="color:var(--brass-bright)">Open the Ops site ↗</a></div>
+      <div class="callout" style="margin-top:18px"><b>This tab is for tracking status</b>, not ordering. To place orders or manage the clear-tote packing, use the <b>Supplies &amp; Packing</b> tab. <a href="https://summer-nyc.vercel.app/" target="_blank" rel="noopener" style="color:var(--brass-bright)">Open the Ops site ↗</a></div>
     </section>
 
     <!-- ===== EVENTS TEAM ===== -->
@@ -970,9 +970,9 @@
 
     <!-- ===== SUPPLIES ===== -->
     <section class="view" id="view-supplies" hidden>
-      <div class="eyebrow">Logistics · The clear-tote system</div>
+      <div class="eyebrow">Logistics · Order &amp; pack here</div>
       <h1 class="page-title">Supplies &amp; packing</h1>
-      <p class="page-lead">The summer command center: every task by owner, the clear-tote packing system, and the side-quest / physical-challenge roster. Every physical item lives in a labeled clear container.</p>
+      <p class="page-lead"><b>This is where you order and pack</b> — the command center, the clear-tote packing system, and the side-quest / physical-challenge roster. Once something's ordered, mark its status (Ordered → Packed/Sent → Arrived) over in the <b>Weekly Supplies</b> tab.</p>
 
       <div class="grid g3" style="margin-bottom:20px">
         <div class="card"><h3>Command Center</h3><p>Every task across every program component, grouped by owner. Surface what's urgent.</p></div>
@@ -1180,6 +1180,14 @@ const SUPPLY_TEMPLATE = [
   "Sports & outdoor gear","First aid / nurse supplies","Sunscreen",
   "Signage & decor refresh","Swag for the week (shirts, towels, bottles)","Lunch headcount confirmed",
 ];
+// Theme-specific supplies per week — mirror the Guide Hub's per-week lists here so
+// the two stay aligned. Each week's tracker seeds the base list + these items.
+const WEEK_SUPPLIES = {
+  // 1:["Survivor buffs","Torch props"], 2:["Chef aprons","Mixing bowls"], 3:["Clay","Aprons"], ...
+};
+function seedSupplies(wk){
+  return SUPPLY_TEMPLATE.concat(WEEK_SUPPLIES[wk]||[]).map(n=>({name:n,qty:"",ordered:false,packed:false,arrived:false}));
+}
 function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); return `${String(f).toLowerCase()}.${String(l).toLowerCase()}@alpha.school`; }
 /* Display name: first name + last initial, e.g. "Maya R." */
 function studentLabel(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); const li=String(l).trim(); return `${String(f).trim()}${li?` ${li[0].toUpperCase()}.`:''}`; }
@@ -2155,7 +2163,7 @@ const SUP_STAGES=[{k:'ordered',l:'Ordered'},{k:'packed',l:'Packed / Sent'},{k:'a
 function supKey(){ return `supplies:w${document.getElementById('sup-week').value}`; }
 function loadSup(){
   let d = stateGet(supKey());
-  if(!d){ d = SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",ordered:false,packed:false,arrived:false})); }
+  if(!d){ d = seedSupplies(+(document.getElementById('sup-week').value)||0); }
   // migrate the old single-status model ({done}) to the 3-stage pipeline
   d = d.map(it=> ('ordered' in it) ? it : {name:it.name, qty:it.qty||"", ordered:!!it.done, packed:false, arrived:false});
   return d;
@@ -2213,7 +2221,7 @@ function supInit(){
   document.getElementById('sup-new').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('sup-add').click(); });
   document.getElementById('sup-export').addEventListener('click',supExport);
   document.getElementById('sup-reset').addEventListener('click',()=>{
-    const d=SUPPLY_TEMPLATE.map(n=>({name:n,qty:"",ordered:false,packed:false,arrived:false})); saveSup(d); renderSup();
+    const d=seedSupplies(+(document.getElementById('sup-week').value)||0); saveSup(d); renderSup();
   });
   renderSup();
 }

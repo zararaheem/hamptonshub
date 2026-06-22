@@ -2343,6 +2343,46 @@ const FG_SECTIONS=[
   {key:'bus_dropoff', label:'Bus — drop-off / pickup'},
   {key:'timeback_intro', label:'Additional Resources — TimeBack intro'},
 ];
+// Pull coordinator + head-guide for a week straight from the Staff Roster.
+function rosterCell(roleName, n){
+  const row=ROSTER.find(r=>r.role===roleName); if(!row) return '';
+  return String(row.cells[n-1]||'').trim();
+}
+function resolveStaffName(token, staff){
+  token=String(token||'').trim(); if(!token) return null;
+  const parts=token.split(/\s+/); const first=parts[0].toLowerCase();
+  const initial=(parts[1]||'').replace(/\./g,'').toLowerCase();
+  const named=staff.filter(s=>s.name && s.name.trim());
+  let cands=named.filter(s=>s.name.trim().split(/\s+/)[0].toLowerCase()===first);
+  if(cands.length>1 && initial) cands=cands.filter(s=>((s.name.trim().split(/\s+/)[1]||'').toLowerCase()).startsWith(initial));
+  if(!cands.length){
+    cands=staff.filter(s=>((s.email.split('@')[0]||'').split(/[._]/)[0]||'').toLowerCase()===first);
+    if(cands.length>1 && initial) cands=cands.filter(s=>((s.email.split('@')[0]||'').split(/[._]/)[1]||'').toLowerCase().startsWith(initial));
+  }
+  return cands[0]||null;
+}
+function setFG(key,val){ const el=document.querySelector(`[data-fg="${key}"]`); if(el) el.value=val; }
+async function fgPullRoster(){
+  const m=document.getElementById('fg-msg');
+  const n=Number(document.getElementById('fg-week').value);
+  const staff=await dbGetAllow();
+  const tokens=rosterCell('Campus Coordinator', n).split(/\s+(?:and|&)\s+|\s*,\s*/i).map(s=>s.trim()).filter(Boolean);
+  const resolved=tokens.map(t=>({t, p:resolveStaffName(t,staff)}));
+  const names=resolved.map(r=>r.p?r.p.name:r.t);
+  const emails=resolved.map(r=>r.p&&r.p.email).filter(Boolean);
+  const headRaw=rosterCell('Lead Guide', n);
+  const head=resolveStaffName(headRaw, staff);
+  setFG('coordinators', names.join(' & '));
+  setFG('coord_emails', emails.join(', '));
+  setFG('head_guide', head?head.name:headRaw);
+  const missing=resolved.filter(r=>!r.p).map(r=>r.t).concat((headRaw&&!head)?[headRaw]:[]);
+  if(m){
+    m.className=missing.length?'gate-msg':'gate-msg ok';
+    m.textContent=missing.length
+      ? `Filled from roster. Couldn't match an email for: ${missing.join(', ')} — add them on the Access tab (with full name), then re-pull. Then Save.`
+      : 'Pulled coordinator + head guide from the roster. Review and Save.';
+  }
+}
 function renderFamGuideForm(){
   const sel=document.getElementById('fg-week'), wrap=document.getElementById('fg-editor');
   if(!sel||!wrap) return;
@@ -2356,6 +2396,7 @@ function renderFamGuideForm(){
         <span class="pill ${w.published?'ok':''}">${w.published?'Live for families':'Draft — not visible'}</span>
         <a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">Preview / open ↗</a>
         <button class="btn ghost" id="fg-copy">Copy family link</button>
+        <button class="btn ghost" id="fg-roster">Pull from Staff Roster</button>
       </div>
       <div class="grid g2">
         ${fgField('Access code','access_code',w.access_code,'hamptonswk1')}
@@ -2390,6 +2431,7 @@ function renderFamGuideForm(){
     const m=document.getElementById('fg-msg');
     navigator.clipboard.writeText(url).then(()=>{ m.className='gate-msg ok'; m.textContent='Link copied'; },()=>{ m.className='gate-msg'; m.textContent=url; });
   });
+  document.getElementById('fg-roster').addEventListener('click',fgPullRoster);
   document.getElementById('fg-save').addEventListener('click',async()=>{
     const m=document.getElementById('fg-msg'); const patch={};
     wrap.querySelectorAll('[data-fg]').forEach(el=>{ patch[el.dataset.fg]=el.value; });

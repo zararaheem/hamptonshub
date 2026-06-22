@@ -58,7 +58,7 @@
 
   <main class="wrap">
     <div id="gate" class="gate">
-      <h2>Welcome, families 👋</h2>
+      <h2>Welcome, families</h2>
       <p>Enter the access code your campus team shared with you for this week.</p>
       <input id="code" type="text" placeholder="e.g. HamptonsWk1" autocomplete="off" autocapitalize="none" />
       <button id="enter">View the guide</button>
@@ -92,6 +92,8 @@
         : esc(w.friday_showcase_loc);
       const guideTeam = (w.guide_team||'').trim();
       const headGuide = (w.head_guide||'').trim();
+      const hgName = headGuide || 'Jenna Klemm';
+      const hgEmail = hgName.toLowerCase().trim().split(/\s+/).join('.') + '@alpha.school';
 
       let h='';
       if((w.custom_note||'').trim()){ h+=`<div class="note">${esc(w.custom_note)}</div>`; }
@@ -111,6 +113,13 @@
         <div class="qa"><h3>What should my child wear?</h3><p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for the pool and beach but not for the general day.</p></div>
       </div>`;
 
+      h+=`<div class="sec-head"><h2>Contact</h2></div><div class="card contact-card">
+        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p><b>${coordNames}</b><br>${mailtoList(w.coord_emails)}${w.coord_phones?`<br>${esc(w.coord_phones)}`:''}</p></div>
+        <div class="qa"><h3>Admissions &amp; questions about Alpha — Nancy Torvund, Director of Admissions</h3><p>${mailtoList('nancy.torvund@alpha.school')}</p></div>
+        <div class="qa"><h3>Academic &amp; Life-Skills Questions — ${esc(hgName)}, Head Guide</h3><p>${mailtoList(hgEmail)}</p></div>
+        <div class="qa"><h3>Anything else — Dr. Tasha Arnold, Head of Schools</h3><p>${mailtoList('tasha.arnold@alpha.school')}</p></div>
+      </div>`;
+
       h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
         <div class="qa"><h3>Is lunch provided?</h3><p>Yes — an organic lunch and healthy snacks throughout the day. If your child prefers a packed lunch they're welcome to bring one; please label it, as we store them in the refrigerator. ${lunch}</p></div>
         <div class="qa"><h3>Allergies or dietary restrictions?</h3><p>Please ensure your child's dietary requirements are noted in your enrollment forms. Questions? Message ${coord}.</p></div>
@@ -123,7 +132,7 @@
       </div>`;
 
       h+=`<div class="sec-head"><h2>Health &amp; Safety</h2></div><div class="card">
-        <div class="qa"><h3>Ticks &amp; mosquitoes</h3><p>We treat the grounds with an eco-friendly spray, keep grass short, remove standing water, and plant natural deterrents. We provide long socks for outdoor activities; families are encouraged to apply a preferred repellent before drop-off. We also keep kid-safe repellents on-site that children may apply with your permission.</p></div>
+        <div class="qa"><h3>Ticks &amp; mosquitoes</h3><p>We take tick prevention very seriously. In the lead up to the summer, we treated the grounds with an eco-friendly spray. The center intentionally keeps grass short, ensures there is no standing water, and we have also placed plants that act as natural deterrents. We will provide all students with long socks for outdoor activities. Families are also encouraged to apply a preferred repellent before drop-off. We also keep kid-safe repellents on-site that children may apply with your permission.</p></div>
         <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout. As a precaution we share the CDC's HEADS UP concussion resources: <a href="https://www.cdc.gov/heads-up/" target="_blank" rel="noopener">overview</a> and <a href="https://www.cdc.gov/heads-up/guidelines/" target="_blank" rel="noopener">returning to activities</a>. We have an on-site First Aid Professional Rescuer/nurse.</p></div>
         <div class="qa"><h3>Sun protection</h3><p>Please apply sunscreen before drop-off; we have sunscreen stations on-site and shaded spaces, and children are encouraged to reapply during the day.</p></div>
         <div class="qa"><h3>Medications &amp; medical needs</h3><p>If your child takes medication during the day, please complete the medication form at registration and notify ${coord} at Monday drop-off so it can be stored safely. Make sure allergies, medical info, and emergency contacts are up to date before Monday. If your child is unwell, please keep them home and let our team know.</p></div>
@@ -132,15 +141,9 @@
       h+=`<div class="sec-head"><h2>Your Child's Learning Experience</h2></div><div class="card">
         <div class="qa"><h3>How does the guide model work?</h3><p>Your child's guide is with them every day, fully focused on students — never pulled into admin or meetings. Their role is to understand how your child thinks, what motivates them, and where they're ready to be challenged.${guideTeam?` This week's guide team: <b>${esc(guideTeam)}</b>.`:''}</p></div>
         <div class="qa"><h3>What will I receive at the end of the week?</h3><ul>
-          <li><b>MAP insights</b> — where your child is academically, so we can target learning at the right level.</li>
-          <li><b>An accountability report</b> — guide insights from the people who worked with them all week.</li>
-          <li><b>A concrete academic plan</b> — where your child is and how quickly they can grow.</li></ul></div>
-      </div>`;
-
-      h+=`<div class="sec-head"><h2>The TimeBack Learning Model</h2></div><div class="card">
-        <div class="qa"><h3>What is TimeBack?</h3><p>TimeBack is the learning model behind Alpha. Your child masters core academics in about <b>two focused hours a day</b> using personalized, adaptive apps that meet them exactly at their level — which gives the rest of the day back for life skills, passions, and hands-on workshops. Progress is measured with <b>MAP</b>, and you'll see it in the insights, accountability report, and academic plan you receive at the end of the week.</p>
-          <p style="margin-top:8px"><a href="assets/timeback-parent-guide.pdf" target="_blank" rel="noopener">Open the full TimeBack Parent Guide (PDF) ↗</a></p></div>
-        <iframe src="assets/timeback-parent-guide.pdf" title="TimeBack Parent Guide" loading="lazy" style="width:100%;height:560px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:4px 0 8px"></iframe>
+          <li><b>MAP insights</b> — MAP (Measures of Academic Progress) is a standardized assessment that shows where your child is academically. We use it to target their learning at exactly the right level — their zone of proximal development — so our apps and guides can focus on what each child is ready for.</li>
+          <li><b>An accountability report</b> — these highlight guide insights about your child, from the people who worked with them all week.</li>
+          <li><b>A concrete academic plan</b> — this shows not just where your child is, but how quickly they can grow from where they are.</li></ul></div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
@@ -152,11 +155,10 @@
         <div class="qa"><h3>Is bus service available?</h3><p>Yes, for families who require it. Please complete all enrollment forms; bussing details are sent separately to families on the route.</p></div>
       </div>`;
 
-      h+=`<div class="sec-head"><h2>Contact</h2></div><div class="card contact-card">
-        <div class="qa"><h3>Logistics (lunch, bussing, attendance) — Campus Coordinator</h3><p><b>${coordNames}</b><br>${mailtoList(w.coord_emails)}${w.coord_phones?`<br>${esc(w.coord_phones)}`:''}</p></div>
-        <div class="qa"><h3>Admissions &amp; questions about Alpha — Nancy Torvund</h3><p>${mailtoList('nancy.torvund@alpha.school')}</p></div>
-        ${headGuide?`<div class="qa"><h3>Academic &amp; life-skills questions — Head Guide</h3><p><b>${esc(headGuide)}</b></p></div>`:''}
-        <div class="qa"><h3>Anything else — Dr. Tasha Arnold, Head of Schools</h3><p>${mailtoList('tasha.arnold@alpha.school')}</p></div>
+      h+=`<div class="sec-head"><h2>Additional Resources</h2></div><div class="card">
+        <div class="qa"><h3>The TimeBack Learning Model</h3><p>You can learn more about TimeBack — our 2 Hour Learning model — in the parent guide below.</p>
+          <p style="margin-top:8px"><a href="assets/timeback-parent-guide.pdf" target="_blank" rel="noopener">Open the full TimeBack Parent Guide (PDF) ↗</a></p></div>
+        <iframe src="assets/timeback-parent-guide.pdf" title="TimeBack Parent Guide" loading="lazy" style="width:100%;height:560px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:4px 0 8px"></iframe>
       </div>`;
 
       const g=document.getElementById('guide');

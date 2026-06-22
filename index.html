@@ -545,7 +545,6 @@
       <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
       <div class="nav-label">Parent Comms</div>
-      <button class="nav-item" data-tab="family">Family Hub</button>
       <button class="nav-item admin-only" data-tab="famguide">Family Guide</button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only" data-tab="access">Access</button>
@@ -891,61 +890,6 @@
           <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
         </div>
       </div>
-    </section>
-
-    <!-- ===== FAMILY HUB (admin) ===== -->
-    <section class="view" id="view-family" hidden>
-      <div class="eyebrow">Families · Parent-facing</div>
-      <h1 class="page-title">Family Hub</h1>
-      <p class="page-lead">One warm landing space for parents — the week's photos, your newsletter updates, and shout-outs — behind a shared access code. Post here; families view it at the public link.</p>
-
-      <div class="embed-head">
-        <div class="meta-line" style="margin:0"><span>Public family link</span></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <a class="btn ghost" id="fh-public-link" href="family.html" target="_blank" rel="noopener">Open family hub ↗</a>
-          <button class="btn" id="fh-copy">Copy family link</button>
-        </div>
-      </div>
-
-      <div class="nl-composer admin-only" id="fh-code-box" style="margin-bottom:22px">
-        <h3 style="margin:0 0 8px">Parent access code</h3>
-        <p class="lc-desc" style="margin:0 0 10px">Parents type this once to open the hub. Share it with families; change it anytime to rotate access.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <input id="fh-code" type="text" placeholder="e.g. hamptons2026" style="max-width:240px" />
-          <button class="btn" id="fh-code-save">Save code</button>
-          <span class="gate-msg" id="fh-code-msg" style="margin:0"></span>
-        </div>
-      </div>
-
-      <div class="nl-composer admin-only">
-        <h3 style="margin:0 0 10px">📸 Add photos to the wall</h3>
-        <input id="fh-cap" type="text" placeholder="Caption (optional) — applies to the photos you add next" />
-        <div class="nl-photos" id="fh-photo-strip"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-          <label class="btn ghost" for="fh-file">＋ Upload photos</label>
-          <input id="fh-file" type="file" accept="image/*" multiple style="display:none" />
-          <span class="gate-msg" id="fh-photo-msg" style="margin:0"></span>
-        </div>
-      </div>
-      <div class="section-title"><span class="num">↳</span>Photo wall</div>
-      <div id="fh-wall" class="fh-wall"></div>
-
-      <div class="nl-composer admin-only" style="margin-top:26px">
-        <h3 style="margin:0 0 10px">🌟 Post a shout-out</h3>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-          <input id="fh-so-to" type="text" placeholder="For… (student / group, optional)" style="flex:1;min-width:160px" />
-          <input id="fh-so-from" type="text" placeholder="From… (guide name, optional)" style="flex:1;min-width:160px" />
-        </div>
-        <textarea id="fh-so-msg" rows="3" placeholder="A kind word, a win, a moment worth celebrating…"></textarea>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
-          <button class="btn" id="fh-so-post">Post shout-out</button>
-          <span class="gate-msg" id="fh-so-msg2" style="margin:0"></span>
-        </div>
-      </div>
-      <div class="section-title"><span class="num">↳</span>Shout-outs</div>
-      <div id="fh-shouts" class="fh-shouts"></div>
-
-      <div class="callout" style="margin-top:18px"><b>Privacy:</b> photos live in a private bucket and are shown to parents only through the access code — each image link is signed and expires after an hour, so it can't be opened or indexed without the code.</div>
     </section>
 
     <!-- ===== FAMILY GUIDE (weekly, parent-facing) ===== -->
@@ -2549,8 +2493,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','family','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',family:'Family Hub',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(t==='access' && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
@@ -2559,7 +2503,6 @@ function showTab(t){
   if(t==='supplies') lazyEmbed('supplies-embed','https://summer-nyc.vercel.app/');
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
-  if(t==='family') loadFamily();
   if(t==='famguide') loadFamGuide();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();

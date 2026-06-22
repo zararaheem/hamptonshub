@@ -2626,8 +2626,29 @@ async function gateSubmit(){
 async function tryEnter(email){
   const acc = await dbCheckAccess(email);
   if(acc.allowed){ enterHub({email, ...acc}); return; }
-  document.body.classList.add('locked');
   const msg=document.getElementById('gate-msg');
+  // Not on the list yet — if this person's Google name already matches someone
+  // listed (and it's an org-domain email), let them confirm and link it.
+  if(SUPA){
+    try{
+      const { data:elig } = await SB.rpc('claim_access', { p_confirm:false });
+      if(elig && elig.status==='eligible'){
+        document.body.classList.add('locked');
+        if(msg){ msg.className='gate-msg'; msg.textContent=''; }
+        const ok = confirm(`We found "${elig.name}" on the Hamptons Hub access list.\n\nConfirm this is you to link ${email} to your account and sign in.`);
+        if(ok){
+          const { data:res } = await SB.rpc('claim_access', { p_confirm:true });
+          if(res && (res.status==='linked' || res.status==='already')){
+            try{ await SB.functions.invoke('notify-claim'); }catch(e){}  // tell the owner on Slack
+            const acc2 = await dbCheckAccess(email);
+            if(acc2.allowed){ enterHub({email, ...acc2}); return; }
+          }
+        }
+        // declined or failed → fall through to the normal denial below
+      }
+    }catch(e){ /* fall through to denial */ }
+  }
+  document.body.classList.add('locked');
   if(msg){ msg.className='gate-msg err'; msg.textContent='Successfully signed in as "'+email+'", but you’re not on the access list yet — Reach out to Zara to add you'; }
   if(SUPA){
     try{ await SB.functions.invoke('notify-denied'); }catch(e){}  // alert admins (Slack) before we drop the session

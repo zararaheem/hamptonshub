@@ -1001,14 +1001,14 @@
     <section class="view" id="view-guide" hidden>
       <div class="eyebrow">Curriculum · Contact Kate Liemandt on Slack</div>
       <h1 class="page-title">Guide Hub</h1>
-      <div class="seg" id="guide-seg" style="margin:6px 0 18px">
+      <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Toggle to <b>Filler games</b> below.</p>
+
+      <div class="seg" id="guide-seg" style="margin:2px 0 18px">
         <button data-gv="brief" class="on">📘 Weekly brief</button>
         <button data-gv="games">🎲 Filler games</button>
       </div>
 
       <div id="guide-brief">
-        <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Flip to <b>Filler games</b> above.</p>
-
         <div class="embed-head">
           <div class="meta-line" style="margin:0"><span>Nine weeks · day-by-day briefs</span></div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -2586,9 +2586,30 @@ function showTab(t){
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
   if(t==='weekly' && SUPA){ refreshStateKey(supKey()).then(renderSup); }
+  try{ history.replaceState(null,'', t==='dashboard' ? (location.pathname+location.search) : ('#'+t)); }catch(e){}
   closeRail();
   window.scrollTo({top:0});
 }
+/* Guide Hub sub-view (weekly brief vs filler games) */
+function setGuideView(v){
+  const seg=document.getElementById('guide-seg'); if(!seg) return;
+  seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.gv===v));
+  const games = v==='games';
+  const gb=document.getElementById('guide-brief'), gg=document.getElementById('guide-games');
+  if(gb) gb.hidden=games; if(gg) gg.hidden=!games;
+}
+/* Deep-link routing: #<tab> opens that tab; #games opens Guide Hub → Filler games */
+function routeHash(){
+  let h=(location.hash||'').replace(/^#/,'');
+  if(!h || /access_token|refresh_token|error/.test(h)){
+    try{ const s=localStorage.getItem('hub_return'); if(s){ localStorage.removeItem('hub_return'); h=s.replace(/^#/,''); } else h=''; }catch(e){ h=''; }
+  }
+  if(!h) return false;
+  if(h==='games'||h==='filler-games'){ showTab('guide'); setGuideView('games'); try{ history.replaceState(null,'','#games'); }catch(e){} return true; }
+  if(tabs.includes(h)){ showTab(h); if(h==='guide') setGuideView('brief'); return true; }
+  return false;
+}
+window.addEventListener('hashchange',()=>{ if(SESSION) routeHash(); });
 document.getElementById('nav').addEventListener('click',e=>{
   const b=e.target.closest('.nav-item'); if(b) showTab(b.dataset.tab);
 });
@@ -2698,7 +2719,7 @@ function enterHub(sess){
   if(typeof renderHousingRoster==='function') renderHousingRoster();
   Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
-  showTab('dashboard');
+  if(!routeHash()) showTab('dashboard');  // honor a deep link like #games / #tech, else Home
 }
 async function signOut(){
   SESSION=null;
@@ -2851,6 +2872,8 @@ async function addEmailHandler(){
 async function googleSignIn(){
   const msg=document.getElementById('gate-msg');
   if(msg){ msg.className='gate-msg'; msg.textContent='Opening Google sign-in…'; }
+  // remember where they were headed (e.g. #games) — OAuth replaces the hash with its token
+  try{ const h=location.hash||''; if(h && !/access_token|refresh_token|error/.test(h)) localStorage.setItem('hub_return', h); }catch(e){}
   try{
     const { error } = await SB.auth.signInWithOAuth({
       provider:'google',
@@ -2987,7 +3010,7 @@ function renderGames(){
   let body=''; let total=0;
   GAMES.filter(g=>GFILTER.cat==='all'||g.cat===GFILTER.cat).forEach(g=>{
     const items=g.items.filter(gameMatch); if(!items.length) return; total+=items.length;
-    body+=`<div style="display:flex;align-items:center;gap:10px;background:${g.color};color:${g.ink};font-weight:700;padding:9px 16px;border-radius:10px;margin:24px 0 14px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 2px 8px rgba(20,40,60,.12)"><span style="opacity:.8">▪</span>${esc(g.cat)} <span style="opacity:.7;font-weight:600">· ${items.length}</span></div>`;
+    body+=`<div style="color:${g.color};font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin:26px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)">${esc(g.cat)} <span style="opacity:.65;font-weight:600">· ${items.length}</span></div>`;
     body+=`<div class="grid g2">`+items.map(it=>cards({...it,__color:g.color})).join('')+`</div>`;
   });
   if(!total) body=`<div class="callout">No games match those filters — try clearing one.</div>`;
@@ -3003,13 +3026,11 @@ function renderGames(){
 renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
 renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
-/* Guide Hub: toggle between the weekly brief and filler games */
+/* Guide Hub: toggle between the weekly brief and filler games (also updates the URL) */
 (function(){ const seg=document.getElementById('guide-seg'); if(!seg) return;
   seg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
-    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
-    const games = b.dataset.gv==='games';
-    document.getElementById('guide-brief').hidden = games;
-    document.getElementById('guide-games').hidden = !games;
+    setGuideView(b.dataset.gv);
+    try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#guide'); }catch(e){}
   });
 })();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();

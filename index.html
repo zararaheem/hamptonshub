@@ -447,8 +447,9 @@
   body.edit-mode .editable-disp{display:none!important}
   .editor-wrap .e-hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin:0 0 10px}
   .seg button.on{background:var(--brass);color:var(--navy)}
-  /* Guide Hub toggle: match the .btn typography (body font), not the mono seg default */
-  #guide-seg button{font-family:var(--body);font-weight:600;font-size:13.5px;letter-spacing:0;padding:10px 16px}
+  /* Guide Hub toggle: compact segmented control, body-font text (not the mono seg default) */
+  #guide-seg{display:inline-flex;width:auto;background:var(--navy-2)}
+  #guide-seg button{font-family:var(--body);font-weight:600;font-size:13.5px;letter-spacing:0;padding:9px 20px;transition:background .18s,color .18s}
 
   /* ---------- Level summary ---------- */
   .levels{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:4px 0 22px}
@@ -1003,7 +1004,7 @@
     <section class="view" id="view-guide" hidden>
       <div class="eyebrow">Contact Kate Liemandt or Jenna Klemm for any questions</div>
       <h1 class="page-title">Guide Hub</h1>
-      <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Toggle to <b>Filler games</b> below.</p>
+      <p class="page-lead" id="guide-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Toggle to <b>Filler games</b> below.</p>
 
       <div class="seg" id="guide-seg" style="margin:2px 0 18px">
         <button data-gv="brief" class="on">Weekly brief</button>
@@ -1030,10 +1031,9 @@
       </div>
 
       <div id="guide-games" hidden>
-        <p class="page-lead"><b>Have extra time? Try these</b> — quick, low-setup games for the gaps in the day. <b>Tap any game</b> to see how to run it; players · time · space are right there. Questions? Reach out to <b>Jenna Klemm</b>.</p>
         <div class="embed-head">
           <div class="meta-line" style="margin:0"><span>15 games · quick reference</span></div>
-          <a class="btn" href="assets/summer-camp-games.pdf" download="Summer-Camp-Games.pdf" target="_blank" rel="noopener">Download as PDF ↗</a>
+          <a class="btn" href="assets/summer-camp-games.pdf" download="Summer-Camp-Games.pdf" target="_blank" rel="noopener">Download full PDF ↗</a>
         </div>
         <div id="games-list"></div>
         <h3 style="margin:26px 0 10px;color:var(--oyster)">Printable reference card</h3>
@@ -2599,12 +2599,17 @@ function showTab(t){
   window.scrollTo({top:0});
 }
 /* Guide Hub sub-view (weekly brief vs filler games) */
+const GUIDE_LEADS={
+  brief:`Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Toggle to <b>Filler games</b> below.`,
+  games:`<b>Have extra time? Try these</b> — quick, low-setup games for the gaps in the day; <b>tap any game</b> to see how to run it. Questions? Reach out to <b>Jenna Klemm</b>. Want the full weekly brief? Toggle to <b>Weekly brief</b> below.`
+};
 function setGuideView(v){
   const seg=document.getElementById('guide-seg'); if(!seg) return;
   seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x.dataset.gv===v));
   const games = v==='games';
   const gb=document.getElementById('guide-brief'), gg=document.getElementById('guide-games');
   if(gb) gb.hidden=games; if(gg) gg.hidden=!games;
+  const lead=document.getElementById('guide-lead'); if(lead) lead.innerHTML=GUIDE_LEADS[v]||GUIDE_LEADS.brief;
 }
 /* Deep-link routing: #<tab> opens that tab; #games opens Guide Hub → Filler games */
 function routeHash(){

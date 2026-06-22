@@ -447,6 +447,8 @@
   body.edit-mode .editable-disp{display:none!important}
   .editor-wrap .e-hint{font-family:var(--mono);font-size:11px;color:var(--muted);margin:0 0 10px}
   .seg button.on{background:var(--brass);color:var(--navy)}
+  /* Guide Hub toggle: match the .btn typography (body font), not the mono seg default */
+  #guide-seg button{font-family:var(--body);font-weight:600;font-size:13.5px;letter-spacing:0;padding:10px 16px}
 
   /* ---------- Level summary ---------- */
   .levels{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:4px 0 22px}
@@ -1004,8 +1006,8 @@
       <p class="page-lead">Your <b>daily field guides and the weekly brief</b> for the summer Odyssey — the Full brief (Master) has every detail; each level tab is your grade's summary, so read just that. Got extra time in the day? Toggle to <b>Filler games</b> below.</p>
 
       <div class="seg" id="guide-seg" style="margin:2px 0 18px">
-        <button data-gv="brief" class="on">📘 Weekly brief</button>
-        <button data-gv="games">🎲 Filler games</button>
+        <button data-gv="brief" class="on">Weekly brief</button>
+        <button data-gv="games">Filler games</button>
       </div>
 
       <div id="guide-brief">

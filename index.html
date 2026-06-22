@@ -167,9 +167,9 @@
   .card p{margin:0;color:var(--muted);font-size:13.5px}
 
   .linkcard{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);
-    border-radius:var(--radius);padding:18px;transition:.18s}
-  .linkcard:hover{border-color:var(--brass);transform:translateY(-2px);box-shadow:var(--shadow)}
-  .linkcard .tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal-bright)}
+    border-radius:var(--radius);padding:18px;transition:.18s;box-shadow:inset 4px 0 0 var(--accent,transparent)}
+  .linkcard:hover{border-color:var(--accent,var(--brass));transform:translateY(-2px);box-shadow:inset 4px 0 0 var(--accent,transparent),var(--shadow)}
+  .linkcard .tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent,var(--teal-bright))}
   .linkcard h3{margin:8px 0 4px;font-family:var(--display);font-weight:600;font-size:18px}
   .linkcard .lc-desc{margin:0;color:var(--muted);font-size:13.5px}
   .linkcard .go{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--brass-bright)}
@@ -1467,13 +1467,21 @@ function buildAllEditors(){
     CONTENT.staff.map(r=>({name:r[0],role:r[1],status:r[2],housing:r[3],precamp:r[4],constraint:r[5],notes:r[6]})),
     async rows=>{ CONTENT.staff=rows.map(r=>[r.name,r.role,r.status,r.housing,r.precamp,r.constraint,r.notes]); const e=await saveContent('staff'); renderStaff(); return e; });
 }
+// Category colour-coding for the dashboard jump cards (and their tag labels).
+const CARD_CAT={Roster:'people',Daily:'people',Enrollment:'people',Curriculum:'curriculum',Logistics:'logistics',Ops:'ops',Parents:'parents'};
+const CAT_COLOR={people:'var(--teal-bright)',curriculum:'#9b8cff',logistics:'var(--brass-bright)',ops:'var(--coral)',parents:'var(--ok)'};
+const CAT_ORDER={people:0,curriculum:1,logistics:2,ops:3,parents:4};
 function renderJumpCards(){
   const el=document.getElementById('jump-grid'); if(!el) return;
-  el.innerHTML=(CONTENT.jumpCards||[]).map(c=>{
+  const cards=(CONTENT.jumpCards||[]).map((c,i)=>({c,i}))
+    .sort((a,b)=>{ const ca=CAT_ORDER[CARD_CAT[a.c.tag]]??9, cb=CAT_ORDER[CARD_CAT[b.c.tag]]??9; return ca-cb || a.i-b.i; });
+  el.innerHTML=cards.map(({c})=>{
     const http=/^https?:/i.test(c.to||'');
     const go=http?'Open ↗':'Open tab →';
-    const attrs=http?`href="${escAttr(c.to)}" target="_blank" rel="noopener"`:`data-jump="${escAttr(c.to)}" style="cursor:pointer"`;
-    return `<a class="linkcard" ${attrs}><div class="tag">${esc(c.tag)}</div><h3>${esc(c.title)}</h3><p class="lc-desc">${esc(c.desc)}</p><div class="go">${go}</div></a>`;
+    const col=CAT_COLOR[CARD_CAT[c.tag]||'people']||'var(--teal-bright)';
+    const style=`--accent:${col};`+(http?'':'cursor:pointer');
+    const attrs=http?`href="${escAttr(c.to)}" target="_blank" rel="noopener"`:`data-jump="${escAttr(c.to)}"`;
+    return `<a class="linkcard" ${attrs} style="${style}"><div class="tag">${esc(c.tag)}</div><h3>${esc(c.title)}</h3><p class="lc-desc">${esc(c.desc)}</p><div class="go">${go}</div></a>`;
   }).join('');
   el.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',()=>showTab(a.dataset.jump)));
 }

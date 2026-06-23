@@ -22,13 +22,26 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const code = String(body.code ?? "").trim();
-    if (!code) return json({ ok: false });
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
-    // Case-insensitive match so links/typing work regardless of case.
-    const { data, error } = await sb
-      .from("family_weeks").select("*").ilike("access_code", code).eq("published", true).maybeSingle();
-    if (error || !data) return json({ ok: false });
-    return json({ ok: true, week: data });
+    let week = null;
+    if (code) {
+      // A specific week link: case-insensitive code match (published only).
+      const { data } = await sb
+        .from("family_weeks").select("*").ilike("access_code", code).eq("published", true).maybeSingle();
+      week = data;
+    } else {
+      // Bare URL: show the current published week (by date), else next upcoming, else latest.
+      const { data } = await sb
+        .from("family_weeks").select("*").eq("published", true).order("week");
+      const rows = data || [];
+      const today = new Date().toISOString().slice(0, 10);
+      const d = (v: unknown) => String(v || "").slice(0, 10);
+      week = rows.find((w) => d(w.start_date) && d(w.end_date) && d(w.start_date) <= today && today <= d(w.end_date))
+        || rows.find((w) => d(w.start_date) && d(w.start_date) >= today)
+        || rows[rows.length - 1] || null;
+    }
+    if (!week) return json({ ok: false });
+    return json({ ok: true, week });
   } catch (_e) {
     return json({ ok: false }, 500);
   }

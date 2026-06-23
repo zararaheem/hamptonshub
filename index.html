@@ -599,7 +599,7 @@
     <!-- ===== STAFFING ===== -->
     <section class="view" id="view-staffing" hidden>
       <div class="eyebrow">Crew · DRI: Emily (staffing) · Ops: Robbie</div>
-      <h1 class="page-title">Staffing &amp; housing</h1>
+      <h1 class="page-title">Staffing &amp; housing <button class="edit-toggle admin-only" style="float:right">Edit</button></h1>
       <p class="page-lead">Ratio is 1 guide per 6 kids (the lead counts in the ratio). Housing holds 5 beds baseline, 7 at surge, at 248 Blank Ln, Water Mill.</p>
 
       <div class="subtabs" id="staff-subtabs">
@@ -789,7 +789,7 @@
     <!-- ===== EVENTS TEAM ===== -->
     <section class="view" id="view-events" hidden>
       <div class="eyebrow">Events Team · DRI: Alice Lee</div>
-      <h1 class="page-title">Events team</h1>
+      <h1 class="page-title">Events team <button class="edit-toggle admin-only" style="float:right">Edit</button></h1>
       <p class="page-lead">Everything the events team is sending over and producing for the Hamptons. For visibility, the whole team works off this one shared list (owner: Alice Lee).</p>
 
       <div id="events-groups" class="editable-disp"></div>
@@ -1024,7 +1024,7 @@ const WEEKS = [
 const guidesNeeded = k => Math.ceil(k/6);
 
 const ROSTER = [
-  {role:"Campus Coordinator", cells:["Julianne AND Zara","Julianne","Julianne","Zara","Julianne AND Zara","Zara","Zara","Shannon","Shannon"]},
+  {role:"Campus Coordinator", cells:["Julianne AND Zara","Julianne AND Zara","Julianne","Zara","Julianne AND Zara","Zara","Zara","Shannon","Shannon"]},
   {role:"Admissions", cells:["Nancy","Nancy","Nancy","Nancy","Nancy","Nancy","Nancy","Nancy","Nancy"]},
   {role:"Lead Guide", cells:["Jenna K","Jesse","Jenna K","Jenna K","Parthvi","","Jenna K","Jenna K","Jenna K"]},
   {role:"Guide 1", cells:["Sam","Sam","Sam","Sam","","Sam","Sam","Sam","Sam"]},
@@ -2679,12 +2679,13 @@ document.getElementById('burger').addEventListener('click',openRail);
 document.getElementById('scrim').addEventListener('click',closeRail);
 
 /* admin edit-mode toggle */
-{ const et=document.getElementById('edit-toggle');
-  if(et) et.addEventListener('click',()=>{
+{ const ets=[...document.querySelectorAll('.edit-toggle')];
+  const sync=on=>ets.forEach(b=>b.textContent=on?'Done editing':'Edit');
+  ets.forEach(et=>et.addEventListener('click',()=>{
     const on=document.body.classList.toggle('edit-mode');
-    et.textContent=on?'Done':'Edit';
-    if(on){ buildAllEditors(); window.scrollTo({top:0}); }
-  });
+    sync(on);
+    if(on){ buildAllEditors(); }
+  }));
 }
 
 /* =================== AUTH / ACCESS =================== */

@@ -532,7 +532,6 @@
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item cat-logistics" data-tab="supplies">Supplies &amp; Packing</button>
-      <button class="nav-item cat-ops" data-tab="workstreams">Task List</button>
       <button class="nav-item cat-ops" data-tab="events">Events Team</button>
       <button class="nav-item cat-curriculum" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item cat-curriculum" data-tab="resources">Resources<span class="ext">live ↗</span></button>
@@ -630,7 +629,7 @@
         <div class="eyebrow" style="margin-bottom:8px">House details</div>
         <div class="hd editable-disp" id="house-info"></div>
         <div class="editor-wrap" id="house-editor"></div>
-        <div class="callout" style="margin:14px 0 16px"><b>Separate / off-site housing:</b> Gaby Guajardo &amp; Nancy (Admissions). Does <b>not</b> stay in housing: Nurse, Lifeguards.</div>
+        <div class="callout" style="margin:14px 0 16px"><b>Separate / off-site housing:</b> Gaby Guajardo. Does <b>not</b> stay in housing: Nurse, Lifeguards.</div>
         <div class="tablewrap editable-disp"><table id="housing-table"></table></div>
         <div class="editor-wrap" id="housing-editor"></div>
       </div>
@@ -898,17 +897,6 @@
       <p class="page-lead">Configure each week's parent guide — coordinator, drop-off/pickup, lunch menu, Monday &amp; Friday events — then <b>publish</b> it. Families open it on the parent guide site using that week's access code (use <b>Copy family link</b> below). Static sections (packing, safety, swimming, etc.) are built in.</p>
       <div class="field" style="max-width:300px"><label for="fg-week">Week</label><select id="fg-week"></select></div>
       <div id="fg-editor"></div>
-    </section>
-
-    <!-- ===== WORKSTREAMS ===== -->
-    <section class="view" id="view-workstreams" hidden>
-      <div class="eyebrow">Accountability · Who owns what</div>
-      <h1 class="page-title">Pre-launch task list</h1>
-      <p class="page-lead">The final to-dos before opening week, each with its owner. Check items off as they're done — saved for everyone. Filter by owner to see just yours.</p>
-      <div class="meta-line" style="margin-bottom:10px"><span><b id="ws-progress">—</b></span></div>
-      <div class="ws-filter" id="ws-filter"></div>
-      <div class="grid g2 editable-disp" id="ws-grid"></div>
-      <div class="editor-wrap" id="tasks-editor"></div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -1367,7 +1355,7 @@ const CONTENT_DEFAULTS = {
     {k:"Bed capacity", v:"5 baseline · 7 surge · 10 with overflow"},
     {k:"Ops DRI", v:"Robbie Forrest"},
     {k:"Stays in house", v:"Coordinator, Lead Guide, Manuel, extra guides"},
-    {k:"Separate / off-site", v:"Gaby Guajardo, Nancy (Admissions)"},
+    {k:"Separate / off-site", v:"Gaby Guajardo"},
   ],
   staff: STAFF,
 };
@@ -1635,6 +1623,7 @@ function taskDoneMap(){ return (CONTENT.taskDone = CONTENT.taskDone || {}); }
 function renderWorkstreams(filter){
   // build owner filter once
   const fwrap = document.getElementById('ws-filter');
+  if(!fwrap) return;   // tab removed
   if(!fwrap.dataset.built){
     const all = ['All', ...[...new Set(CONTENT.tasks.flatMap(w=>w.owners||[]))]];
     fwrap.innerHTML = all.map((d,i)=>`<button class="fbtn ${i===0?'active':''}" data-f="${escAttr(d)}">${esc(d)}</button>`).join('');
@@ -2622,8 +2611,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','supplies','workstreams','events','guide','resources','signage','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',tech:'Tech Onboarding',supplies:'Supplies & Packing',workstreams:'DoP/DoA Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });

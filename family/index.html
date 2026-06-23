@@ -110,12 +110,10 @@
   </header>
 
   <main class="wrap">
-    <div id="gate" class="gate">
+    <div id="loading" class="gate"><p style="margin:0">Loading your guide…</p></div>
+    <div id="noguide" class="gate" hidden>
       <h2>Welcome, families</h2>
-      <p>Enter the access code your campus team shared with you for this week.</p>
-      <input id="code" type="text" placeholder="e.g. hamptonswk1" autocomplete="off" autocapitalize="none" />
-      <button id="enter">View the guide</button>
-      <div class="err" id="gate-err"></div>
+      <p id="noguide-msg">Your guide will be available here soon — please check back closer to your week.</p>
     </div>
     <div id="guide" hidden></div>
   </main>
@@ -297,29 +295,25 @@
       if(dl) dl.addEventListener('click', ()=>window.print());
     }
 
-    async function tryUnlock(code, fromCache){
-      const err=document.getElementById('gate-err'); err.textContent='';
-      const c=(code||'').trim();
-      if(!c){ if(!fromCache) err.textContent='Enter the access code.'; return; }
+    // Always live: a ?code= in the link picks a specific week; a bare URL
+    // loads the current published week. We never show a code prompt to parents.
+    async function loadGuide(code){
+      const loading=document.getElementById('loading'), nog=document.getElementById('noguide');
       let res;
-      try{ res=await sb.functions.invoke('family-guide', { body:{ code:c } }); }
-      catch(e){ err.textContent='Could not reach the guide — please try again.'; return; }
-      const payload=res && res.data;
-      if(!payload || !payload.ok){
-        if(fromCache){ try{ sessionStorage.removeItem('guide-code'); }catch(e){} return; }
-        err.textContent='That code didn’t match a published week. Check with your campus team.'; return;
+      try{ res=await sb.functions.invoke('family-guide', { body:{ code: code||'' } }); }
+      catch(e){
+        loading.hidden=true; nog.hidden=false;
+        document.getElementById('noguide-msg').textContent='We couldn’t load the guide right now — please refresh in a moment.';
+        return;
       }
-      try{ sessionStorage.setItem('guide-code', c); }catch(e){}
-      document.getElementById('gate').hidden=true;
+      const payload=res && res.data;
+      if(!payload || !payload.ok){ loading.hidden=true; nog.hidden=false; return; }
+      loading.hidden=true; nog.hidden=true;
       renderGuide(payload.week);
     }
-    document.getElementById('enter').addEventListener('click',()=>tryUnlock(document.getElementById('code').value));
-    document.getElementById('code').addEventListener('keydown',e=>{ if(e.key==='Enter') tryUnlock(e.target.value); });
-    // ?code= in the URL, or remembered within the session
     (function(){
       const u=new URLSearchParams(location.search).get('code');
-      if(u){ document.getElementById('code').value=u; tryUnlock(u); return; }
-      try{ const c=sessionStorage.getItem('guide-code'); if(c) tryUnlock(c, true); }catch(e){}
+      loadGuide(u);
     })();
   </script>
 </body>

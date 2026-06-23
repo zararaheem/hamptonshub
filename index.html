@@ -78,6 +78,13 @@
   .nav-item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
     background:var(--brass);border-radius:0 3px 3px 0}
   .nav-item .ext{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--muted-2)}
+  .nav-item[class*="cat-"]{box-shadow:inset 3px 0 0 var(--nav-accent,transparent)}
+  .nav-item.cat-people{--nav-accent:var(--teal-bright)}
+  .nav-item.cat-logistics{--nav-accent:var(--brass-bright)}
+  .nav-item.cat-curriculum{--nav-accent:#9b8cff}
+  .nav-item.cat-ops{--nav-accent:var(--coral)}
+  .nav-item.cat-comms{--nav-accent:#5ab0e6}
+  .nav-item.cat-admin{--nav-accent:var(--muted-2)}
   .nav-item .wip{margin-left:auto;font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:6px;padding:1px 5px}
   .wip-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:7px;padding:3px 9px;vertical-align:middle;margin-left:8px;white-space:nowrap}
   .wip-banner{margin:6px 0 14px;background:rgba(226,101,74,.12);border:1px solid var(--coral);border-radius:10px;padding:11px 14px;color:var(--coral);font-size:13.5px}
@@ -518,25 +525,25 @@
     <nav class="nav" id="nav">
       <button class="nav-item active" data-tab="dashboard">Dashboard</button>
       <div class="nav-label">Rostering</div>
-      <button class="nav-item" data-tab="staffing">Staff Roster</button>
-      <button class="nav-item" data-tab="roster">Weekly Roster</button>
-      <button class="nav-item" data-tab="attendance">Attendance</button>
-      <button class="nav-item" data-tab="dismissal">Dismissal</button>
+      <button class="nav-item cat-people" data-tab="staffing">Staff Roster</button>
+      <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
+      <button class="nav-item cat-people" data-tab="attendance">Attendance</button>
+      <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
       <div class="nav-label">Logistics</div>
-      <button class="nav-item" data-tab="tech">Tech Onboarding</button>
-      <button class="nav-item" data-tab="weekly">Weekly Supplies</button>
-      <button class="nav-item" data-tab="supplies">Supplies &amp; Packing<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="workstreams">Task List</button>
-      <button class="nav-item" data-tab="events">Events Team</button>
-      <button class="nav-item" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="resources">Resources<span class="ext">live ↗</span></button>
-      <button class="nav-item" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
+      <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
+      <button class="nav-item cat-logistics" data-tab="weekly">Weekly Supplies</button>
+      <button class="nav-item cat-logistics" data-tab="supplies">Supplies &amp; Packing<span class="ext">live ↗</span></button>
+      <button class="nav-item cat-ops" data-tab="workstreams">Task List</button>
+      <button class="nav-item cat-ops" data-tab="events">Events Team</button>
+      <button class="nav-item cat-curriculum" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
+      <button class="nav-item cat-curriculum" data-tab="resources">Resources<span class="ext">live ↗</span></button>
+      <button class="nav-item cat-logistics" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
       <div class="nav-label admin-only">Team Comms</div>
-      <button class="nav-item admin-only" data-tab="slack">Weekly Slack</button>
+      <button class="nav-item admin-only cat-comms" data-tab="slack">Weekly Slack</button>
       <div class="nav-label">Parent Comms</div>
-      <button class="nav-item admin-only" data-tab="famguide">Family Guide</button>
+      <button class="nav-item admin-only cat-comms" data-tab="famguide">Family Guide</button>
       <div class="nav-label admin-only">Admin</div>
-      <button class="nav-item admin-only" data-tab="access">Access</button>
+      <button class="nav-item admin-only cat-admin" data-tab="access">Access</button>
     </nav>
     <div class="rail-foot">
       <a class="rail-link" href="https://alpha-session0.lovable.app/resources" target="_blank" rel="noopener">Session 0 Hub · Trainings ↗</a>
@@ -572,7 +579,7 @@
 
       <div class="section-title"><span class="num">i</span>The daily rhythm</div>
       <div class="callout" style="margin-bottom:16px">
-        <b>Pool window</b> — Mon–Thu <b>11:00 AM–1:30 PM</b> · Fri <b>11:00 AM–12:00 PM</b>. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
+        <b>Students swim on Wednesdays.</b> The pool <i>window</i> is available Mon–Thu <b>11:00 AM–1:30 PM</b> · Fri <b>11:00 AM–12:00 PM</b>, but campers only use it on <b>Wednesdays</b>. 20×50 pool, 3 ft shallow → 5 ft deep. Two lifeguards + an aquatics director required on deck.
       </div>
       <div class="flow editable-disp" id="flow"></div>
       <div class="editor-wrap" id="rhythm-editor"></div>
@@ -1339,13 +1346,13 @@ const CONTENT_DEFAULTS = {
       {k:"Roles still to hire", v:"3", d:"1 nurse + 2 lifeguards", c:"t-coral"},
     ]; })(),
   jumpCards: [
-    {tag:"Roster", title:"Staffing & Housing", desc:"Weekly crew, bed assignments, constraints.", to:"staffing"},
+    {tag:"Staff Roster", title:"Staffing & Housing", desc:"Weekly crew, bed assignments, constraints.", to:"staffing"},
     {tag:"Daily", title:"Attendance", desc:"Check students in, export the day's roll.", to:"attendance"},
-    {tag:"Enrollment", title:"Students", desc:"Add, edit & import the roster per week; mark laptops assigned/ready.", to:"roster"},
+    {tag:"Student Roster", title:"Students", desc:"Add, edit & import the roster per week; mark laptops assigned/ready.", to:"roster"},
     {tag:"Curriculum", title:"Guide Hub", desc:"Daily field guides for all nine themed weeks.", to:"guide"},
     {tag:"Logistics", title:"Tech Onboarding", desc:"Laptop & iPad assignments by student — asset tags, setup status.", to:"tech"},
     {tag:"Logistics", title:"Weekly Supplies", desc:"Per-week supply checklist — separate from the ordering site.", to:"weekly"},
-    {tag:"Ops", title:"DoP Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
+    {tag:"Ops", title:"DoP/DoA Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
     {tag:"Logistics", title:"Supplies & Ordering", desc:"The live ordering / packing site (summer-nyc), embedded in the hub.", to:"supplies"},
     {tag:"Parents", title:"Parent FAQ", desc:"The family-facing FAQ — everything parents need to know about the summer.", to:"https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit"},
   ],
@@ -1353,7 +1360,7 @@ const CONTENT_DEFAULTS = {
     {time:"8:15 – 8:45", act:"Drop-off", note:""},
     {time:"8:45 – 10:15", act:"Core Skills", note:""},
     {time:"10:15 – 11:00", act:"Physical Adventure", note:""},
-    {time:"11:00 – 1:30", act:"Pool", note:"Mon–Thu; Fri ends 12:00"},
+    {time:"11:00 – 1:30", act:"Pool", note:"Wednesdays only"},
     {time:"12:00 – 12:45", act:"Lunch", note:""},
     {time:"1:30 – 3:30", act:"Workshop", note:""},
     {time:"3:30 – 3:45", act:"Shout-Outs", note:""},
@@ -1468,7 +1475,7 @@ function buildAllEditors(){
     async rows=>{ CONTENT.staff=rows.map(r=>[r.name,r.role,r.status,r.housing,r.precamp,r.constraint,r.notes]); const e=await saveContent('staff'); renderStaff(); return e; });
 }
 // Category colour-coding for the dashboard jump cards (and their tag labels).
-const CARD_CAT={Roster:'people',Daily:'people',Enrollment:'people',Curriculum:'curriculum',Logistics:'logistics',Ops:'ops',Parents:'parents'};
+const CARD_CAT={'Staff Roster':'people',Daily:'people','Student Roster':'people',Curriculum:'curriculum',Logistics:'logistics',Ops:'ops',Parents:'parents'};
 const CAT_COLOR={people:'var(--teal-bright)',curriculum:'#9b8cff',logistics:'var(--brass-bright)',ops:'var(--coral)',parents:'var(--ok)'};
 const CAT_ORDER={people:0,curriculum:1,logistics:2,ops:3,parents:4};
 function renderJumpCards(){
@@ -2625,7 +2632,7 @@ async function fhDelShout(id){
 
 /* =================== TAB NAV =================== */
 const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','weekly','supplies','workstreams','events','guide','resources','signage','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Weekly Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',tech:'Tech Onboarding',weekly:'Weekly Supplies',supplies:'Supplies & Packing',workstreams:'DoP/DoA Task List',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });

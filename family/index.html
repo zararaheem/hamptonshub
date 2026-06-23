@@ -199,9 +199,9 @@
         <div class="qa"><h3>Pickup</h3><p><span class="pill">${esc(w.pickup_time)}</span> at <b>${esc(w.pickup_loc)}</b>. Only adults listed on your forms may collect your child; to add someone, reach out to ${coord}. For early pickup, please notify us by <b>${esc(w.early_pickup_cutoff)}</b> at the latest.</p></div>
         <div class="qa"><h3>What should my child pack each day?</h3>${SEC('packing', `<ul>
           <li>Refillable water bottle</li><li>Hat/cap and/or sunglasses</li><li>Sunscreen (also available on-site)</li>
-          <li>A swimsuit (towels are provided) — <i>optional:</i> flip-flops to change into at the pool</li>
+          <li>On Wednesdays, a swimsuit (towels are provided) — <i>optional:</i> flip-flops to change into at the pool</li>
           <li>Extra change of clothes for our youngest campers</li><li>Closed-toe shoes, like sneakers</li></ul>`)}</div>
-        <div class="qa"><h3>What should my child wear?</h3>${SEC('wear', `<p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for the pool and beach but not for the general day.</p>`)}</div>
+        <div class="qa"><h3>What should my child wear?</h3>${SEC('wear', `<p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for changing at the pool and beach wear but not for the general day.</p>`)}</div>
       </div>`;
 
       const contacts=[
@@ -220,24 +220,24 @@
 
       h+=`<div class="sec-head"><h2>Lunch &amp; Food</h2></div><div class="card">
         <div class="qa"><h3>Is lunch provided?</h3>${SEC('lunch_provided', `<p>Yes — an organic lunch and healthy snacks throughout the day. If your child prefers a packed lunch they're welcome to bring one; please label it, as we store them in the refrigerator.</p>`)}<p>${lunch}</p></div>
-        <div class="qa"><h3>Allergies or dietary restrictions?</h3>${SEC('lunch_allergies', `<p>Please ensure your child's dietary requirements are noted in your <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">enrollment forms</a>. Questions? Message ${coord}.</p>`)}</div>
+        <div class="qa"><h3>Allergies or dietary restrictions?</h3>${SEC('lunch_allergies', `<p>Alternative food options are provided for students with allergies or dietary restrictions. Please ensure your child's dietary requirements are noted in your <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">enrollment forms</a>. Questions? Message ${coord}.</p>`)}</div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Swimming &amp; Water</h2></div><div class="card">
         <div class="qa"><h3>When will my child swim?</h3>${SEC('swim_schedule', `<p>Students will have access to the pool on <b>Wednesdays</b>.</p>`)}</div>
-        <div class="qa"><h3>Is there a swim test?</h3>${SEC('swim_test', `<p>Yes — every camper takes a short swim test on Monday so our aquatics team can group children by ability and plan water activities safely.</p>`)}</div>
-        <div class="qa"><h3>How is water safety handled?</h3>${SEC('swim_safety', `<p>Water activities are overseen by our aquatics team with 2 lifeguards on site, whether at the camp pool or the ocean.</p>`)}</div>
+        <div class="qa"><h3>Is there a swim test?</h3>${SEC('swim_test', `<p>Yes — every camper takes a short swim test on Wednesday so our aquatics team can group children by swimming ability and plan water activities safely.</p>`)}</div>
+        <div class="qa"><h3>How is water safety handled?</h3>${SEC('swim_safety', `<p>Water activities are overseen by our aquatics team with 2 lifeguards on site, whether at the camp pool or the ocean. The swim test helps us ensure your child is safe and supported before they enter the pool.</p>`)}</div>
         <div class="qa"><h3>What to bring for water days?</h3>${SEC('swim_bring', `<p>A swimsuit and optional flip-flops to change into. Towels are provided.</p>`)}</div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Health &amp; Safety</h2></div><div class="card">
-        <div class="qa"><h3>Ticks &amp; mosquitoes</h3>${SEC('ticks', `<p>We take tick prevention very seriously. In the lead up to the summer, we treated the grounds with an eco-friendly spray. The center intentionally keeps grass short, ensures there is no standing water, and we have also placed plants that act as natural deterrents. We will provide all students with long socks for outdoor activities. Families are also encouraged to apply a preferred repellent before drop-off. We also keep kid-safe repellents on-site that children may apply with your permission.</p>`)}</div>
+        <div class="qa"><h3>Ticks &amp; mosquitoes</h3>${SEC('ticks', `<p>We take tick and mosquito prevention seriously and have several measures in place. Our grounds have been treated with an eco-friendly spray before the program, with repeated sprays throughout the summer as needed. We keep the grass short and ensure there is no standing water, which is a key mosquito breeding source. We have planted a variety of plants around the center that naturally deter both ticks and mosquitoes.</p><p>During the day, we provide long socks to all students to help keep ticks away during outdoor activities. Families are encouraged to apply a preferred insect repellent before drop-off. We also keep a station of kid-safe repellents on-site that children can apply with your permission or an adult's support.</p>`)}</div>
         <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout, and we have an on-site First Aid Professional Rescuer/nurse. As a precaution, we share the CDC's HEADS UP concussion resources:</p>
           <ul>
             <li><a href="https://www.cdc.gov/heads-up/" target="_blank" rel="noopener">HEADS UP — concussion overview</a></li>
             <li><a href="https://www.cdc.gov/heads-up/guidelines/" target="_blank" rel="noopener">Returning to activities after a concussion</a></li>
           </ul></div>
-        <div class="qa"><h3>Sun protection</h3>${SEC('sun', `<p>Please apply sunscreen before drop-off; we have sunscreen stations on-site and shaded spaces, and children are encouraged to reapply during the day.</p>`)}</div>
+        <div class="qa"><h3>Sun protection</h3>${SEC('sun', `<p>Please apply sunscreen before drop-off; we have sunscreen stations available on-site and children are encouraged to reapply during the day. We have shaded spaces for children to have reprieve from the sun. You're welcome to pack a hat and sunglasses too.</p>`)}</div>
         <div class="qa"><h3>Medications &amp; medical needs</h3>${SEC('meds', `<p>If your child takes medication during the day, please complete the medication form in the <a href="https://summer.alpha.school/my-registrations" target="_blank" rel="noopener">Summer Enrollment Portal</a> and notify ${coord} at Monday drop-off so it can be stored safely. Make sure allergies, medical info, and emergency contacts are up to date before Monday. If your child is unwell, please keep them home and let our team know.</p>`)}</div>
       </div>`;
 
@@ -250,7 +250,7 @@
       </div>`;
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
-        <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
+        <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come. Parking will be available on-site for families that may require it.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
         <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week.</p><div class="alert-soft">Location is subject to change depending on weather/ocean conditions.</div>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
       </div>`;
 

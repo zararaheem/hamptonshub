@@ -321,11 +321,17 @@
   #tech-table td{min-width:96px}
 
   /* ---------- Weekly Supplies ---------- */
-  .supply-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
+  .supply-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-soft);border-left:3px solid transparent}
   .supply-row:last-child{border-bottom:0}
-  .supply-row:hover{background:rgba(62,140,132,.06)}
-  .supply-row.done .sname{color:var(--muted-2)}
-  .sstage-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .supply-row:hover{background:rgba(62,140,132,.05)}
+  .supply-row.s0{border-left-color:var(--brass)}
+  .supply-row.s1{border-left-color:#5ab0e6}
+  .supply-row.s2{border-left-color:var(--teal-bright)}
+  .supply-row.s3{border-left-color:var(--ok)}
+  .srow-main{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+  .srow-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .srow-meta .sqty{width:auto;flex:1;min-width:140px;max-width:320px}
+  .sstage-wrap{display:flex;gap:6px;flex-wrap:wrap}
   .sstage{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;
     border:1px solid var(--line);background:var(--navy-2);color:var(--muted);border-radius:7px;padding:5px 9px;cursor:pointer;white-space:nowrap}
   .sstage::before{content:"";width:12px;height:12px;border-radius:4px;border:1.5px solid var(--line)}
@@ -338,8 +344,16 @@
   .cbox{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);background:var(--navy-2);
     cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:13px;font-weight:700}
   .cbox.on{background:var(--ok);border-color:var(--ok)}
-  .sname{font-size:14px}
+  .sname{font-size:14.5px;line-height:1.45;flex:1}
   .sqty{width:90px;flex:none}
+  /* "Additional supplies ordered" summary card */
+  .sup-summary{background:linear-gradient(180deg,var(--panel),var(--navy-2));border-color:var(--brass)}
+  .sup-sec-title-static{flex:1;font-family:var(--display);font-size:18px;font-weight:600;color:var(--oyster)}
+  .sup-sumrow{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:7px 0 7px 10px;border-bottom:1px solid var(--line-soft);border-left:3px solid transparent;font-size:13.5px}
+  .sup-sumrow:last-child{border-bottom:0}
+  .sup-sumrow.s0{border-left-color:var(--brass)} .sup-sumrow.s1{border-left-color:#5ab0e6}
+  .sup-sumrow.s2{border-left-color:var(--teal-bright)} .sup-sumrow.s3{border-left-color:var(--ok)}
+  .sup-sumtag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
   .sup-section{margin-bottom:16px}
   .sup-sec-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
   .sup-sec-title{flex:1;background:transparent;border:0;border-bottom:1px solid transparent;color:var(--oyster);
@@ -1179,8 +1193,7 @@ function blankItem(name,qty){ return {name:name||'', qty:qty||'', status:''}; }
 function seedSupplies(wk){
   const wkItems=(WEEK_SUPPLIES[wk]||[]).map(e=> Array.isArray(e)?blankItem(e[0],e[1]):blankItem(e));
   return [
-    {title:'General / core items', items: SUPPLY_TEMPLATE.map(n=>blankItem(n))},
-    {title:"This week's activity supplies (from the Guide Hub)", items: wkItems}
+    {title:"This week's supplies", items: wkItems}
   ];
 }
 function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); return `${String(f).toLowerCase()}.${String(l).toLowerCase()}@alpha.school`; }
@@ -2181,16 +2194,28 @@ function loadSup(){
   return (d||[]).map(sec=>({ title: sec.title||'Items', items: (sec.items||[]).map(migItem) }));
 }
 function saveSup(d){ stateSet(supKey(), d); }
+const SUP_STIDX={ordered:0,pending:1,bins:2,jcoh:3};
 function renderSup(){
   const d = loadSup(); const list=document.getElementById('sup-list'); if(!list) return;
-  list.innerHTML = d.length ? d.map((sec,si)=>{
+  // "Additional supplies ordered" — quick read-only summary of everything actioned so far.
+  const actioned=[];
+  d.forEach(sec=>sec.items.forEach(it=>{ if(it.status) actioned.push(it); }));
+  let summary='';
+  if(actioned.length){
+    summary=`<div class="card sup-summary">
+      <div class="sup-sec-head"><div class="sup-sec-title-static">Additional supplies ordered</div><span class="sup-sec-count">${actioned.length} actioned</span></div>
+      ${actioned.map(it=>`<div class="sup-sumrow s${SUP_STIDX[it.status]}"><span>${esc(it.name)}${it.qty?` <span style="color:var(--muted-2)">· ${esc(it.qty)}</span>`:''}</span><span class="sup-sumtag">${esc(SUP_STLABEL[it.status])}</span></div>`).join('')}
+    </div>`;
+  }
+  const body = d.length ? d.map((sec,si)=>{
     const handled=sec.items.filter(x=>x.status==='bins'||x.status==='jcoh').length;
     const rows = sec.items.length ? sec.items.map((it,i)=>`
-      <div class="supply-row ${it.status?'set':''}" data-s="${si}" data-i="${i}">
-        <span class="sname">${esc(it.name)}</span>
-        <input class="cell-input sqty" data-act="qty" value="${escAttr(it.qty)}" placeholder="qty / note">
-        <div class="sstage-wrap">${SUP_STATUSES.map((s,k)=>`<button class="sstage ${it.status===s.k?'on s'+k:''}" data-act="status" data-status="${s.k}">${s.l}</button>`).join('')}</div>
-        <button class="del" data-act="del" title="Remove">×</button>
+      <div class="supply-row s${it.status?SUP_STIDX[it.status]:'x'}" data-s="${si}" data-i="${i}">
+        <div class="srow-main"><span class="sname">${esc(it.name)}</span><button class="del" data-act="del" title="Remove">×</button></div>
+        <div class="srow-meta">
+          <input class="cell-input sqty" data-act="qty" value="${escAttr(it.qty)}" placeholder="qty / note">
+          <div class="sstage-wrap">${SUP_STATUSES.map((s,k)=>`<button class="sstage ${it.status===s.k?'on s'+k:''}" data-act="status" data-status="${s.k}">${s.l}</button>`).join('')}</div>
+        </div>
       </div>`).join('') : `<div style="padding:8px 2px;color:var(--muted);font-size:13px">No items yet — add one below.</div>`;
     return `<div class="sup-section card" data-s="${si}">
       <div class="sup-sec-head">
@@ -2205,7 +2230,8 @@ function renderSup(){
         <button class="btn ghost" data-act="additem">Add</button>
       </div>
     </div>`;
-  }).join('') : `<div style="padding:18px;color:var(--muted)">No sections yet — add one above, or reset to the template.</div>`;
+  }).join('') : `<div style="padding:18px;color:var(--muted)">No items yet — add a section above, or reset to the template.</div>`;
+  list.innerHTML = summary + body;
   wireSup(); renderSupStats();
 }
 function wireSup(){

@@ -354,6 +354,11 @@
   .sup-sumrow.s0{border-left-color:var(--brass)} .sup-sumrow.s1{border-left-color:#5ab0e6}
   .sup-sumrow.s2{border-left-color:var(--teal-bright)} .sup-sumrow.s3{border-left-color:var(--ok)}
   .sup-sumtag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .access-block{display:flex;gap:14px;align-items:center;justify-content:center;text-align:left;padding:26px 20px;
+    background:linear-gradient(180deg,var(--panel),var(--navy-2));border:1px dashed var(--line);border-radius:12px;color:var(--oyster)}
+  .access-block .ab-lock{font-size:26px;opacity:.8}
+  .wg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 14px;margin:10px 0 14px}
+  .wg-grid label{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13.5px;padding:3px 0}
   .sup-section{margin-bottom:16px}
   .sup-sec-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
   .sup-sec-title{flex:1;background:transparent;border:0;border-bottom:1px solid transparent;color:var(--oyster);
@@ -631,6 +636,14 @@
         <button class="subtab" data-sub="staff">Staff Roster</button>
         <button class="subtab" data-sub="ops">Ops Coverage</button>
         <button class="subtab" data-sub="summary">Summary</button>
+        <button class="subtab admin-only" data-sub="weekaccess">Week Access</button>
+      </div>
+
+      <div class="subpanel" id="sub-weekaccess">
+        <p class="page-lead">Assign which guides can see each week's <b>student data</b> (Student Roster, Attendance, Dismissal, Tech). Leadership and admins always see every week. Everyone else sees counts but not names.</p>
+        <div class="att-bar"><div class="field" style="max-width:240px"><label for="wg-week">Week</label><select id="wg-week"></select></div></div>
+        <div id="wg-list"></div>
+        <div style="margin-top:12px"><button class="btn" id="wg-save">Save week access</button> <span class="gate-msg" id="wg-msg" style="margin-left:8px"></span></div>
       </div>
 
       <div class="subpanel active" id="sub-roster">
@@ -1718,6 +1731,7 @@ function flashSaved(){
 function curWeek(){ return document.getElementById('att-week').value; }
 async function refreshAtt(){ if(SUPA){ await hydrateRoster(); await refreshStateKey(attKey()); } renderAtt(); }
 function renderAtt(){
+  if(guardStudentTab('att-list', curWeek())){ ['att-stats','att-levels','att-health'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
   const data = loadAtt();
   const list = document.getElementById('att-list');
   const studs = studentsForWeek(curWeek());
@@ -1906,6 +1920,7 @@ async function dqDismissAll(){
 }
 function dqStudentInQueue(id){ return DQ_ROWS.some(r=>(r.students||[]).some(s=>s.id===id)); }
 function renderDismissal(){
+  if(guardStudentTab('dq-line', dqWeek())){ ['dq-stats','dq-log','dq-picker'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
   const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
   const dismissed=DQ_ROWS.filter(r=>r.status==='dismissed');
   const studs=studentsForWeek(dqWeek());
@@ -1985,6 +2000,7 @@ function techKey(){ return `tech:w${techWeek()}`; }
 function loadTech(){ return stateGet(techKey()) || {}; }
 function saveTech(d){ stateSet(techKey(), d); flash('tech-saved'); }
 function renderTech(){
+  if(!canSeeWeek(techWeek())){ document.getElementById('tech-table').innerHTML=`<tbody><tr><td colspan="7">${accessBlockHTML(techWeek())}</td></tr></tbody>`; const e=document.getElementById('tech-stats'); if(e) e.innerHTML=''; return; }
   const d = loadTech();
   const studs = studentsForWeek(techWeek());
   const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th>Laptop assigned</th><th>Ready</th><th>Notes</th></tr></thead>`;
@@ -2065,6 +2081,7 @@ function rosHealthCell(s){
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
+  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="10">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
@@ -2736,9 +2753,10 @@ document.getElementById('staff-subtabs').addEventListener('click',e=>{
   const b=e.target.closest('.subtab'); if(!b) return;
   document.querySelectorAll('#staff-subtabs .subtab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['roster','housing','staff','ops','summary'].forEach(s=>{
-    document.getElementById('sub-'+s).classList.toggle('active', s===b.dataset.sub);
+  ['roster','housing','staff','ops','summary','weekaccess'].forEach(s=>{
+    const el=document.getElementById('sub-'+s); if(el) el.classList.toggle('active', s===b.dataset.sub);
   });
+  if(b.dataset.sub==='weekaccess') renderWeekGuides();
 });
 
 /* mobile rail */
@@ -2805,18 +2823,74 @@ async function dbSetCategory(email, category){
 async function dbCheckAccess(email){
   email=(email||'').toLowerCase();
   if(SUPA){
-    const { data } = await SB.from('allowed_emails').select('is_admin,is_owner').eq('email', email).maybeSingle();
-    if(!data) return {allowed:false, admin:false, owner:false};
-    return {allowed:true, admin: !!(data.is_admin||data.is_owner), owner: !!data.is_owner};
+    const { data } = await SB.from('allowed_emails').select('is_admin,is_owner,is_leadership').eq('email', email).maybeSingle();
+    if(!data) return {allowed:false, admin:false, owner:false, leadership:false};
+    return {allowed:true, admin: !!(data.is_admin||data.is_owner), owner: !!data.is_owner, leadership: !!(data.is_leadership||data.is_owner)};
   }
-  if(!domainOk(email)) return {allowed:false, admin:false, owner:false};
-  if(email===OWNER) return {allowed:true, admin:true, owner:true};
-  if(getMode()==='domain') return {allowed:true, admin:false, owner:false};
+  if(!domainOk(email)) return {allowed:false, admin:false, owner:false, leadership:false};
+  if(email===OWNER) return {allowed:true, admin:true, owner:true, leadership:true};
+  if(getMode()==='domain') return {allowed:true, admin:false, owner:false, leadership:false};
   const u=getAllowLocal().find(x=>x.email.toLowerCase()===email);
-  return u ? {allowed:true, admin:!!u.admin, owner:!!u.owner} : {allowed:false, admin:false, owner:false};
+  return u ? {allowed:true, admin:!!u.admin, owner:!!u.owner, leadership:!!u.owner} : {allowed:false, admin:false, owner:false, leadership:false};
 }
 function isAdmin(){ return !!(SESSION && SESSION.admin); }
 function refreshAdminState(){ document.body.classList.toggle('is-admin', isAdmin()); }
+/* Per-week guide assignments → who may see that week's student data (mirrors RLS). */
+let WEEK_STAFF={};
+async function loadWeekStaff(){
+  WEEK_STAFF={};
+  if(!SUPA) return;
+  try{ const { data } = await SB.from('week_staff').select('week,email');
+    (data||[]).forEach(r=>{ (WEEK_STAFF[r.week]=WEEK_STAFF[r.week]||[]).push((r.email||'').toLowerCase()); });
+  }catch(e){ console.warn('week_staff load failed', e); }
+}
+function canSeeWeek(week){
+  if(!SESSION) return false;
+  if(SESSION.owner || SESSION.leadership) return true;
+  return (WEEK_STAFF[+week]||[]).includes((SESSION.email||'').toLowerCase());
+}
+function accessBlockHTML(week){
+  return `<div class="access-block"><div class="ab-lock">🔒</div><div><b>Access is limited to this week's Guides.</b><div style="color:var(--muted);font-size:13px;margin-top:4px">Student names and details for Week ${esc(week)} are visible only to that week's assigned guides and leadership. Counts stay visible above.</div></div></div>`;
+}
+function guardStudentTab(container, week){
+  // returns true if blocked (and renders the block message); false if allowed
+  if(canSeeWeek(week)) return false;
+  const el=document.getElementById(container); if(el) el.innerHTML=accessBlockHTML(week);
+  return true;
+}
+async function dbSetWeekStaff(week, emails){
+  if(!SUPA) return null;
+  const del=await SB.from('week_staff').delete().eq('week', week); if(del.error) return del.error;
+  const rows=emails.map(e=>({week:week, email:e.toLowerCase()}));
+  if(rows.length){ const { error } = await SB.from('week_staff').insert(rows); if(error) return error; }
+  return null;
+}
+async function renderWeekGuides(){
+  const wsel=document.getElementById('wg-week'); if(!wsel) return;
+  if(!wsel.options.length){
+    wsel.innerHTML=WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
+    wsel.value=String(WEEKS[NOW].n);
+    wsel.addEventListener('change',renderWeekGuides);
+    document.getElementById('wg-save').addEventListener('click',wgSave);
+  }
+  await loadWeekStaff();
+  const week=+wsel.value;
+  const assigned=new Set(WEEK_STAFF[week]||[]);
+  const all=(await dbGetAllow()).slice().sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+  document.getElementById('wg-list').innerHTML='<div class="wg-grid">'+all.map(u=>`<label><input type="checkbox" value="${escAttr(u.email)}" ${assigned.has(u.email.toLowerCase())?'checked':''}> ${esc(u.name||u.email)}${u.name?` <span style="color:var(--muted);font-size:12px">${esc(u.email)}</span>`:''}</label>`).join('')+'</div>';
+}
+async function wgSave(){
+  const week=+document.getElementById('wg-week').value;
+  const emails=[...document.querySelectorAll('#wg-list input[type=checkbox]:checked')].map(c=>c.value);
+  const m=document.getElementById('wg-msg'); m.className='gate-msg'; m.textContent='Saving…';
+  const err=await dbSetWeekStaff(week, emails);
+  if(err){ m.className='gate-msg err'; m.textContent='Save failed — '+(err.message||'try again'); return; }
+  await loadWeekStaff();
+  m.className='gate-msg ok'; m.textContent='Saved ✓';
+  if(typeof renderRosterTab==='function') renderRosterTab();
+  if(typeof renderAtt==='function') renderAtt();
+  if(typeof renderTech==='function') renderTech();
+}
 /* Is this email explicitly on the access list (used to allow non-domain exceptions)? */
 async function dbIsListed(email){
   email=(email||'').toLowerCase();
@@ -2834,7 +2908,7 @@ function enterHub(sess){
   if(SUPA){ SB.auth.getUser().then(({data})=>{ const u=data&&data.user, md=u&&u.user_metadata||{}; const nm=md.full_name||md.name; if(nm) SB.rpc('claim_my_profile',{p_name:nm}).then(()=>renderAccess()).catch(()=>{}); }).catch(()=>{}); }
   renderAccess();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
-  Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
+  Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState()]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
   if(!routeHash()) showTab('dashboard');  // honor a deep link like #games / #tech, else Home
 }

@@ -461,6 +461,9 @@
   .admin-only{display:none!important}
   body.is-admin .nav-label.admin-only{display:block!important}
   body.is-admin .nav-item.admin-only{display:flex!important}
+  .nav-item.owner-only,.nav-label.owner-only,.subtab.owner-only{display:none!important}
+  body.is-owner .nav-item.owner-only{display:flex!important}
+  body.is-owner .nav-label.owner-only,body.is-owner .subtab.owner-only{display:inline-flex!important}
   body.is-admin .edit-toggle.admin-only{display:inline-flex!important}
   /* admin edit mode */
   .edit-toggle{align-items:center;gap:6px;background:var(--navy-2);border:1px solid var(--brass);color:var(--brass-bright);
@@ -560,6 +563,7 @@
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
       <button class="nav-item cat-people" data-tab="attendance">Attendance</button>
       <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
+      <button class="nav-item cat-people owner-only" data-tab="emergency">Emergency Info</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item cat-logistics" data-tab="supplies">Supplies &amp; Packing</button>
@@ -802,6 +806,22 @@
         <button class="btn ghost" id="dq-export">Export CSV</button>
       </div>
       <div id="dq-log"></div>
+    </section>
+
+    <!-- ===== EMERGENCY INFO (owner-only) ===== -->
+    <section class="view" id="view-emergency" hidden>
+      <div class="eyebrow">Owner-only · zara.raheem@alpha.school</div>
+      <h1 class="page-title">Emergency info</h1>
+      <p class="page-lead">Guardian &amp; emergency contacts in one place — <b>visible only to you</b> (the owner). Allergies/meds are shown for context. Pick a week; edit inline or import a file in the Students tab.</p>
+      <div class="att-bar">
+        <div class="field" style="max-width:220px"><label for="em-week">Week</label><select id="em-week"></select></div>
+        <div class="att-stats" id="em-stats"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <input class="cell-input" id="em-search" placeholder="Search name…" style="max-width:240px">
+        <button class="btn ghost" id="em-export">Export CSV</button>
+      </div>
+      <div class="tablewrap"><table id="em-table"></table></div>
     </section>
 
     <!-- ===== TECH ONBOARDING ===== -->
@@ -1229,6 +1249,7 @@ function flash(id){ const el=document.getElementById(id); if(el) el.textContent=
    Supabase `students` table (one row per student per week); falls back to
    localStorage when Supabase isn't connected. */
 let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
+let EMERGENCY = {};   // owner-only: { [student_id]: {guardian, guardian_phone, ...} }
 let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last'
 function studentsForWeek(w){
   const arr=(ROSTER_DATA[+w]||[]).slice();
@@ -1312,28 +1333,50 @@ async function dbBulkAddStudents(week, arr){
   }
   return null;
 }
+const STUDENT_FIELDS=['grade','allergies','meds','media_consent','laptop_assigned','laptop_ready'];
+const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','emergency_contact','emergency_phone','dob'];
+async function dbSetEmergency(student_id, patch){
+  EMERGENCY[student_id]={...(EMERGENCY[student_id]||{}), ...patch};
+  if(!SUPA) return null;
+  const { error } = await SB.from('student_emergency').upsert({student_id, ...patch, updated_at:new Date().toISOString()});
+  if(error) console.warn('emergency save failed', error);
+  return error;
+}
+async function loadEmergency(){
+  EMERGENCY={};
+  if(!SUPA) return;
+  const { data, error } = await SB.from('student_emergency').select('*');
+  if(error){ return; }  // non-owners get nothing (RLS) — that's intended
+  (data||[]).forEach(r=>{ const {student_id,...rest}=r; EMERGENCY[student_id]=rest; });
+}
 // Import that updates students already on the week (matched by first+last name)
-// instead of creating duplicate rows; new names are added.
+// instead of duplicating; new names are added. Emergency fields go to the
+// owner-only student_emergency table (written only if you're the owner).
 async function dbMergeStudents(week, arr){
   week=+week;
   const key=s=>((s.first||'').trim().toLowerCase()+'|'+(s.last||'').trim().toLowerCase());
-  const map=new Map((ROSTER_DATA[week]||[]).map(s=>[key(s), s]));
-  let updated=0; const toAdd=[];
+  const idx=()=>new Map((ROSTER_DATA[week]||[]).map(s=>[key(s), s]));
+  let updated=0, added=0, emerg=0;
   for(const s of arr){
-    const ex=map.get(key(s));
-    if(ex){
-      const patch={};
-      if((s.grade||'').trim()) patch.grade=(s.grade||'').trim();
-      if('laptop_assigned' in s) patch.laptop_assigned=!!s.laptop_assigned;
-      if('laptop_ready' in s) patch.laptop_ready=!!s.laptop_ready;
-      if((s.media_consent||'')!=='') patch.media_consent=s.media_consent;
-      if(Object.keys(patch).length){ const err=await dbUpdateStudent(ex.id, patch); if(err) return {err}; }
+    let row=idx().get(key(s));
+    const spatch={};
+    STUDENT_FIELDS.forEach(f=>{ if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready') spatch[f]=!!s[f]; else if((s[f]||'')!=='') spatch[f]=s[f]; } });
+    if(row){
+      if(Object.keys(spatch).length){ const err=await dbUpdateStudent(row.id, spatch); if(err) return {err}; }
       updated++;
-    } else toAdd.push(s);
+    } else {
+      const err=await dbAddStudent(week, s.first, s.last, s.grade||''); if(err) return {err};
+      row=(ROSTER_DATA[week]||[]).slice(-1)[0];
+      const extra={}; STUDENT_FIELDS.forEach(f=>{ if(f!=='grade' && f in spatch) extra[f]=spatch[f]; });
+      if(row && Object.keys(extra).length){ const err2=await dbUpdateStudent(row.id, extra); if(err2) return {err:err2}; }
+      added++;
+    }
+    if(row && SESSION && SESSION.owner){
+      const epatch={}; EMERG_FIELDS.forEach(f=>{ if(f in s && (s[f]||'')!=='') epatch[f]=s[f]; });
+      if(Object.keys(epatch).length){ const err=await dbSetEmergency(row.id, epatch); if(!err) emerg++; }
+    }
   }
-  let added=0;
-  if(toAdd.length){ const err=await dbBulkAddStudents(week, toAdd); if(err) return {err}; added=toAdd.length; }
-  return {updated, added};
+  return {updated, added, emerg};
 }
 async function dbUpdateStudent(id, patch){
   const s=findStudent(id); if(s) Object.assign(s, patch);
@@ -1361,12 +1404,44 @@ function parseRosterCSV(text){
   const truthy=v=>/^(1|y|yes|true|x|✓|done|ready)$/i.test(String(v||'').trim());
   const consentVal=v=>{ const s=String(v||'').trim().toLowerCase(); if(/^(y|yes|true|1|consent|consented|approved|ok)$/.test(s)) return 'yes'; if(/^(n|no|false|0|decline|declined|non|none|no consent)$/.test(s)) return 'no'; return ''; };
   let rows=lines.map(splitRow);
-  const head=rows[0].map(h=>h.toLowerCase());
-  const looksHeader=head.some(h=>/first|last|name|grade|laptop/.test(h));
-  if(looksHeader) rows=rows.slice(1);
+  const head=rows[0].map(h=>h.toLowerCase().trim());
+  const isHeader=head.some(h=>/first|last|name|grade|laptop|allerg|medic|guardian|parent|emergency|phone|consent|dob|birth|email/.test(h));
+  if(isHeader){
+    rows=rows.slice(1);
+    const find=re=>head.findIndex(h=>re.test(h));
+    const iFirst=find(/first/), iLast=find(/last|surname/),
+          iFull=find(/^(student )?(full )?name$|^name$|^student$/),
+          iGrade=find(/grade|year/), iAllerg=find(/allerg/), iMeds=find(/medic|meds/),
+          iConsent=find(/consent|photo|media/), iLapA=find(/laptop.*assign|^assigned/), iLapR=find(/laptop.*ready|^ready/),
+          iGuardian=find(/guardian|parent\s*name|parent\/guardian|caregiver|mother|father|^parent$/),
+          iGPhone=find(/(guardian|parent).*?(phone|mobile|cell|number)|^phone|primary phone|contact number/),
+          iGEmail=find(/(guardian|parent).*email|parent email|^email/),
+          iEC=find(/emergency.*(name|contact)|secondary contact|emergency$/),
+          iEP=find(/emergency.*(phone|mobile|number)/),
+          iDob=find(/dob|date of birth|birth/);
+    const g=(idx,c)=> idx>=0 ? (c[idx]||'').trim() : '';
+    return rows.map(c=>{
+      let first=g(iFirst,c), last=g(iLast,c);
+      if(!first && !last && iFull>=0){ const p=g(iFull,c).split(/\s+/); first=p[0]||''; last=p.slice(1).join(' '); }
+      const o={first,last};
+      if(iGrade>=0) o.grade=g(iGrade,c);
+      if(iAllerg>=0) o.allergies=g(iAllerg,c);
+      if(iMeds>=0) o.meds=g(iMeds,c);
+      if(iConsent>=0) o.media_consent=consentVal(g(iConsent,c));
+      if(iLapA>=0) o.laptop_assigned=truthy(g(iLapA,c));
+      if(iLapR>=0) o.laptop_ready=truthy(g(iLapR,c));
+      if(iGuardian>=0) o.guardian=g(iGuardian,c);
+      if(iGPhone>=0) o.guardian_phone=g(iGPhone,c);
+      if(iGEmail>=0) o.guardian_email=g(iGEmail,c);
+      if(iEC>=0) o.emergency_contact=g(iEC,c);
+      if(iEP>=0) o.emergency_phone=g(iEP,c);
+      if(iDob>=0) o.dob=g(iDob,c);
+      return o;
+    }).filter(s=>s.first||s.last);
+  }
+  // No header row — fall back to positional First,Last,Grade[,Laptop…] or Name,Grade
   return rows.map(c=>{
     if(c.length===1){ return {first:c[0], last:'', grade:''}; }
-    // Heuristic: if 2 cols and 2nd looks like a grade, treat as Name,Grade
     if(c.length===2 && /^(pk|k|\d{1,2})$/i.test(c[1])){ const parts=c[0].split(/\s+/); return {first:parts[0]||'', last:parts.slice(1).join(' '), grade:c[1]}; }
     return {first:c[0]||'', last:c[1]||'', grade:c[2]||'', laptop_assigned:truthy(c[3]), laptop_ready:truthy(c[4]), media_consent:consentVal(c[5])};
   }).filter(s=>s.first||s.last);
@@ -2198,8 +2273,8 @@ async function rosImport(file){
     msg.className='gate-msg'; msg.textContent='Importing…';
     const res=await dbMergeStudents(rosWeek(), parsed);
     if(res.err){ msg.className='gate-msg err'; msg.textContent=res.err.message||'Import failed.'; return; }
-    msg.className='gate-msg ok'; msg.textContent=`Updated ${res.updated}, added ${res.added} ✓`;
-    renderRosterTab();
+    msg.className='gate-msg ok'; msg.textContent=`Updated ${res.updated}, added ${res.added}${res.emerg?`, ${res.emerg} emergency record${res.emerg>1?'s':''}`:''} ✓`;
+    renderRosterTab(); if(typeof renderEmergency==='function') renderEmergency();
   }catch(e){ msg.className='gate-msg err'; msg.textContent='Could not read that file.'; }
 }
 function rosterInit(){
@@ -2218,10 +2293,52 @@ function rosterInit(){
   if(rf) rf.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; rf.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); ROS_FILTER=b.dataset.cf; renderRosterTab(); });
   document.getElementById('ros-export').addEventListener('click',rosExport);
   document.getElementById('ros-template').addEventListener('click',()=>{
-    csvDownload('roster-template.csv', [["First","Last","Grade","Laptop assigned","Laptop ready","Media consent"],["Jane","Doe","3","no","no","yes"]]);
+    csvDownload('roster-template.csv', [["First","Last","Grade","Allergies","Medications","Media consent","Guardian","Guardian phone","Guardian email","Emergency contact","Emergency phone","DOB"],["Jane","Doe","3","Peanuts","None","yes","John Doe","555-1234","john@example.com","Jane Roe","555-9876","2018-04-02"]]);
   });
   document.getElementById('ros-file').addEventListener('change',e=>{ if(e.target.files[0]) rosImport(e.target.files[0]); e.target.value=''; });
   renderRosterTab();
+}
+
+/* =================== EMERGENCY INFO (owner-only) =================== */
+function emWeek(){ const s=document.getElementById('em-week'); return s?s.value:'1'; }
+function renderEmergency(){
+  const tbl=document.getElementById('em-table'); if(!tbl) return;
+  const wk=emWeek();
+  const q=(document.getElementById('em-search').value||'').trim().toLowerCase();
+  let studs=studentsForWeek(wk);
+  if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
+  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>DOB</th><th>Guardian</th><th>Guardian phone</th><th>Guardian email</th><th>Emergency contact</th><th>Emergency phone</th><th>Allergies</th><th>Meds</th></tr></thead>`;
+  const inp=(id,f,val)=>`<input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" value="${escAttr(val||'')}">`;
+  const body=studs.length? studs.map((s,i)=>{ const e=EMERGENCY[s.id]||{}; return `<tr>
+    <td class="role-cell">${i+1}</td>
+    <td>${esc(s.first||'')} ${esc(s.last||'')}</td>
+    <td>${esc(s.grade||'')}</td>
+    <td>${inp(s.id,'dob',e.dob)}</td>
+    <td>${inp(s.id,'guardian',e.guardian)}</td>
+    <td>${inp(s.id,'guardian_phone',e.guardian_phone)}</td>
+    <td>${inp(s.id,'guardian_email',e.guardian_email)}</td>
+    <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
+    <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
+    <td>${esc(s.allergies||'')}</td>
+    <td>${esc(s.meds||'')}</td>
+  </tr>`; }).join('') : `<tr><td colspan="11" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
+  tbl.innerHTML=head+`<tbody>${body}</tbody>`;
+  tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
+  const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone); }).length;
+  const st=document.getElementById('em-stats'); if(st) st.innerHTML=`<div class="ministat p"><div class="n">${filled}</div><div class="l">With contact</div></div><div class="ministat l-late"><div class="n">${studs.length-filled}</div><div class="l">Missing</div></div><div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>`;
+}
+function emExport(){
+  const wk=emWeek(); const studs=studentsForWeek(wk);
+  const rows=[["First","Last","Grade","DOB","Guardian","Guardian phone","Guardian email","Emergency contact","Emergency phone","Allergies","Meds"]];
+  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.emergency_contact||'',e.emergency_phone||'',s.allergies||'',s.meds||'']); });
+  csvDownload(`emergency-w${wk}.csv`, rows);
+}
+function emInit(){
+  const sel=document.getElementById('em-week'); if(!sel) return;
+  fillWeekSelect(sel);
+  sel.addEventListener('change',()=>loadEmergency().then(renderEmergency));
+  document.getElementById('em-search').addEventListener('input',renderEmergency);
+  document.getElementById('em-export').addEventListener('click',emExport);
 }
 
 /* =================== SUPPLIES & PACKING (sectioned, per week) =================== */
@@ -2730,10 +2847,11 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Emergency Info',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
+  if(t==='emergency' && !document.body.classList.contains('is-owner')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
@@ -2744,6 +2862,7 @@ function showTab(t){
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
+  if(t==='emergency') loadEmergency().then(()=>renderEmergency());
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
   try{ history.replaceState(null,'', t==='dashboard' ? (location.pathname+location.search) : ('#'+(t==='guide'?'weeklybrief':t))); }catch(e){}
@@ -2940,12 +3059,13 @@ function enterHub(sess){
   store.set('session',{email:sess.email});
   document.body.classList.remove('locked');
   document.body.classList.toggle('is-admin', !!sess.admin);
+  document.body.classList.toggle('is-owner', !!sess.owner);
   document.getElementById('me-mail').textContent=sess.email;
   // record the signed-in person's Google display name (own row only, if not set yet)
   if(SUPA){ SB.auth.getUser().then(({data})=>{ const u=data&&data.user, md=u&&u.user_metadata||{}; const nm=md.full_name||md.name; if(nm) SB.rpc('claim_my_profile',{p_name:nm}).then(()=>renderAccess()).catch(()=>{}); }).catch(()=>{}); }
   renderAccess();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
-  Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState()]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); });
+  Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState(), (sess.owner?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
   if(!routeHash()) showTab('dashboard');  // honor a deep link like #games / #tech, else Home
 }
@@ -2955,6 +3075,7 @@ async function signOut(){
   if(NEEDS_LOGIN || GOOGLE_GATE){ try{ await SB.auth.signOut(); }catch(e){} }
   document.body.classList.add('locked');
   document.body.classList.remove('is-admin');
+  document.body.classList.remove('is-owner');
   const e=document.getElementById('gate-email'); if(e) e.value='';
   const p=document.getElementById('gate-pass'); if(p) p.value='';
   const m=document.getElementById('gate-msg'); if(m){ m.className='gate-msg'; m.textContent=''; }
@@ -3268,7 +3389,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); emInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();

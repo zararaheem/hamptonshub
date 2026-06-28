@@ -319,6 +319,9 @@
     border-radius:7px;padding:6px 8px;font-family:var(--body);font-size:12.5px;width:100%;min-width:92px}
   .cell-input:focus,.cell-select:focus{outline:1.5px solid var(--brass);outline-offset:0}
   #tech-table td{min-width:96px}
+  .th-sort{background:none;border:0;color:inherit;font:inherit;font-weight:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
+  .th-sort:hover{color:var(--brass-bright)}
+  .th-arrow{font-size:9px;color:var(--brass-bright)}
 
   /* ---------- Weekly Supplies ---------- */
   .supply-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-soft);border-left:3px solid transparent}
@@ -2108,7 +2111,8 @@ function renderRosterTab(){
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
-  const head = `<thead><tr><th>#</th><th>First</th><th>Last</th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
+  const sortArrow=k=>STUDENT_SORT===k?' <span class="th-arrow">▲</span>':'';
+  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
   const cols = ed?10:9;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
@@ -2126,6 +2130,12 @@ function renderRosterTab(){
       ${ed?`<td><button class="del" data-act="del" title="Remove">×</button></td>`:''}
     </tr>`).join('') : `<tr><td colspan="${cols}" class="note-row">${ROS_FILTER==='all'?`No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}`:'No students match this consent filter.'}</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
+  tbl.querySelectorAll('.th-sort').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.sort;
+    STUDENT_SORT = (STUDENT_SORT===k) ? '' : k;   // click again to return to manual order
+    const ss=document.getElementById('ros-sort'); if(ss) ss.value=STUDENT_SORT;
+    renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech();
+  }));
   tbl.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('change',async ()=>{
     const id=el.closest('tr').dataset.id;
     await dbUpdateStudent(id, {[el.dataset.f]: el.value});

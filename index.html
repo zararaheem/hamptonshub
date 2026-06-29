@@ -397,6 +397,12 @@
   .dq-names{font-size:15.5px;font-weight:600;color:var(--oyster)}
   .dq-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
   .dq-dismiss{flex:0 0 auto}
+  .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
+  .dq-tag.self{font-family:var(--mono);font-size:10px;color:var(--teal-bright);border:1px solid var(--teal);border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-note{font-size:12px;color:var(--brass-bright);margin-top:3px}
+  .dqn-table{width:100%;border-collapse:collapse}
+  .dqn-table th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
+  .dqn-table td{padding:5px 8px;border-bottom:1px solid var(--line-soft)}
   .dq-done{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
   .dq-done .lk{background:none;border:0;color:var(--teal-bright);cursor:pointer;font-family:var(--mono);font-size:11px}
   .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
@@ -512,6 +518,8 @@
     border:1px solid rgba(226,101,74,.4);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .note-chip{font-family:var(--mono);font-size:10.5px;background:rgba(212,160,74,.16);color:var(--brass-bright);
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
+  .ros-health{font-size:12px;line-height:1.45;color:var(--coral);white-space:normal;word-break:break-word;max-width:340px;margin:1px 0}
+  .ros-health b{font-weight:700}
   .student-block{border-bottom:1px solid var(--line-soft)}
   .student-block:last-child{border-bottom:0}
   .student-block .student-row{border-bottom:0}
@@ -831,6 +839,15 @@
           <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:180px;flex:1;max-width:280px">
         </div>
         <div id="dq-picker" class="dq-picker"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div><div class="eyebrow" style="margin-bottom:4px">Dismissal notes &amp; self-dismissal</div>
+            <p class="lc-desc" style="margin:0">Standing per-student instructions — mark who may <b>self-dismiss</b> (walk/bike home on their own) and add any pickup notes. These show on the line and in the picker.</p></div>
+          <button class="btn ghost" id="dq-notes-toggle" style="flex-shrink:0">Manage notes</button>
+        </div>
+        <div id="dq-notes" style="display:none;margin-top:14px"></div>
       </div>
 
       <div class="section-title"><span class="num">↓</span>Carpool line</div>
@@ -1326,7 +1343,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1394,7 +1411,7 @@ async function dbBulkAddStudents(week, arr){
   return null;
 }
 const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready'];
-const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','emergency_contact','emergency_phone','dob'];
+const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob'];
 // "Test" rule: any student whose name is a test/placeholder entry is excluded by
 // default on import, and can be purged from the roster with one click. Matches a
 // whole "test" word (Test, test student, QA test) — not real names like "Tester".
@@ -1588,7 +1605,9 @@ function parseRegistration(text){
     sName:find(/secondary .*(parent|guardian).*name/), sEmail:find(/secondary .*(parent|guardian).*email/), sPhone:find(/secondary .*(parent|guardian).*phone/),
     sRel:find(/secondary .*relationship/),
     ecName:find(/(alternative )?emergency contact.*name/), ecPhone:find(/(alternative )?emergency contact.*phone/),
-    pu1Name:find(/pickup 1 — name|pickup — pickup 1/),
+    pu1Name:find(/pickup 1 — name|pickup — pickup 1/), pu1Phone:find(/pickup 1 — phone/),
+    pu2Name:find(/pickup 2 — name/), pu2Phone:find(/pickup 2 — phone/),
+    pu3Name:find(/pickup 3 — name/), pu3Phone:find(/pickup 3 — phone/),
   };
   const g=(c,idx)=> idx>=0 ? String(c[idx]||'').trim() : '';
   const out=[];
@@ -1611,6 +1630,9 @@ function parseRegistration(text){
     const media_consent = /no consent|no media|decline|^no\b/.test(mediaRaw) ? 'no'
                         : /consent|yes|approved|^ok/.test(mediaRaw) ? 'yes' : '';
     const addr=g(c,I.address).replace(/\s*\n\s*/g,', ').replace(/\s+/g,' ').replace(/(,\s*)+/g,', ').trim().replace(/^,\s*|,\s*$/g,'');
+    // Authorized pickups: #1 → its own field; #2 and #3 → the combined "more pickups" field.
+    const puFmt=(n,p)=>{ n=softNone(n); p=(p||'').trim(); return n?`${n}${p?` (${p})`:''}`:''; };
+    const morePickups=[puFmt(g(c,I.pu2Name),g(c,I.pu2Phone)), puFmt(g(c,I.pu3Name),g(c,I.pu3Phone))].filter(Boolean).join('; ');
     out.push({
       first, last, weeks,
       grade:g(c,I.grade), allergies:cleanAllergy(g(c,I.allerg)),
@@ -1618,7 +1640,7 @@ function parseRegistration(text){
       contact:{
         guardian:g(c,I.pName), guardian_email:g(c,I.pEmail), guardian_phone:g(c,I.pPhone),
         secondary_parent:g(c,I.sName), secondary_email:g(c,I.sEmail), secondary_phone:g(c,I.sPhone),
-        other_guardian:g(c,I.pu1Name),
+        other_guardian:softNone(g(c,I.pu1Name)), other_phone:g(c,I.pu1Phone), authorized_pickups:morePickups,
         emergency_contact:g(c,I.ecName), emergency_phone:g(c,I.ecPhone),
         relationship:g(c,I.sRel), dob:g(c,I.dob), address:addr,
       }
@@ -2252,8 +2274,9 @@ async function dqFetch(){
 function dqPersistLocal(){ store.set(dqLocalKey(), DQ_ROWS); }
 async function dqAddStudents(ids){
   if(!ids.length) return;
-  const studs = ids.map(id=>{ const s=findStudent(id); return {id, name: s?studentLabel(s):'Student'}; });
-  const label = (document.getElementById('dq-label').value||'').trim();
+  const studs = ids.map(id=>{ const s=findStudent(id)||{}; return {id, name: s.first?studentLabel(s):'Student', note:(s.dismissal||'').trim(), self:!!s.self_dismiss}; });
+  let label = (document.getElementById('dq-label').value||'').trim();
+  if(!label && studs.length && studs.every(s=>s.self)) label='Self-dismissal';
   const rec = { day:dqDay(), week:+dqWeek(), students:studs, label, status:'waiting', queued_at:new Date().toISOString() };
   if(SUPA){
     const { error } = await SB.from('dismissal_queue').insert(rec);
@@ -2289,7 +2312,8 @@ async function dqDismissAll(){
 }
 function dqStudentInQueue(id){ return DQ_ROWS.some(r=>(r.students||[]).some(s=>s.id===id)); }
 function renderDismissal(){
-  if(guardStudentTab('dq-line', dqWeek())){ ['dq-stats','dq-log','dq-picker'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
+  if(guardStudentTab('dq-line', dqWeek())){ ['dq-stats','dq-log','dq-picker','dq-notes'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
+  renderDqNotes();
   const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
   const dismissed=DQ_ROWS.filter(r=>r.status==='dismissed');
   const studs=studentsForWeek(dqWeek());
@@ -2310,8 +2334,9 @@ function renderDismissal(){
     <div class="dq-car ${i===0?'next':''}">
       <div class="dq-pos">${i+1}</div>
       <div class="dq-body">
-        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)).join(', ')}</div>
+        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">🚶 self</span>':'')).join(', ')}</div>
         <div class="dq-sub">${r.label?esc(r.label)+' · ':''}in line since ${esc(new Date(r.queued_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}${i===0?' · <b style="color:var(--brass-bright)">UP NEXT</b>':''}</div>
+        ${(r.students||[]).some(s=>s.note)?`<div class="dq-note">📝 ${(r.students||[]).filter(s=>s.note).map(s=>esc(s.note)).join(' · ')}</div>`:''}
       </div>
       <button class="btn dq-dismiss" data-id="${escAttr(r.id)}">Dismiss →</button>
       <button class="del" data-rm="${escAttr(r.id)}" title="Remove from line">×</button>
@@ -2332,9 +2357,29 @@ function renderDismissal(){
   let avail=studs.filter(s=>!dqStudentInQueue(s.id))
     .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
   if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(sq));
-  picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick" data-pick="${escAttr(s.id)}">${esc(studentLabel(s))}</button>`).join('')
+  picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim();
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(studentLabel(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
+}
+// Standing per-student dismissal instructions: self-dismiss flag + free note.
+function renderDqNotes(){
+  const box=document.getElementById('dq-notes'); if(!box) return;
+  if(box.contains(document.activeElement)) return;  // don't clobber a field being edited
+  const studs=studentsForWeek(dqWeek());
+  if(!studs.length){ box.innerHTML=`<p class="lc-desc" style="margin:0">No students on this roster yet.</p>`; return; }
+  box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
+    studs.map(s=>`<tr data-id="${escAttr(s.id)}">
+      <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td>
+      <td style="text-align:center"><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
+      <td><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
+    </tr>`).join('')}</tbody></table>`;
+  box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
+    const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();
+  }));
+  box.querySelectorAll('[data-dqn=note]').forEach(el=>el.addEventListener('change',async()=>{
+    const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{dismissal:el.value.trim()}); renderDismissal();
+  }));
 }
 function dqExport(){
   const rows=[["Students","Label","Status","Queued","Dismissed","Date"]];
@@ -2357,6 +2402,8 @@ function dismissalInit(){
   document.getElementById('dq-export').addEventListener('click',dqExport);
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
+  const nt=document.getElementById('dq-notes-toggle');
+  if(nt) nt.addEventListener('click',()=>{ const p=document.getElementById('dq-notes'); const open=p.style.display!=='none'; p.style.display=open?'none':'block'; nt.textContent=open?'Manage notes':'Hide notes'; if(!open) renderDqNotes(); });
 }
 
 /* =================== REFERENCES =================== */
@@ -2460,9 +2507,10 @@ function consentColor(v){ return v==='yes'?'color:var(--ok)':v==='no'?'color:var
 function rosHealthCell(s){
   const a=cleanAllergy(s.allergies), m=(s.meds||'').trim(), n=(s.notes||'').trim();
   if(!a&&!m&&!n) return '<span class="blank">—</span>';
-  let out=''; if(a) out+=`<span class="allergy-chip" title="${escAttr(a)}">⚠ ${esc(a.slice(0,22))}${a.length>22?'…':''}</span>`;
-  if(m) out+=`${a?' ':''}<span style="font-family:var(--mono);font-size:11px;color:var(--brass-bright)" title="${escAttr(m)}">℞ ${esc(m.slice(0,18))}${m.length>18?'…':''}</span>`;
-  if(n) out+=`${(a||m)?' ':''}<span style="font-size:11px;color:var(--muted)" title="${escAttr(n)}">📝 ${esc(n.slice(0,20))}${n.length>20?'…':''}</span>`;
+  let out='';
+  if(a) out+=`<div class="ros-health"><b>Allergies:</b> ${esc(a)}</div>`;
+  if(m) out+=`<div class="ros-health"><b>Meds:</b> ${esc(m)}</div>`;
+  if(n) out+=`<div class="ros-health"><b>Note:</b> ${esc(n)}</div>`;
   return out;
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
@@ -2631,7 +2679,8 @@ function renderEmergency(){
   const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>DOB</th>
     <th>Primary parent</th><th>Phone</th><th>Email</th>
     <th>Secondary parent</th><th>Phone</th><th>Email</th>
-    <th>Other guardian</th><th>Phone</th>
+    <th>Authorized pickup</th><th>Phone</th>
+    <th title="List any additional people allowed to pick up — name + phone, separate with ;">More authorized pickups</th>
     <th>Emergency contact</th><th>Phone</th>
     <th>Allergies</th><th>Meds</th></tr></thead>`;
   const inp=(id,f,val)=>`<input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" value="${escAttr(val||'')}">`;
@@ -2648,11 +2697,12 @@ function renderEmergency(){
     <td>${inp(s.id,'secondary_email',e.secondary_email)}</td>
     <td>${inp(s.id,'other_guardian',e.other_guardian)}</td>
     <td>${inp(s.id,'other_phone',e.other_phone)}</td>
+    <td>${inp(s.id,'authorized_pickups',e.authorized_pickups)}</td>
     <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
     <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
     <td>${esc(cleanAllergy(s.allergies))}</td>
     <td>${esc(s.meds||'')}</td>
-  </tr>`; }).join('') : `<tr><td colspan="16" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
+  </tr>`; }).join('') : `<tr><td colspan="17" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
   const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone||e.secondary_phone); }).length;
@@ -2660,8 +2710,8 @@ function renderEmergency(){
 }
 function emExport(){
   const wk=emWeek(); const studs=studentsForWeek(wk);
-  const rows=[["First","Last","Grade","DOB","Primary parent","Primary phone","Primary email","Secondary parent","Secondary phone","Secondary email","Other guardian","Other phone","Emergency contact","Emergency phone","Allergies","Meds"]];
-  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.secondary_parent||'',e.secondary_phone||'',e.secondary_email||'',e.other_guardian||'',e.other_phone||'',e.emergency_contact||'',e.emergency_phone||'',s.allergies||'',s.meds||'']); });
+  const rows=[["First","Last","Grade","DOB","Primary parent","Primary phone","Primary email","Secondary parent","Secondary phone","Secondary email","Authorized pickup","Pickup phone","More authorized pickups","Emergency contact","Emergency phone","Allergies","Meds"]];
+  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.secondary_parent||'',e.secondary_phone||'',e.secondary_email||'',e.other_guardian||'',e.other_phone||'',e.authorized_pickups||'',e.emergency_contact||'',e.emergency_phone||'',cleanAllergy(s.allergies),s.meds||'']); });
   csvDownload(`family-contacts-w${wk}.csv`, rows);
 }
 function emInit(){

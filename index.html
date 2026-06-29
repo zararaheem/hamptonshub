@@ -2734,14 +2734,16 @@ function emInit(){
 // Parent mailing list: every unique parent/guardian email across ALL weeks,
 // deduplicated. Copies to clipboard and offers a CSV download.
 function emMailingList(){
-  const seen=new Map();  // lower-email -> {email, name}
-  const add=(email,name)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase(); if(!seen.has(k)) seen.set(k,{email:e,name:(name||'').trim()}); };
-  Object.values(ROSTER_DATA||{}).flat().forEach(s=>{ const e=EMERGENCY[s.id]; if(!e) return; add(e.guardian_email, e.guardian); add(e.secondary_email, e.secondary_parent); });
-  const list=[...seen.values()].sort((a,b)=>a.email.localeCompare(b.email));
-  const msg=document.getElementById('em-stats');
+  const seen=new Map();  // lower-email -> {email, name, students:Set}
+  const add=(email,name,student)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase();
+    let o=seen.get(k); if(!o){ o={email:e, name:(name||'').trim(), students:new Set()}; seen.set(k,o); }
+    if(!o.name && name) o.name=name.trim(); if(student) o.students.add(student); };
+  Object.values(ROSTER_DATA||{}).flat().forEach(s=>{ const e=EMERGENCY[s.id]; if(!e) return; const sn=`${s.first||''} ${s.last||''}`.trim();
+    add(e.guardian_email, e.guardian, sn); add(e.secondary_email, e.secondary_parent, sn); });
+  const list=[...seen.values()].map(o=>({email:o.email, name:o.name, students:[...o.students].sort().join('; ')})).sort((a,b)=>a.email.localeCompare(b.email));
   if(!list.length){ alert('No parent emails found yet — import the registration CSV first.'); return; }
   const emails=list.map(x=>x.email).join(', ');
-  const finish=()=>{ csvDownload('parent-mailing-list.csv', [["Email","Name"], ...list.map(x=>[x.email,x.name])]); };
+  const finish=()=>{ csvDownload('parent-mailing-list.csv', [["Email","Parent name","Student(s)"], ...list.map(x=>[x.email,x.name,x.students])]); };
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(emails).then(()=>{ alert(`${list.length} parent emails copied to clipboard. A CSV is also downloading.`); finish(); }).catch(()=>{ finish(); alert(`${list.length} parent emails — CSV downloaded (clipboard blocked).`); });
   } else { finish(); alert(`${list.length} parent emails — CSV downloaded.`); }

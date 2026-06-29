@@ -322,6 +322,7 @@
   .th-sort{background:none;border:0;color:inherit;font:inherit;font-weight:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
   .th-sort:hover{color:var(--brass-bright)}
   .th-arrow{font-size:9px;color:var(--brass-bright)}
+  .seg-filter{display:flex;gap:6px;flex-wrap:wrap}
 
   /* ---------- Weekly Supplies ---------- */
   .supply-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-soft);border-left:3px solid transparent}
@@ -722,7 +723,19 @@
         <div class="eyebrow" style="margin-top:18px;margin-bottom:8px">Allergies &amp; medications</div>
         <div id="att-health"></div>
 
-        <div class="tablewrap" id="att-list" style="margin-top:18px"></div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:18px">
+          <div class="seg-filter" id="att-filter">
+            <button class="fbtn active" data-af="all">All</button>
+            <button class="fbtn" data-af="unmarked">Not marked</button>
+            <button class="fbtn" data-af="p">Present</button>
+            <button class="fbtn" data-af="l">Late</button>
+            <button class="fbtn" data-af="a">Absent</button>
+          </div>
+          <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin-left:auto">Sort by
+            <select class="cell-select" id="att-sort" style="width:auto;min-width:120px"><option value="last">Last name</option><option value="first">First name</option></select>
+          </label>
+        </div>
+        <div class="tablewrap" id="att-list" style="margin-top:12px"></div>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
           <button class="btn" id="att-allp">Mark all present</button>
@@ -1822,6 +1835,7 @@ function renderGuideWeeks(){
 
 /* =================== ATTENDANCE =================== */
 const ATT_STATES = {p:'sel-p', l:'sel-l', a:'sel-a'};
+let ATT_FILTER='all', ATT_SORT='last';
 function attKey(){ return `att:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
 function loadAtt(){ return stateGet(attKey()) || {}; }
 function saveAtt(data){ stateSet(attKey(), data); flashSaved(); }
@@ -1835,9 +1849,18 @@ function renderAtt(){
   if(guardStudentTab('att-list', curWeek())){ ['att-stats','att-levels','att-health'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
   const data = loadAtt();
   const list = document.getElementById('att-list');
-  const studs = studentsForWeek(curWeek());
-  if(!studs.length){
+  const all = studentsForWeek(curWeek());
+  if(!all.length){
     list.innerHTML = `<div class="callout">No students on the Week ${esc(curWeek())} roster yet. Add or import them in the <b>Students</b> tab — they'll appear here automatically.</div>`;
+    renderAttStats(); renderLevels(); renderHealthSummary(); return;
+  }
+  let studs = all.slice().sort((a,b)=> ATT_SORT==='first'
+    ? ((a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''))
+    : ((a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'')));
+  if(ATT_FILTER==='unmarked') studs=studs.filter(s=>!data[s.id]);
+  else if(ATT_FILTER==='p'||ATT_FILTER==='l'||ATT_FILTER==='a') studs=studs.filter(s=>data[s.id]===ATT_FILTER);
+  if(!studs.length){
+    list.innerHTML = `<div class="callout">${ATT_FILTER==='unmarked'?'Everyone is marked for today ✓':'No students match this filter.'}</div>`;
     renderAttStats(); renderLevels(); renderHealthSummary(); return;
   }
   list.innerHTML = studs.map(s=>{
@@ -1960,6 +1983,10 @@ function attInit(){
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
+  const af=document.getElementById('att-filter');
+  if(af) af.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; af.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); ATT_FILTER=b.dataset.af; renderAtt(); });
+  const as=document.getElementById('att-sort');
+  if(as) as.addEventListener('change',()=>{ ATT_SORT=as.value; renderAtt(); });
   refreshAtt();
 }
 

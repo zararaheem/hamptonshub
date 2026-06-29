@@ -502,6 +502,7 @@
     padding:8px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:auto}
   .health-toggle:hover{border-color:var(--teal);color:var(--oyster)}
   .health-toggle.flag{border-color:var(--coral);color:var(--coral)}
+  .health-toggle.flag-note{border-color:var(--brass);color:var(--brass-bright)}
   .student-block .seg{margin-left:12px}
   .health-panel{display:none;padding:4px 14px 16px 60px;background:rgba(226,101,74,.05)}
   .health-panel.open{display:block}
@@ -509,6 +510,8 @@
   .health-panel label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
   .allergy-chip{font-family:var(--mono);font-size:10.5px;background:rgba(226,101,74,.14);color:var(--coral);
     border:1px solid rgba(226,101,74,.4);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
+  .note-chip{font-family:var(--mono);font-size:10.5px;background:rgba(212,160,74,.16);color:var(--brass-bright);
+    border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .student-block{border-bottom:1px solid var(--line-soft)}
   .student-block:last-child{border-bottom:0}
   .student-block .student-row{border-bottom:0}
@@ -1278,6 +1281,23 @@ function studentLabel(s){ const pf=(s&&s.preferred!=null&&String(s.preferred).tr
 // "None"-type allergy values count as no allergy — return '' so nothing flags.
 const ALLERGY_NONE_RE=/^(none|n\/?a|na|no|nka|nkda|nil|none known|no known( allergies)?|no allergies|not applicable|-|—|–)\.?$/i;
 function cleanAllergy(v){ const t=(v||'').trim(); return ALLERGY_NONE_RE.test(t)?'':t; }
+// Full legal name with "(goes-by)" when a preferred name differs, e.g. "Louis (Ted) Pack".
+function studentFullName(s){
+  const first=String(s&&s.first!=null?s.first:(s&&s[0])||'').trim();
+  const last=String(s&&s.last!=null?s.last:(s&&s[1])||'').trim();
+  const pref=String(s&&s.preferred!=null?s.preferred:'').trim();
+  const showPref=pref && pref.toLowerCase()!==first.toLowerCase();
+  return `${first}${showPref?` (${pref})`:''}${last?` ${last}`:''}`.trim();
+}
+// Red allergy chip + yellow health-note chip for a student row.
+function healthChips(s){
+  const allergy=cleanAllergy(s.allergies);
+  const note=(s.notes||'').trim();
+  let out='';
+  if(allergy) out+=`<span class="allergy-chip">⚠ ${esc(allergy.split(',')[0].trim()).slice(0,18)}</span>`;
+  if(note) out+=`<span class="note-chip" title="${escAttr(note)}">⚠ note</span>`;
+  return out;
+}
 function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
 function csvDownload(name, rows){
@@ -2080,15 +2100,16 @@ function renderAtt(){
   list.innerHTML = studs.map(s=>{
     const st = data[s.id]||'';
     const init = ((s.first[0]||'?')+(s.last[0]||'')).toUpperCase();
-    const allergy = cleanAllergy(s.allergies);
-    const hasAllergy = !!allergy;
+    const hasAllergy = !!cleanAllergy(s.allergies);
     const hasMed = !!(s.meds && s.meds.trim());
-    const flag = hasAllergy || hasMed;
+    const hasNote = !!(s.notes && s.notes.trim());
+    const flag = hasAllergy || hasMed || hasNote;
+    const flagCls = flag ? ((hasAllergy||hasMed) ? 'flag' : 'flag-note') : '';
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(studentLabel(s))}${hasAllergy?`<span class="allergy-chip">⚠ ${esc(allergy.split(',')[0].trim()).slice(0,18)}</span>`:''}</div></div>
-        <button class="health-toggle ${flag?'flag':''}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
+        <div><div class="nm">${esc(studentFullName(s))}${healthChips(s)}</div></div>
+        <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
           <button data-s="l" class="${st==='l'?'sel-l':''}">Late</button>
@@ -2121,13 +2142,16 @@ function renderAtt(){
       const block=inp.closest('.student-block'); const id=block.dataset.id;
       await dbUpdateStudent(id, {[inp.dataset.h]: inp.value});
       const s=findStudent(id)||{};
-      const allergy=cleanAllergy(s.allergies);
-      const hasAllergy=!!allergy;
-      const flag=hasAllergy||!!(s.meds&&s.meds.trim());
+      const hasAllergy=!!cleanAllergy(s.allergies);
+      const hasMed=!!(s.meds&&s.meds.trim());
+      const hasNote=!!(s.notes&&s.notes.trim());
+      const flag=hasAllergy||hasMed||hasNote;
       const tgl=block.querySelector('[data-act=htoggle]');
-      tgl.classList.toggle('flag',flag); tgl.textContent=flag?'⚠ health':'＋ health';
+      tgl.classList.toggle('flag',flag&&(hasAllergy||hasMed));
+      tgl.classList.toggle('flag-note',flag&&!(hasAllergy||hasMed));
+      tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(studentLabel(s))}`+(hasAllergy?`<span class="allergy-chip">⚠ ${esc(allergy.split(',')[0].trim()).slice(0,18)}</span>`:'');
+      nm.innerHTML=`${esc(studentFullName(s))}`+healthChips(s);
       flashSaved(); renderHealthSummary();
     });
   });
@@ -2137,22 +2161,23 @@ function renderHealthSummary(){
   const el=document.getElementById('att-health'); if(!el) return;
   const flagged=[];
   studentsForWeek(curWeek()).forEach(s=>{
-    const a=cleanAllergy(s.allergies), m=(s.meds||'').trim();
-    if(a||m) flagged.push({name:studentLabel(s), grade:s.grade, level:levelOf(s.grade), a, m});
+    const a=cleanAllergy(s.allergies), m=(s.meds||'').trim(), n=(s.notes||'').trim();
+    if(a||m||n) flagged.push({name:studentFullName(s), level:levelOf(s.grade), a, m, n});
   });
   if(!flagged.length){
-    el.innerHTML=`<div class="callout">No allergies or medications recorded for this roster yet. Tap <b>＋ health</b> on a student below to add details — they'll roll up here and flag red on the roll.</div>`;
+    el.innerHTML=`<div class="callout">No allergies, medications, or health notes recorded for this roster yet. Tap <b>＋ health</b> on a student below to add details — they'll roll up here and flag on the roll.</div>`;
     return;
   }
-  const allergyN=flagged.filter(f=>f.a).length, medN=flagged.filter(f=>f.m).length;
-  const head=`<thead><tr><th>Student</th><th>Level</th><th>Allergies</th><th>Medications</th></tr></thead>`;
+  const allergyN=flagged.filter(f=>f.a).length, medN=flagged.filter(f=>f.m).length, noteN=flagged.filter(f=>f.n).length;
+  const head=`<thead><tr><th>Student</th><th>Level</th><th>Allergies</th><th>Medications</th><th>Health note</th></tr></thead>`;
   const body=flagged.map(f=>`<tr>
-    <td class="role-cell">${esc(f.name)} <span class="gr">Gr ${esc(f.grade)}</span></td>
+    <td class="role-cell">${esc(f.name)}</td>
     <td><span class="lvlbadge">${f.level}</span></td>
     <td>${f.a?`<span class="allergy-chip">⚠ ${esc(f.a)}</span>`:'<span class="blank">—</span>'}</td>
     <td>${f.m?esc(f.m):'<span class="blank">—</span>'}</td>
+    <td>${f.n?`<span class="note-chip">⚠</span> ${esc(f.n)}`:'<span class="blank">—</span>'}</td>
   </tr>`).join('');
-  el.innerHTML=`<div class="meta-line" style="margin-bottom:8px"><span><b>${flagged.length}</b> student${flagged.length>1?'s':''} flagged</span><span><b>${allergyN}</b> with allergies</span><span><b>${medN}</b> on medication</span></div><div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>`;
+  el.innerHTML=`<div class="meta-line" style="margin-bottom:8px"><span><b>${flagged.length}</b> student${flagged.length>1?'s':''} flagged</span><span><b>${allergyN}</b> with allergies</span><span><b>${medN}</b> on medication</span><span><b>${noteN}</b> with notes</span></div><div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>`;
 }
 function renderAttStats(){
   const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0;

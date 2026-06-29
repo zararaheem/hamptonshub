@@ -319,6 +319,8 @@
     border-radius:7px;padding:6px 8px;font-family:var(--body);font-size:12.5px;width:100%;min-width:92px}
   .cell-input:focus,.cell-select:focus{outline:1.5px solid var(--brass);outline-offset:0}
   #tech-table td{min-width:96px}
+  .selall-lbl{font-weight:400;font-size:11px;color:var(--muted);white-space:nowrap;cursor:pointer;margin-left:4px}
+  .selall-lbl input{vertical-align:middle;margin-right:2px}
   .th-sort{background:none;border:0;color:inherit;font:inherit;font-weight:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
   .th-sort:hover{color:var(--brass-bright)}
   .th-arrow{font-size:9px;color:var(--brass-bright)}
@@ -1729,11 +1731,14 @@ const csvSplit = s => String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
 
 /* Generic table editor: schema=[{key,label,w}], rows=array of flat objects.
    onSave(newRows) is called with the edited rows. */
-function buildEditor(mount, schema, rows, onSave){
-  const cell=(o,c)=>`<td><input class="cell-input" data-k="${c.key}" value="${escAttr(o[c.key]==null?'':o[c.key])}" placeholder="${escAttr(c.label)}" style="min-width:${c.w||120}px"></td>`;
+function buildEditor(mount, schema, rows, onSave, lists){
+  lists=lists||{};
+  const dl=Object.entries(lists).map(([k,vals])=>`<datalist id="ed-${k}">${(vals||[]).map(v=>`<option value="${escAttr(v)}"></option>`).join('')}</datalist>`).join('');
+  const cell=(o,c)=>`<td><input class="cell-input" data-k="${c.key}" ${c.list?`list="ed-${c.list}" autocomplete="off"`:''} value="${escAttr(o[c.key]==null?'':o[c.key])}" placeholder="${escAttr(c.label)}" style="min-width:${c.w||120}px"></td>`;
   const rowHtml=o=>`<tr>${schema.map(c=>cell(o,c)).join('')}<td><button class="del" data-act="del" title="Remove row">×</button></td></tr>`;
   mount.innerHTML = `
-    <p class="e-hint">Editing — change any field, add or remove rows, then Save. Saved for everyone.</p>
+    <p class="e-hint">Editing — change any field, add or remove rows, then Save. Saved for everyone. ${Object.keys(lists).length?'Name cells suggest existing staff as you type.':''}</p>
+    ${dl}
     <div class="tablewrap"><table>
       <thead><tr>${schema.map(c=>`<th>${esc(c.label)}</th>`).join('')}<th></th></tr></thead>
       <tbody>${rows.map(rowHtml).join('')}</tbody>
@@ -1758,8 +1763,13 @@ function buildEditor(mount, schema, rows, onSave){
   });
 }
 function buildAllEditors(){
-  const mk=(id,schema,rows,save)=>{ const m=document.getElementById(id); if(m) buildEditor(m,schema,rows,save); };
-  const wcols=[0,1,2,3,4,5,6,7,8].map(n=>({key:'c'+n,label:'W'+(n+1),w:88}));
+  const mk=(id,schema,rows,save,lists)=>{ const m=document.getElementById(id); if(m) buildEditor(m,schema,rows,save,lists); };
+  // Known staff names + roles, used to power the type-ahead dropdowns.
+  const staffNames=[...new Set((CONTENT.staff||[]).map(r=>r[0]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const staffRoles=[...new Set((CONTENT.staff||[]).map(r=>r[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const STATUS_OPTS=['Confirmed','Pending','Tentative','Declined'];
+  const HOUSING_OPTS=['Yes','No','Off-site'];
+  const wcols=[0,1,2,3,4,5,6,7,8].map(n=>({key:'c'+n,label:'W'+(n+1),w:88,list:'staff'}));
   mk('tiles-editor',
     [{key:'k',label:'Label',w:150},{key:'v',label:'Value',w:120},{key:'d',label:'Detail',w:200},{key:'c',label:'Accent (t-teal / t-coral)',w:130}],
     CONTENT.tiles.map(o=>({...o})),
@@ -1782,21 +1792,24 @@ function buildAllEditors(){
     evRows,
     async rows=>{ const groups=[]; const idx={}; rows.forEach(r=>{ const t=(r.group||'').trim()||'Other'; if(!(t in idx)){ idx[t]=groups.length; groups.push({title:t,items:[]}); } if((r.item||'').trim()) groups[idx[t]].items.push({item:r.item, qty:r.qty||'', note:r.note||''}); }); CONTENT.events=groups; const e=await saveContent('events'); renderEvents(); return e; });
   mk('roster-editor',
-    [{key:'role',label:'Role',w:150},...wcols],
+    [{key:'role',label:'Role',w:150,list:'role'},...wcols],
     CONTENT.roster.map(r=>{ const o={role:r.role}; (r.cells||[]).forEach((c,i)=>o['c'+i]=c); return o; }),
-    async rows=>{ CONTENT.roster=rows.map(r=>({role:r.role, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('roster'); renderRoster(); return e; });
+    async rows=>{ CONTENT.roster=rows.map(r=>({role:r.role, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('roster'); renderRoster(); return e; },
+    {staff:staffNames, role:staffRoles});
   mk('housing-editor',
     [{key:'bed',label:'Bed',w:150},{key:'tier',label:'Tier',w:90},...wcols],
     CONTENT.housing.map(r=>{ const o={bed:r.bed,tier:r.tier}; (r.cells||[]).forEach((c,i)=>o['c'+i]=c); return o; }),
-    async rows=>{ CONTENT.housing=rows.map(r=>({bed:r.bed, tier:r.tier, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('housing'); renderHousing(); return e; });
+    async rows=>{ CONTENT.housing=rows.map(r=>({bed:r.bed, tier:r.tier, cells:[0,1,2,3,4,5,6,7,8].map(i=>r['c'+i]||'')})); const e=await saveContent('housing'); renderHousing(); return e; },
+    {staff:staffNames});
   mk('house-editor',
     [{key:'k',label:'Detail',w:170},{key:'v',label:'Value',w:300}],
     (CONTENT.houseDetails||[]).map(o=>({...o})),
     async rows=>{ CONTENT.houseDetails=rows; const e=await saveContent('houseDetails'); renderHouseInfo(); return e; });
   mk('staff-editor',
-    [{key:'name',label:'Name',w:120},{key:'role',label:'Role',w:140},{key:'status',label:'Status',w:100},{key:'housing',label:'Housing',w:90},{key:'precamp',label:'Pre-camp',w:120},{key:'constraint',label:'Constraint',w:140},{key:'notes',label:'Notes',w:160}],
+    [{key:'name',label:'Name',w:120,list:'staff'},{key:'role',label:'Role',w:140,list:'role'},{key:'status',label:'Status',w:100,list:'status'},{key:'housing',label:'Housing',w:90,list:'housing'},{key:'precamp',label:'Pre-camp',w:120},{key:'constraint',label:'Constraint',w:140},{key:'notes',label:'Notes',w:160}],
     CONTENT.staff.map(r=>({name:r[0],role:r[1],status:r[2],housing:r[3],precamp:r[4],constraint:r[5],notes:r[6]})),
-    async rows=>{ CONTENT.staff=rows.map(r=>[r.name,r.role,r.status,r.housing,r.precamp,r.constraint,r.notes]); const e=await saveContent('staff'); renderStaff(); return e; });
+    async rows=>{ CONTENT.staff=rows.map(r=>[r.name,r.role,r.status,r.housing,r.precamp,r.constraint,r.notes]); const e=await saveContent('staff'); renderStaff(); return e; },
+    {staff:staffNames, role:staffRoles, status:STATUS_OPTS, housing:HOUSING_OPTS});
 }
 // Category colour-coding for the dashboard jump cards (and their tag labels).
 const CARD_CAT={'Staff Roster':'people',Daily:'people','Student Roster':'people',Curriculum:'curriculum',Logistics:'logistics',Ops:'ops',Parents:'parents'};
@@ -2331,12 +2344,12 @@ function techKey(){ return `tech:w${techWeek()}`; }
 function loadTech(){ return stateGet(techKey()) || {}; }
 function saveTech(d){ stateSet(techKey(), d); flash('tech-saved'); }
 function renderTech(){
-  if(!canSeeWeek(techWeek())){ document.getElementById('tech-table').innerHTML=`<tbody><tr><td colspan="7">${accessBlockHTML(techWeek())}</td></tr></tbody>`; const e=document.getElementById('tech-stats'); if(e) e.innerHTML=''; return; }
+  if(!canSeeWeek(techWeek())){ document.getElementById('tech-table').innerHTML=`<tbody><tr><td colspan="6">${accessBlockHTML(techWeek())}</td></tr></tbody>`; const e=document.getElementById('tech-stats'); if(e) e.innerHTML=''; return; }
   const d = loadTech();
   const studs = studentsForWeek(techWeek());
-  const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th>Laptop assigned</th><th>Ready</th><th>Notes</th></tr></thead>`;
+  const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th style="white-space:nowrap">Laptop assigned <label class="selall-lbl"><input type="checkbox" id="tech-all"> all</label></th><th>Notes</th></tr></thead>`;
   if(!studs.length){
-    document.getElementById('tech-table').innerHTML = head+`<tbody><tr><td colspan="7" class="note-row">No students on the Week ${esc(techWeek())} roster yet — add or import them in the <b>Students</b> tab.</td></tr></tbody>`;
+    document.getElementById('tech-table').innerHTML = head+`<tbody><tr><td colspan="6" class="note-row">No students on the Week ${esc(techWeek())} roster yet — add or import them in the <b>Students</b> tab.</td></tr></tbody>`;
     renderTechStats(); return;
   }
   const body = studs.map(s=>{
@@ -2348,7 +2361,6 @@ function renderTech(){
         <option ${dev==='iPad'?'selected':''}>iPad</option></select></td>
       <td><input class="cell-input" data-f="tag" value="${escAttr(r.tag)}" placeholder="ALPHA-…"></td>
       <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
-      <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_ready" ${s.laptop_ready?'checked':''}></td>
       <td><input class="cell-input" data-f="notes" value="${escAttr(r.notes)}" placeholder="—"></td>
     </tr>`;
   }).join('');
@@ -2363,26 +2375,40 @@ function renderTech(){
     el.addEventListener('change',async ()=>{
       const id=el.closest('tr').dataset.id;
       await dbUpdateStudent(id,{[el.dataset.flag]: el.checked});
-      flash('tech-saved'); renderTechStats();
+      flash('tech-saved'); renderTechStats(); syncTechAll();
     });
   });
+  // Select-all: toggles "Laptop assigned" for every student on this roster.
+  const all=document.getElementById('tech-all');
+  if(all){ syncTechAll();
+    all.addEventListener('change',async ()=>{
+      const val=all.checked;
+      for(const s of studentsForWeek(techWeek())){ if(!!s.laptop_assigned!==val) await dbUpdateStudent(s.id,{laptop_assigned:val}); }
+      flash('tech-saved'); renderTech();
+    });
+  }
   renderTechStats();
+}
+function syncTechAll(){
+  const all=document.getElementById('tech-all'); if(!all) return;
+  const studs=studentsForWeek(techWeek());
+  const on=studs.filter(s=>s.laptop_assigned).length;
+  all.checked = studs.length>0 && on===studs.length;
+  all.indeterminate = on>0 && on<studs.length;
 }
 function renderTechStats(){
   const studs=studentsForWeek(techWeek());
   const assigned=studs.filter(s=>s.laptop_assigned).length;
-  const ready=studs.filter(s=>s.laptop_ready).length;
   document.getElementById('tech-stats').innerHTML = `
     <div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>
-    <div class="ministat l-late"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>
-    <div class="ministat p"><div class="n">${ready}</div><div class="l">Ready</div></div>
+    <div class="ministat p"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>
     <div class="ministat a"><div class="n">${studs.length-assigned}</div><div class="l">Not assigned</div></div>`;
 }
 function techExport(){
   const d=loadTech();
-  const rows=[["First","Last","Grade","Email","Device","Asset tag","Laptop assigned","Laptop ready","Notes"]];
+  const rows=[["First","Last","Grade","Email","Device","Asset tag","Laptop assigned","Notes"]];
   studentsForWeek(techWeek()).forEach(s=>{ const r=d[s.id]||{};
-    rows.push([s.first,s.last,s.grade,studentEmail(s),r.device||'Laptop',r.tag||'',s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No',r.notes||'']);
+    rows.push([s.first,s.last,s.grade,studentEmail(s),r.device||'Laptop',r.tag||'',s.laptop_assigned?'Yes':'No',r.notes||'']);
   });
   csvDownload(`tech-onboarding-w${techWeek()}.csv`, rows);
 }

@@ -798,6 +798,7 @@
           <label class="btn" for="ros-file" style="cursor:pointer;margin:0">Import CSV…</label>
           <input id="ros-file" type="file" accept=".csv,text/csv" style="display:none">
           <button class="btn ghost" id="ros-template">Download template</button>
+          <button class="btn ghost" id="ros-purge-test" title="Delete any student whose name looks like a test entry">Remove test entries</button>
         </div>
         <span class="saved-note" id="ros-saved"></span>
         <span class="gate-msg" id="ros-io-msg"></span>
@@ -850,7 +851,13 @@
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <input class="cell-input" id="em-search" placeholder="Search name…" style="max-width:240px">
+        <select id="em-sort" class="cell-input" style="max-width:170px" title="Sort the roster">
+          <option value="roster">Sort: roster order</option>
+          <option value="first">Sort: first name</option>
+          <option value="last">Sort: last name</option>
+        </select>
         <button class="btn ghost" id="em-export">Export CSV</button>
+        <button class="btn ghost" id="em-maillist" title="Copy a deduplicated list of all parent emails">Parent mailing list</button>
       </div>
       <div class="tablewrap"><table id="em-table"></table></div>
     </section>
@@ -1366,6 +1373,13 @@ async function dbBulkAddStudents(week, arr){
 }
 const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready'];
 const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','emergency_contact','emergency_phone','dob'];
+// "Test" rule: any student whose name is a test/placeholder entry is excluded by
+// default on import, and can be purged from the roster with one click. Matches a
+// whole "test" word (Test, test student, QA test) — not real names like "Tester".
+function isTestName(first,last){
+  const s=`${first||''} ${last||''}`.toLowerCase();
+  return /(^|[^a-z])(test|testing|qa|sample|demo|dummy|placeholder|asdf|xxx)([^a-z]|$)/.test(s);
+}
 async function dbSetEmergency(student_id, patch){
   EMERGENCY[student_id]={...(EMERGENCY[student_id]||{}), ...patch};
   if(!SUPA) return null;
@@ -1396,13 +1410,15 @@ function matchStudent(s, existing, used){
 function planImport(week, arr){
   const existing=(ROSTER_DATA[+week]||[]); const used=new Set();
   const toUpdate=[], toAdd=[];
+  const skippedTest=arr.filter(s=>isTestName(s.first,s.last)).map(s=>`${s.first||''} ${s.last||''}`.trim());
+  arr=arr.filter(s=>!isTestName(s.first,s.last));
   arr.forEach(s=>{
     const m=matchStudent(s, existing, used);
     const nm=`${(s.first||'').trim()} ${(s.last||'').trim()}`.trim();
     if(m){ used.add(m.id); toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), s}); }
     else toAdd.push({name:nm||'(unnamed)', s});
   });
-  return {toUpdate, toAdd};
+  return {toUpdate, toAdd, skippedTest};
 }
 async function applyImport(week, plan){
   week=+week; let updated=0, added=0, emerg=0;
@@ -1588,6 +1604,8 @@ function parseRegistration(text){
 }
 function planRegistration(children){
   const perWeek={}; const childRows=[];
+  const skippedTest=children.filter(ch=>isTestName(ch.first,ch.last)).map(ch=>`${ch.first} ${ch.last}`.trim());
+  children=children.filter(ch=>!isTestName(ch.first,ch.last));
   children.forEach(ch=>{
     const name=`${ch.first} ${ch.last}`.trim();
     childRows.push({name, weeks:ch.weeks.slice()});
@@ -1598,7 +1616,7 @@ function planRegistration(children){
       else pw.toAdd.push({name, ch});
     });
   });
-  return {perWeek, childRows, children};
+  return {perWeek, childRows, children, skippedTest};
 }
 async function applyRegistration(plan){
   let updated=0, added=0, contacts=0; const weeksTouched=new Set();
@@ -1616,13 +1634,14 @@ function showRegistrationReview(plan){
   const box=document.getElementById('ros-review'); if(!box) return;
   const weeks=Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b);
   let totU=0, totA=0; weeks.forEach(w=>{ totU+=plan.perWeek[w].toUpdate.length; totA+=plan.perWeek[w].toAdd.length; });
-  const childList=plan.childRows.slice(0,80).map(c=>`${esc(c.name)} <span style="color:var(--muted)">(${c.weeks.length?'wk '+c.weeks.join(', '):'no week listed'})</span>`).join('<br>');
+  const sortedRows=plan.childRows.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const childList=sortedRows.slice(0,80).map(c=>`${esc(c.name)} <span style="color:var(--muted)">(${c.weeks.length?'wk '+c.weeks.join(', '):'no week listed'})</span>`).join('<br>');
   const weekRows=weeks.map(w=>{ const pw=plan.perWeek[w]; return `<tr><td style="padding:3px 14px 3px 0"><b>Week ${w}</b></td><td style="padding:3px 14px 3px 0;color:var(--teal-bright)">${pw.toUpdate.length} updated</td><td style="padding:3px 0;color:var(--brass-bright)">${pw.toAdd.length} added</td></tr>`; }).join('');
   const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
   const noWeek=plan.childRows.filter(c=>!c.weeks.length).length;
   box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
     <h3 style="margin:0 0 6px">Review registration import <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by child first name)</span></h3>
-    <p class="lc-desc" style="margin:0 0 10px">${plan.children.length} children → <b style="color:var(--teal-bright)">${totU} student records updated</b>, <b style="color:var(--brass-bright)">${totA} added</b> across ${weeks.length} week${weeks.length===1?'':'s'}.${canContacts?' Parent &amp; emergency contacts will be written to Family Contacts.':' <i>Contacts skipped — you don\'t have Family Contacts access.</i>'}${noWeek?` <span style="color:#d9534f">${noWeek} child(ren) had no week listed and will be skipped.</span>`:''}</p>
+    <p class="lc-desc" style="margin:0 0 10px">${plan.children.length} children → <b style="color:var(--teal-bright)">${totU} student records updated</b>, <b style="color:var(--brass-bright)">${totA} added</b> across ${weeks.length} week${weeks.length===1?'':'s'}.${canContacts?' Parent &amp; emergency contacts will be written to Family Contacts.':' <i>Contacts skipped — you don\'t have Family Contacts access.</i>'}${noWeek?` <span style="color:#d9534f">${noWeek} child(ren) had no week listed and will be skipped.</span>`:''}${plan.skippedTest&&plan.skippedTest.length?` <span style="color:var(--muted)">${plan.skippedTest.length} test entr${plan.skippedTest.length===1?'y':'ies'} skipped (${esc(plan.skippedTest.slice(0,5).join(', '))}${plan.skippedTest.length>5?'…':''}).</span>`:''}</p>
     <table style="border-collapse:collapse;margin:0 0 12px;font-size:13px">${weekRows}</table>
     <details style="margin:0 0 12px"><summary style="cursor:pointer;color:var(--muted)">Show children (${plan.childRows.length})</summary><div style="margin-top:8px;font-size:13px;line-height:1.7">${childList}${plan.childRows.length>80?'<br>…':''}</div></details>
     <button class="btn" id="ros-review-go">Confirm import</button>
@@ -2498,7 +2517,7 @@ function showImportReview(week, plan){
   box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
     <h3 style="margin:0 0 10px">Review import — Week ${esc(week)} <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by first name)</span></h3>
     <p class="lc-desc" style="margin:0 0 8px"><b style="color:var(--teal-bright)">${plan.toUpdate.length} will be updated</b>${plan.toUpdate.length?' — '+names(plan.toUpdate):''}</p>
-    <p class="lc-desc" style="margin:0 0 14px"><b style="color:var(--brass-bright)">${plan.toAdd.length} will be added as new</b>${plan.toAdd.length?' — '+names(plan.toAdd):''}</p>
+    <p class="lc-desc" style="margin:0 0 14px"><b style="color:var(--brass-bright)">${plan.toAdd.length} will be added as new</b>${plan.toAdd.length?' — '+names(plan.toAdd):''}${plan.skippedTest&&plan.skippedTest.length?`<br><span style="color:var(--muted)">${plan.skippedTest.length} test entr${plan.skippedTest.length===1?'y':'ies'} skipped</span>`:''}</p>
     <button class="btn" id="ros-review-go">Confirm import</button>
     <button class="btn ghost" id="ros-review-cancel">Cancel</button>
   </div>`;
@@ -2531,7 +2550,20 @@ function rosterInit(){
     csvDownload('roster-template.csv', [["First","Last","Preferred name","Grade","Allergies","Medications","Notes","Media consent","Primary parent","Primary phone","Primary email","Secondary parent","Secondary phone","Secondary email","Other guardian","Other phone","Emergency contact","Emergency phone","DOB"],["Louis","Pack","Ted","6","Peanuts","None","Gets picked up by grandparent on Fridays","yes","John Pack","555-1234","john@example.com","Mary Pack","555-2345","mary@example.com","Aunt Sue","555-3456","Jane Roe","555-9876","2018-04-02"]]);
   });
   document.getElementById('ros-file').addEventListener('change',e=>{ if(e.target.files[0]) rosImport(e.target.files[0]); e.target.value=''; });
+  { const pb=document.getElementById('ros-purge-test'); if(pb) pb.addEventListener('click',rosPurgeTest); }
   renderRosterTab();
+}
+// Delete every student (across all weeks) whose name reads as a test/placeholder.
+async function rosPurgeTest(){
+  const seen=new Map();  // id -> name
+  for(const w in ROSTER_DATA) (ROSTER_DATA[w]||[]).forEach(s=>{ if(isTestName(s.first,s.last)) seen.set(s.id, `${s.first||''} ${s.last||''}`.trim()); });
+  const ids=[...seen.keys()]; const msg=document.getElementById('ros-io-msg');
+  if(!ids.length){ if(msg){ msg.className='gate-msg'; msg.textContent='No test entries found.'; } return; }
+  if(!confirm(`Delete ${ids.length} test entr${ids.length===1?'y':'ies'} (${[...seen.values()].slice(0,8).join(', ')}${ids.length>8?'…':''})? This can't be undone.`)) return;
+  if(msg){ msg.className='gate-msg'; msg.textContent='Removing…'; }
+  let n=0; for(const id of ids){ const err=await dbDeleteStudent(id); if(!err) n++; }
+  if(msg){ msg.className='gate-msg ok'; msg.textContent=`Removed ${n} test entr${n===1?'y':'ies'} ✓`; }
+  renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderEmergency==='function') renderEmergency();
 }
 
 /* =================== EMERGENCY INFO (owner-only) =================== */
@@ -2584,6 +2616,23 @@ function emInit(){
   sel.addEventListener('change',()=>loadEmergency().then(renderEmergency));
   document.getElementById('em-search').addEventListener('input',renderEmergency);
   document.getElementById('em-export').addEventListener('click',emExport);
+  { const ss=document.getElementById('em-sort'); if(ss){ ss.value=STUDENT_SORT||'roster'; ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; const rs=document.getElementById('ros-sort'); if(rs) rs.value=ss.value; renderEmergency(); if(typeof renderRosterTab==='function') renderRosterTab(); }); } }
+  { const mb=document.getElementById('em-maillist'); if(mb) mb.addEventListener('click',emMailingList); }
+}
+// Parent mailing list: every unique parent/guardian email across ALL weeks,
+// deduplicated. Copies to clipboard and offers a CSV download.
+function emMailingList(){
+  const seen=new Map();  // lower-email -> {email, name}
+  const add=(email,name)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase(); if(!seen.has(k)) seen.set(k,{email:e,name:(name||'').trim()}); };
+  Object.values(ROSTER_DATA||{}).flat().forEach(s=>{ const e=EMERGENCY[s.id]; if(!e) return; add(e.guardian_email, e.guardian); add(e.secondary_email, e.secondary_parent); });
+  const list=[...seen.values()].sort((a,b)=>a.email.localeCompare(b.email));
+  const msg=document.getElementById('em-stats');
+  if(!list.length){ alert('No parent emails found yet — import the registration CSV first.'); return; }
+  const emails=list.map(x=>x.email).join(', ');
+  const finish=()=>{ csvDownload('parent-mailing-list.csv', [["Email","Name"], ...list.map(x=>[x.email,x.name])]); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(emails).then(()=>{ alert(`${list.length} parent emails copied to clipboard. A CSV is also downloading.`); finish(); }).catch(()=>{ finish(); alert(`${list.length} parent emails — CSV downloaded (clipboard blocked).`); });
+  } else { finish(); alert(`${list.length} parent emails — CSV downloaded.`); }
 }
 
 /* =================== SUPPLIES & PACKING (sectioned, per week) =================== */

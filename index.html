@@ -518,6 +518,8 @@
     border:1px solid rgba(226,101,74,.4);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .note-chip{font-family:var(--mono);font-size:10.5px;background:rgba(212,160,74,.16);color:var(--brass-bright);
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
+  .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
+  .addpu-btn:hover{border-color:var(--teal)}
   .ros-health{font-size:12px;line-height:1.45;color:var(--coral);white-space:normal;word-break:break-word;max-width:340px;margin:1px 0}
   .ros-health b{font-weight:700}
   .student-block{border-bottom:1px solid var(--line-soft)}
@@ -2694,7 +2696,7 @@ function renderEmergency(){
     <td>${inp(s.id,'secondary_email',e.secondary_email)}</td>
     <td>${inp(s.id,'other_guardian',e.other_guardian)}</td>
     <td>${inp(s.id,'other_phone',e.other_phone)}</td>
-    <td>${inp(s.id,'authorized_pickups',e.authorized_pickups)}</td>
+    <td style="white-space:nowrap">${inp(s.id,'authorized_pickups',e.authorized_pickups)}<button class="addpu-btn" data-addpu="${escAttr(s.id)}" title="Add another authorized pickup">+ add</button></td>
     <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
     <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
     <td>${esc(cleanAllergy(s.allergies))}</td>
@@ -2702,8 +2704,17 @@ function renderEmergency(){
   </tr>`; }).join('') : `<tr><td colspan="17" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
+  tbl.querySelectorAll('[data-addpu]').forEach(b=>b.addEventListener('click',()=>emAddPickup(b.dataset.addpu)));
   const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone||e.secondary_phone); }).length;
   const st=document.getElementById('em-stats'); if(st) st.innerHTML=`<div class="ministat p"><div class="n">${filled}</div><div class="l">With contact</div></div><div class="ministat l-late"><div class="n">${studs.length-filled}</div><div class="l">Missing</div></div><div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>`;
+}
+// Quick add: append one authorized pickup (name + phone) to the student's list.
+function emAddPickup(id){
+  const v=(prompt('Add an authorized pickup — name and phone\n(e.g. Aunt Sue 555-1234):')||'').trim();
+  if(!v) return;
+  const cur=((EMERGENCY[id]||{}).authorized_pickups||'').trim();
+  const next=cur?`${cur}; ${v}`:v;
+  dbSetEmergency(id,{authorized_pickups:next}).then(()=>renderEmergency());
 }
 function emExport(){
   const wk=emWeek(); const studs=studentsForWeek(wk);

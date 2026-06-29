@@ -1349,7 +1349,7 @@ async function dbBulkAddStudents(week, arr){
   }
   return null;
 }
-const STUDENT_FIELDS=['grade','allergies','meds','media_consent','laptop_assigned','laptop_ready'];
+const STUDENT_FIELDS=['grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready'];
 const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','emergency_contact','emergency_phone','dob'];
 async function dbSetEmergency(student_id, patch){
   EMERGENCY[student_id]={...(EMERGENCY[student_id]||{}), ...patch};
@@ -1434,7 +1434,8 @@ function parseRosterCSV(text){
           iGEmail=find(/(guardian|parent).*email|parent email|^email/),
           iEC=find(/emergency.*(name|contact)|secondary contact|emergency$/),
           iEP=find(/emergency.*(phone|mobile|number)/),
-          iDob=find(/dob|date of birth|birth/);
+          iDob=find(/dob|date of birth|birth/),
+          iNotes=find(/^notes?$|important note|student note|profile note|comment/);
     const g=(idx,c)=> idx>=0 ? (c[idx]||'').trim() : '';
     return rows.map(c=>{
       let first=g(iFirst,c), last=g(iLast,c);
@@ -1452,6 +1453,7 @@ function parseRosterCSV(text){
       if(iEC>=0) o.emergency_contact=g(iEC,c);
       if(iEP>=0) o.emergency_phone=g(iEP,c);
       if(iDob>=0) o.dob=g(iDob,c);
+      if(iNotes>=0) o.notes=g(iNotes,c);
       return o;
     }).filter(s=>s.first||s.last);
   }
@@ -1888,6 +1890,7 @@ function renderAtt(){
         <div class="hgrid">
           <div><label>Allergies</label><input class="cell-input" data-h="allergies" value="${escAttr(s.allergies)}" placeholder="e.g. peanuts, bee stings — or NKA"></div>
           <div><label>Medications</label><input class="cell-input" data-h="meds" value="${escAttr(s.meds)}" placeholder="e.g. EpiPen, inhaler, daily Rx"></div>
+          <div style="grid-column:1/-1"><label>Important notes</label><input class="cell-input" data-h="notes" value="${escAttr(s.notes)}" placeholder="anything the guide should know — behavioral, pickup, etc."></div>
         </div>
       </div>
     </div>`;
@@ -2207,10 +2210,11 @@ function rosConsentMatch(s){
 }
 function consentColor(v){ return v==='yes'?'color:var(--ok)':v==='no'?'color:var(--coral)':'color:var(--muted)'; }
 function rosHealthCell(s){
-  const a=(s.allergies||'').trim(), m=(s.meds||'').trim();
-  if(!a&&!m) return '<span class="blank">—</span>';
+  const a=(s.allergies||'').trim(), m=(s.meds||'').trim(), n=(s.notes||'').trim();
+  if(!a&&!m&&!n) return '<span class="blank">—</span>';
   let out=''; if(a) out+=`<span class="allergy-chip" title="${escAttr(a)}">⚠ ${esc(a.slice(0,22))}${a.length>22?'…':''}</span>`;
   if(m) out+=`${a?' ':''}<span style="font-family:var(--mono);font-size:11px;color:var(--brass-bright)" title="${escAttr(m)}">℞ ${esc(m.slice(0,18))}${m.length>18?'…':''}</span>`;
+  if(n) out+=`${(a||m)?' ':''}<span style="font-size:11px;color:var(--muted)" title="${escAttr(n)}">📝 ${esc(n.slice(0,20))}${n.length>20?'…':''}</span>`;
   return out;
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
@@ -2326,7 +2330,7 @@ function rosterInit(){
   if(rf) rf.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; rf.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); ROS_FILTER=b.dataset.cf; renderRosterTab(); });
   document.getElementById('ros-export').addEventListener('click',rosExport);
   document.getElementById('ros-template').addEventListener('click',()=>{
-    csvDownload('roster-template.csv', [["First","Last","Grade","Allergies","Medications","Media consent","Guardian","Guardian phone","Guardian email","Emergency contact","Emergency phone","DOB"],["Jane","Doe","3","Peanuts","None","yes","John Doe","555-1234","john@example.com","Jane Roe","555-9876","2018-04-02"]]);
+    csvDownload('roster-template.csv', [["First","Last","Grade","Allergies","Medications","Notes","Media consent","Guardian","Guardian phone","Guardian email","Emergency contact","Emergency phone","DOB"],["Jane","Doe","3","Peanuts","None","Gets picked up by grandparent on Fridays","yes","John Doe","555-1234","john@example.com","Jane Roe","555-9876","2018-04-02"]]);
   });
   document.getElementById('ros-file').addEventListener('change',e=>{ if(e.target.files[0]) rosImport(e.target.files[0]); e.target.value=''; });
   renderRosterTab();

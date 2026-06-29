@@ -1427,7 +1427,7 @@ function parseRosterCSV(text){
     const find=re=>head.findIndex(h=>re.test(h));
     const iFirst=find(/first/), iLast=find(/last|surname/),
           iFull=find(/^(student )?(full )?name$|^name$|^student$/),
-          iGrade=find(/grade|year/), iAllerg=find(/allerg/), iMeds=find(/medic|meds/),
+          iGrade=find(/grade|year/), iAllerg=find(/allerg/), iMeds=find(/medic|meds|health|medical/),
           iConsent=find(/consent|photo|media/), iLapA=find(/laptop.*assign|^assigned/), iLapR=find(/laptop.*ready|^ready/),
           iGuardian=find(/guardian|parent\s*name|parent\/guardian|caregiver|mother|father|^parent$/),
           iGPhone=find(/(guardian|parent).*?(phone|mobile|cell|number)|^phone|primary phone|contact number/),

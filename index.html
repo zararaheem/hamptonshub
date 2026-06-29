@@ -803,7 +803,7 @@
         <span class="gate-msg" id="ros-io-msg"></span>
       </div>
       <div id="ros-review"></div>
-      <div class="callout" style="margin-top:18px"><b>CSV import:</b> a header row is auto-detected and columns are matched by name in any order (First/Name, Grade, Preferred name, Allergies, Medications, Notes, Media consent, Parent/Guardian + phone/email, Emergency contact, DOB). Imports <b>match existing students by first name</b> — you'll get a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
+      <div class="callout" style="margin-top:18px"><b>CSV import:</b> works with two formats, auto-detected. <b>(1) The Alpha Summer registration export</b> — one row per child with a "Weeks" column: each child is created/updated in <b>every week they attend</b>, and parent/guardian/emergency details flow straight into Family Contacts. <b>(2) A simple roster</b> — First/Name, Grade, Preferred name, Allergies, Medications, Notes, Media consent, contacts, DOB (columns matched by name, any order; imports into the selected week). Both <b>match existing students by first name</b> and show a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
     </section>
 
     <!-- ===== DISMISSAL (carpool line) ===== -->
@@ -1502,6 +1502,141 @@ function parseRosterCSV(text){
     if(c.length===2 && /^(pk|k|\d{1,2})$/i.test(c[1])){ const parts=c[0].split(/\s+/); return {first:parts[0]||'', last:parts.slice(1).join(' '), grade:c[1]}; }
     return {first:c[0]||'', last:c[1]||'', grade:c[2]||'', laptop_assigned:truthy(c[3]), laptop_ready:truthy(c[4]), media_consent:consentVal(c[5])};
   }).filter(s=>s.first||s.last);
+}
+
+/* =================== REGISTRATION MASTER IMPORT ===================
+   The Alpha Summer registration export is ONE ROW PER CHILD, with a "Weeks"
+   column listing every week that child attends. This importer:
+     • matches each child to existing students by FIRST name within each week,
+     • creates/updates a student row in EACH week the child attends,
+     • writes parent/guardian/emergency details to Family Contacts (only if you
+       can see contacts) — it never creates extra students from parent names.
+*/
+// Robust CSV → array-of-rows. Handles quoted commas, escaped "" quotes, AND
+// newlines embedded inside quoted fields (e.g. the multi-line household address).
+function csvRows(text){
+  text=String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const rows=[]; let row=[], cur='', q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else if(c==='"'){ q=true; }
+    else if(c===','){ row.push(cur); cur=''; }
+    else if(c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+    else cur+=c;
+  }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(x=>(x||'').trim()!==''));
+}
+// Detect the registration master export by its signature headers.
+function looksLikeRegistration(headers){
+  const h=(headers||[]).map(x=>(x||'').toLowerCase());
+  const has=re=>h.some(x=>re.test(x));
+  return has(/child first name/) && has(/^weeks$|^weeks\b/) && has(/guardian|primary .*parent/);
+}
+function parseRegistration(text){
+  const rows=csvRows(text); if(rows.length<2) return [];
+  const head=rows[0].map(x=>(x||'').toLowerCase().trim());
+  const find=re=>head.findIndex(x=>re.test(x));
+  const I={
+    first:find(/child first name/), last:find(/child last name/),
+    weeks:find(/^weeks$|^weeks\b/),
+    grade:find(/grade level/), glasses:find(/wears glasses/),
+    accom:find(/accommodations|support notes/), anything:find(/anything else/),
+    dietNotes:find(/dietary notes/), medcond:find(/medical conditions/),
+    allerg:find(/medical — allergies|^allergies|allergies$/),
+    media:find(/media release/), dob:find(/date of birth/),
+    address:find(/household addr/),
+    pName:find(/primary .*(parent|guardian).*name/), pEmail:find(/primary .*(parent|guardian).*email/), pPhone:find(/primary .*(parent|guardian).*phone/),
+    sName:find(/secondary .*(parent|guardian).*name/), sEmail:find(/secondary .*(parent|guardian).*email/), sPhone:find(/secondary .*(parent|guardian).*phone/),
+    sRel:find(/secondary .*relationship/),
+    ecName:find(/(alternative )?emergency contact.*name/), ecPhone:find(/(alternative )?emergency contact.*phone/),
+    pu1Name:find(/pickup 1 — name|pickup — pickup 1/),
+  };
+  const g=(c,idx)=> idx>=0 ? String(c[idx]||'').trim() : '';
+  const out=[];
+  for(let r=1;r<rows.length;r++){ const c=rows[r];
+    const first=g(c,I.first), last=g(c,I.last);
+    if(!first && !last) continue;
+    const weeks=[];
+    (g(c,I.weeks).match(/week\s*(\d+)/gi)||[]).forEach(m=>{ const n=+m.replace(/\D/g,''); if(n>=1&&n<=9&&!weeks.includes(n)) weeks.push(n); });
+    weeks.sort((a,b)=>a-b);
+    const noteParts=[];
+    const accom=g(c,I.accom), any=g(c,I.anything), dn=g(c,I.dietNotes), mc=g(c,I.medcond), gl=g(c,I.glasses);
+    if(accom) noteParts.push(accom);
+    if(any) noteParts.push(any);
+    if(dn) noteParts.push('Dietary: '+dn);
+    if(mc) noteParts.push('Medical: '+mc);
+    if(gl && /^(y|yes|true|1)/i.test(gl)) noteParts.push('Wears glasses');
+    const mediaRaw=g(c,I.media).toLowerCase();
+    const media_consent = /no consent|no media|decline|^no\b/.test(mediaRaw) ? 'no'
+                        : /consent|yes|approved|^ok/.test(mediaRaw) ? 'yes' : '';
+    const addr=g(c,I.address).replace(/\s*\n\s*/g,', ').replace(/\s+/g,' ').replace(/(,\s*)+/g,', ').trim().replace(/^,\s*|,\s*$/g,'');
+    out.push({
+      first, last, weeks,
+      grade:g(c,I.grade), allergies:g(c,I.allerg),
+      notes:noteParts.join(' • '), media_consent,
+      contact:{
+        guardian:g(c,I.pName), guardian_email:g(c,I.pEmail), guardian_phone:g(c,I.pPhone),
+        secondary_parent:g(c,I.sName), secondary_email:g(c,I.sEmail), secondary_phone:g(c,I.sPhone),
+        other_guardian:g(c,I.pu1Name),
+        emergency_contact:g(c,I.ecName), emergency_phone:g(c,I.ecPhone),
+        relationship:g(c,I.sRel), dob:g(c,I.dob), address:addr,
+      }
+    });
+  }
+  return out;
+}
+function planRegistration(children){
+  const perWeek={}; const childRows=[];
+  children.forEach(ch=>{
+    const name=`${ch.first} ${ch.last}`.trim();
+    childRows.push({name, weeks:ch.weeks.slice()});
+    ch.weeks.forEach(w=>{
+      const pw=perWeek[w]=perWeek[w]||{toUpdate:[],toAdd:[],used:new Set()};
+      const m=matchStudent({first:ch.first,last:ch.last}, (ROSTER_DATA[w]||[]), pw.used);
+      if(m){ pw.used.add(m.id); pw.toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), ch}); }
+      else pw.toAdd.push({name, ch});
+    });
+  });
+  return {perWeek, childRows, children};
+}
+async function applyRegistration(plan){
+  let updated=0, added=0, contacts=0; const weeksTouched=new Set();
+  const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
+  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; return p; };
+  const writeContact=async(id,ch)=>{ if(!canContacts) return; const ep={}; Object.entries(ch.contact).forEach(([k,v])=>{ if((v||'')!=='') ep[k]=v; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) contacts++; } };
+  for(const w of Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b)){
+    const pw=plan.perWeek[w]; weeksTouched.add(w);
+    for(const u of pw.toUpdate){ const p=stuPatch(u.ch); if(Object.keys(p).length){ const err=await dbUpdateStudent(u.id,p); if(err) return {err}; } await writeContact(u.id,u.ch); updated++; }
+    for(const a of pw.toAdd){ const ch=a.ch; const err=await dbAddStudent(w, ch.first, ch.last, ch.grade||''); if(err) return {err}; const row=(ROSTER_DATA[w]||[]).slice(-1)[0]; if(row){ const p=stuPatch(ch); delete p.grade; if(Object.keys(p).length) await dbUpdateStudent(row.id,p); await writeContact(row.id,ch); } added++; }
+  }
+  return {updated, added, contacts, weeks:[...weeksTouched].sort((a,b)=>a-b)};
+}
+function showRegistrationReview(plan){
+  const box=document.getElementById('ros-review'); if(!box) return;
+  const weeks=Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b);
+  let totU=0, totA=0; weeks.forEach(w=>{ totU+=plan.perWeek[w].toUpdate.length; totA+=plan.perWeek[w].toAdd.length; });
+  const childList=plan.childRows.slice(0,80).map(c=>`${esc(c.name)} <span style="color:var(--muted)">(${c.weeks.length?'wk '+c.weeks.join(', '):'no week listed'})</span>`).join('<br>');
+  const weekRows=weeks.map(w=>{ const pw=plan.perWeek[w]; return `<tr><td style="padding:3px 14px 3px 0"><b>Week ${w}</b></td><td style="padding:3px 14px 3px 0;color:var(--teal-bright)">${pw.toUpdate.length} updated</td><td style="padding:3px 0;color:var(--brass-bright)">${pw.toAdd.length} added</td></tr>`; }).join('');
+  const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
+  const noWeek=plan.childRows.filter(c=>!c.weeks.length).length;
+  box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
+    <h3 style="margin:0 0 6px">Review registration import <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by child first name)</span></h3>
+    <p class="lc-desc" style="margin:0 0 10px">${plan.children.length} children → <b style="color:var(--teal-bright)">${totU} student records updated</b>, <b style="color:var(--brass-bright)">${totA} added</b> across ${weeks.length} week${weeks.length===1?'':'s'}.${canContacts?' Parent &amp; emergency contacts will be written to Family Contacts.':' <i>Contacts skipped — you don\'t have Family Contacts access.</i>'}${noWeek?` <span style="color:#d9534f">${noWeek} child(ren) had no week listed and will be skipped.</span>`:''}</p>
+    <table style="border-collapse:collapse;margin:0 0 12px;font-size:13px">${weekRows}</table>
+    <details style="margin:0 0 12px"><summary style="cursor:pointer;color:var(--muted)">Show children (${plan.childRows.length})</summary><div style="margin-top:8px;font-size:13px;line-height:1.7">${childList}${plan.childRows.length>80?'<br>…':''}</div></details>
+    <button class="btn" id="ros-review-go">Confirm import</button>
+    <button class="btn ghost" id="ros-review-cancel">Cancel</button>
+  </div>`;
+  document.getElementById('ros-review-cancel').addEventListener('click',()=>{ box.innerHTML=''; });
+  document.getElementById('ros-review-go').addEventListener('click',async()=>{
+    const m=document.getElementById('ros-io-msg'); m.className='gate-msg'; m.textContent='Importing…';
+    const res=await applyRegistration(plan);
+    box.innerHTML='';
+    if(res.err){ m.className='gate-msg err'; m.textContent=res.err.message||'Import failed.'; return; }
+    m.className='gate-msg ok'; m.textContent=`Imported ${plan.children.length} children — ${res.updated} updated, ${res.added} added across week${res.weeks.length===1?'':'s'} ${res.weeks.join(', ')}${res.contacts?`, ${res.contacts} contact records`:''} ✓`;
+    renderRosterTab(); if(typeof renderEmergency==='function') renderEmergency();
+  });
 }
 
 /* =================== EDITABLE SITE CONTENT (shared) ===================
@@ -2343,6 +2478,14 @@ async function rosImport(file){
   const msg=document.getElementById('ros-io-msg');
   try{
     const text=await file.text();
+    const rows=csvRows(text);
+    if(rows.length && looksLikeRegistration(rows[0])){
+      const children=parseRegistration(text);
+      if(!children.length){ msg.className='gate-msg err'; msg.textContent='No children found in that registration file.'; return; }
+      msg.textContent='';
+      showRegistrationReview(planRegistration(children));
+      return;
+    }
     const parsed=parseRosterCSV(text);
     if(!parsed.length){ msg.className='gate-msg err'; msg.textContent='No rows found — check the file has a First/Name column.'; return; }
     msg.textContent='';

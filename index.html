@@ -1275,6 +1275,9 @@ function seedSupplies(wk){
 function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); return `${String(f).toLowerCase()}.${String(l).toLowerCase()}@alpha.school`; }
 /* Display name: first name + last initial, e.g. "Maya R." */
 function studentLabel(s){ const pf=(s&&s.preferred!=null&&String(s.preferred).trim())?String(s.preferred).trim():''; const f=pf||(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); const li=String(l).trim(); return `${String(f).trim()}${li?` ${li[0].toUpperCase()}.`:''}`; }
+// "None"-type allergy values count as no allergy — return '' so nothing flags.
+const ALLERGY_NONE_RE=/^(none|n\/?a|na|no|nka|nkda|nil|none known|no known( allergies)?|no allergies|not applicable|-|—|–)\.?$/i;
+function cleanAllergy(v){ const t=(v||'').trim(); return ALLERGY_NONE_RE.test(t)?'':t; }
 function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
 function csvDownload(name, rows){
@@ -1493,7 +1496,7 @@ function parseRosterCSV(text){
       if(!first && !last && iFull>=0){ const p=g(iFull,c).split(/\s+/); first=p[0]||''; last=p.slice(1).join(' '); }
       const o={first,last};
       if(iGrade>=0) o.grade=g(iGrade,c);
-      if(iAllerg>=0) o.allergies=g(iAllerg,c);
+      if(iAllerg>=0) o.allergies=cleanAllergy(g(iAllerg,c));
       if(iMeds>=0) o.meds=g(iMeds,c);
       if(iConsent>=0) o.media_consent=consentVal(g(iConsent,c));
       if(iLapA>=0) o.laptop_assigned=truthy(g(iLapA,c));
@@ -1591,7 +1594,7 @@ function parseRegistration(text){
     const addr=g(c,I.address).replace(/\s*\n\s*/g,', ').replace(/\s+/g,' ').replace(/(,\s*)+/g,', ').trim().replace(/^,\s*|,\s*$/g,'');
     out.push({
       first, last, weeks,
-      grade:g(c,I.grade), allergies:g(c,I.allerg),
+      grade:g(c,I.grade), allergies:cleanAllergy(g(c,I.allerg)),
       notes:noteParts.join(' • '), media_consent,
       contact:{
         guardian:g(c,I.pName), guardian_email:g(c,I.pEmail), guardian_phone:g(c,I.pPhone),
@@ -2077,14 +2080,14 @@ function renderAtt(){
   list.innerHTML = studs.map(s=>{
     const st = data[s.id]||'';
     const init = ((s.first[0]||'?')+(s.last[0]||'')).toUpperCase();
-    const hasAllergy = !!(s.allergies && s.allergies.trim());
+    const allergy = cleanAllergy(s.allergies);
+    const hasAllergy = !!allergy;
     const hasMed = !!(s.meds && s.meds.trim());
     const flag = hasAllergy || hasMed;
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(studentLabel(s))}${hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:''}</div>
-          <div class="gr">Grade ${esc(s.grade)}<span class="lvlbadge">${levelOf(s.grade)}</span></div></div>
+        <div><div class="nm">${esc(studentLabel(s))}${hasAllergy?`<span class="allergy-chip">⚠ ${esc(allergy.split(',')[0].trim()).slice(0,18)}</span>`:''}</div></div>
         <button class="health-toggle ${flag?'flag':''}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
@@ -2118,12 +2121,13 @@ function renderAtt(){
       const block=inp.closest('.student-block'); const id=block.dataset.id;
       await dbUpdateStudent(id, {[inp.dataset.h]: inp.value});
       const s=findStudent(id)||{};
-      const hasAllergy=!!(s.allergies&&s.allergies.trim());
+      const allergy=cleanAllergy(s.allergies);
+      const hasAllergy=!!allergy;
       const flag=hasAllergy||!!(s.meds&&s.meds.trim());
       const tgl=block.querySelector('[data-act=htoggle]');
       tgl.classList.toggle('flag',flag); tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(studentLabel(s))}`+(hasAllergy?`<span class="allergy-chip">⚠ ${esc((s.allergies||'').split(',')[0].trim()).slice(0,18)}</span>`:'');
+      nm.innerHTML=`${esc(studentLabel(s))}`+(hasAllergy?`<span class="allergy-chip">⚠ ${esc(allergy.split(',')[0].trim()).slice(0,18)}</span>`:'');
       flashSaved(); renderHealthSummary();
     });
   });
@@ -2133,7 +2137,7 @@ function renderHealthSummary(){
   const el=document.getElementById('att-health'); if(!el) return;
   const flagged=[];
   studentsForWeek(curWeek()).forEach(s=>{
-    const a=(s.allergies||'').trim(), m=(s.meds||'').trim();
+    const a=cleanAllergy(s.allergies), m=(s.meds||'').trim();
     if(a||m) flagged.push({name:studentLabel(s), grade:s.grade, level:levelOf(s.grade), a, m});
   });
   if(!flagged.length){
@@ -2425,12 +2429,12 @@ let ROS_FILTER='all';
 function rosConsentMatch(s){
   if(ROS_FILTER==='all') return true;
   if(ROS_FILTER==='pending') return !(s.media_consent==='yes'||s.media_consent==='no');
-  if(ROS_FILTER==='health') return !!((s.allergies||'').trim()||(s.meds||'').trim());
+  if(ROS_FILTER==='health') return !!(cleanAllergy(s.allergies)||(s.meds||'').trim());
   return s.media_consent===ROS_FILTER;
 }
 function consentColor(v){ return v==='yes'?'color:var(--ok)':v==='no'?'color:var(--coral)':'color:var(--muted)'; }
 function rosHealthCell(s){
-  const a=(s.allergies||'').trim(), m=(s.meds||'').trim(), n=(s.notes||'').trim();
+  const a=cleanAllergy(s.allergies), m=(s.meds||'').trim(), n=(s.notes||'').trim();
   if(!a&&!m&&!n) return '<span class="blank">—</span>';
   let out=''; if(a) out+=`<span class="allergy-chip" title="${escAttr(a)}">⚠ ${esc(a.slice(0,22))}${a.length>22?'…':''}</span>`;
   if(m) out+=`${a?' ':''}<span style="font-family:var(--mono);font-size:11px;color:var(--brass-bright)" title="${escAttr(m)}">℞ ${esc(m.slice(0,18))}${m.length>18?'…':''}</span>`;
@@ -2622,7 +2626,7 @@ function renderEmergency(){
     <td>${inp(s.id,'other_phone',e.other_phone)}</td>
     <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
     <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
-    <td>${esc(s.allergies||'')}</td>
+    <td>${esc(cleanAllergy(s.allergies))}</td>
     <td>${esc(s.meds||'')}</td>
   </tr>`; }).join('') : `<tr><td colspan="16" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;

@@ -2515,13 +2515,13 @@ function rosHealthCell(s){
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
-  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="10">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
+  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="9">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
   const sortArrow=k=>STUDENT_SORT===k?' <span class="th-arrow">▲</span>':'';
-  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th><th>Ready</th>${ed?'<th></th>':''}</tr></thead>`;
-  const cols = ed?10:9;
+  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
+  const cols = ed?9:8;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
       <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}>
@@ -2535,7 +2535,6 @@ function renderRosterTab(){
         <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>
         <option value="no" ${s.media_consent==='no'?'selected':''}>✗ No consent</option></select></td>
       <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
-      <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_ready" ${s.laptop_ready?'checked':''}></td>
       ${ed?`<td><button class="del" data-act="del" title="Remove">×</button></td>`:''}
     </tr>`).join('') : `<tr><td colspan="${cols}" class="note-row">${ROS_FILTER==='all'?`No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}`:'No students match this consent filter.'}</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
@@ -2569,7 +2568,6 @@ function renderRosterTab(){
 function renderRosStats(){
   const studs=studentsForWeek(rosWeek());
   const assigned=studs.filter(s=>s.laptop_assigned).length;
-  const ready=studs.filter(s=>s.laptop_ready).length;
   const consent=studs.filter(s=>s.media_consent==='yes').length;
   const noConsent=studs.filter(s=>s.media_consent==='no').length;
   const pending=studs.length-consent-noConsent;
@@ -2578,8 +2576,7 @@ function renderRosStats(){
     <div class="ministat p"><div class="n">${consent}</div><div class="l">Media consent</div></div>
     <div class="ministat a"><div class="n">${noConsent}</div><div class="l">No consent</div></div>
     <div class="ministat"><div class="n">${pending}</div><div class="l">Consent pending</div></div>
-    <div class="ministat l-late"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>
-    <div class="ministat p"><div class="n">${ready}</div><div class="l">Laptop ready</div></div>`;
+    <div class="ministat l-late"><div class="n">${assigned}</div><div class="l">Laptop assigned</div></div>`;
   // count by level
   const counts={}; LEVELS.forEach(l=>counts[l.key]=0);
   studs.forEach(s=>counts[levelOf(s.grade)]++);
@@ -2590,8 +2587,8 @@ function renderRosStats(){
 function rosExport(){
   const studs=studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const label=v=>v==='yes'?'Consent':v==='no'?'No consent':'Pending';
-  const rows=[["First","Last","Grade","Level","Email","Media consent","Allergies","Medications","Laptop assigned","Laptop ready"]];
-  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),s.allergies||'',s.meds||'',s.laptop_assigned?'Yes':'No',s.laptop_ready?'Yes':'No']));
+  const rows=[["First","Last","Grade","Level","Email","Media consent","Allergies","Medications","Laptop assigned"]];
+  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),cleanAllergy(s.allergies),s.meds||'',s.laptop_assigned?'Yes':'No']));
   const suffix = ROS_FILTER==='all'?'':'-'+(ROS_FILTER==='yes'?'consent':ROS_FILTER==='no'?'no-consent':ROS_FILTER==='health'?'health':'pending');
   csvDownload(`roster-w${rosWeek()}${suffix}.csv`, rows);
 }

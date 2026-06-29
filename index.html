@@ -530,8 +530,18 @@
     .levels{grid-template-columns:repeat(3,1fr)}
     .health-panel{padding-left:14px}
     .health-panel .hgrid{grid-template-columns:1fr}
-    .student-block .seg{margin-left:0}
-    .health-toggle{margin-left:0}
+    /* Attendance: name on top, full-width big Present/Late/Absent buttons below */
+    .student-row{flex-wrap:wrap;gap:10px}
+    .student-row .nm{font-size:16px}
+    .health-toggle{margin-left:auto}
+    .student-row .seg,.student-block .seg{margin-left:0;margin-top:2px;width:100%;order:5}
+    .seg button{flex:1;padding:15px 6px;font-size:14px}
+    /* Dismissal: bigger tap targets */
+    .dq-pick{padding:13px 15px;font-size:14.5px}
+    .dq-car{flex-wrap:wrap;gap:10px}
+    .dq-car .dq-body{flex:1 1 100%;order:2}
+    .dq-dismiss{flex:1;padding:14px;font-size:15px;order:3}
+    .att-stats .ministat,.seg-filter .fbtn{flex:1}
   }
 </style>
 </head>

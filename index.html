@@ -1599,7 +1599,9 @@ function parseRegistration(text){
     (g(c,I.weeks).match(/week\s*(\d+)/gi)||[]).forEach(m=>{ const n=+m.replace(/\D/g,''); if(n>=1&&n<=9&&!weeks.includes(n)) weeks.push(n); });
     weeks.sort((a,b)=>a-b);
     const noteParts=[];
-    const accom=g(c,I.accom), any=g(c,I.anything), dn=g(c,I.dietNotes), mc=g(c,I.medcond), gl=g(c,I.glasses);
+    // Treat "None / — / n/a / no" placeholders as empty so they don't become notes.
+    const softNone=v=>{ const t=(v||'').trim(); return /^(none|n\/?a|na|no|nil|nothing|not applicable|-|—|–)\.?$/i.test(t)?'':t; };
+    const accom=softNone(g(c,I.accom)), any=softNone(g(c,I.anything)), dn=softNone(g(c,I.dietNotes)), mc=softNone(g(c,I.medcond)), gl=g(c,I.glasses);
     if(accom) noteParts.push(accom);
     if(any) noteParts.push(any);
     if(dn) noteParts.push('Dietary: '+dn);

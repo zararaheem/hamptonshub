@@ -808,7 +808,10 @@
       <div class="card" style="margin-bottom:20px">
         <div class="eyebrow" style="margin-bottom:8px">Add to the line</div>
         <p class="lc-desc" style="margin:0 0 10px">Tap a student as their car pulls up — they go straight into the line. Optionally type a car label first (e.g. "Blue SUV") to tag your next tap.</p>
-        <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:240px;margin-bottom:12px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:220px">
+          <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:180px;flex:1;max-width:280px">
+        </div>
         <div id="dq-picker" class="dq-picker"></div>
       </div>
 
@@ -2087,10 +2090,12 @@ function renderDismissal(){
   log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
   // student picker — tap to add straight into the line, sorted by last name
   const picker=document.getElementById('dq-picker');
-  const avail=studs.filter(s=>!dqStudentInQueue(s.id))
+  const sq=((document.getElementById('dq-search')||{}).value||'').trim().toLowerCase();
+  let avail=studs.filter(s=>!dqStudentInQueue(s.id))
     .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(sq));
   picker.innerHTML = avail.length ? avail.map(s=>`<button class="dq-pick" data-pick="${escAttr(s.id)}">${esc(studentLabel(s))}</button>`).join('')
-    : `<span class="note-row">Everyone is in the line or dismissed.</span>`;
+    : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
 }
 function dqExport(){
@@ -2113,6 +2118,7 @@ function dismissalInit(){
   document.getElementById('dq-dismissall').addEventListener('click',dqDismissAll);
   document.getElementById('dq-export').addEventListener('click',dqExport);
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
+  const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
 }
 
 /* =================== REFERENCES =================== */

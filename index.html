@@ -383,7 +383,7 @@
   .hd-k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
   .hd-v{font-size:14px;color:var(--oyster);font-weight:600}
   /* dismissal carpool line */
-  .dq-picker{display:flex;flex-wrap:wrap;gap:8px}
+  .dq-picker{display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;padding:2px}
   .dq-pick{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
     border-radius:8px;padding:7px 12px;cursor:pointer;transition:.12s}
   .dq-pick:hover{border-color:var(--brass)}
@@ -403,6 +403,7 @@
   .dqn-table{width:100%;border-collapse:collapse}
   .dqn-table th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
   .dqn-table td{padding:5px 8px;border-bottom:1px solid var(--line-soft)}
+  .dqn-m{display:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
   .dq-done{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
   .dq-done .lk{background:none;border:0;color:var(--teal-bright);cursor:pointer;font-family:var(--mono);font-size:11px}
   .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
@@ -551,12 +552,36 @@
     .health-toggle{margin-left:auto}
     .student-row .seg,.student-block .seg{margin-left:0;margin-top:2px;width:100%;order:5}
     .seg button{flex:1;padding:15px 6px;font-size:14px}
-    /* Dismissal: bigger tap targets */
-    .dq-pick{padding:13px 15px;font-size:14.5px}
-    .dq-car{flex-wrap:wrap;gap:10px}
-    .dq-car .dq-body{flex:1 1 100%;order:2}
-    .dq-dismiss{flex:1;padding:14px;font-size:15px;order:3}
-    .att-stats .ministat,.seg-filter .fbtn{flex:1}
+    /* Dismissal: stack the controls and grow tap targets */
+    .att-bar{gap:10px}
+    .att-bar .field{flex:1 1 100%}
+    .att-bar .field select,.att-bar .field input{width:100%}
+    #dq-refresh{width:100%;align-self:stretch!important}
+    .att-stats{margin-left:0;width:100%}
+    .att-stats .ministat,.seg-filter .fbtn{flex:1 1 calc(50% - 5px);min-width:0}
+    /* Add-to-line inputs full width, stacked */
+    #dq-label,#dq-search{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
+    /* Student picker: a tidy two-up grid of large, left-aligned name buttons */
+    .dq-picker{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:46vh}
+    .dq-pick{padding:14px 12px;font-size:14.5px;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+    /* Carpool line card: number + name up top, full-width Dismiss below */
+    .dq-car{flex-wrap:wrap;gap:10px 12px}
+    .dq-car .dq-body{flex:1 1 0;min-width:0;order:1}
+    .dq-pos{order:0}
+    .dq-names{font-size:17px}
+    .dq-car .del{order:1;margin-left:auto;align-self:flex-start;font-size:24px;padding:4px 10px}
+    .dq-dismiss{flex:1 1 100%;padding:15px;font-size:16px;order:3}
+    /* Notes editor: stack each student into a card instead of a 3-col table */
+    .dqn-table,.dqn-table tbody,.dqn-table tr,.dqn-table td{display:block;width:100%}
+    .dqn-table thead{position:absolute;left:-9999px}
+    .dqn-table tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;background:var(--navy-2)}
+    .dqn-table td{border:0;padding:6px 0;text-align:left!important}
+    .dqn-table td.role-cell{font-size:16px;font-weight:600;color:var(--oyster);white-space:normal!important}
+    .dqn-m{display:block}
+    .dqn-table .big-check{width:26px;height:26px}
+    .dqn-table .cell-input{width:100%}
+    /* Dismissed log rows: let long name lists wrap */
+    .dq-done{flex-wrap:wrap}
   }
 </style>
 </head>
@@ -2373,8 +2398,8 @@ function renderDqNotes(){
   box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td>
-      <td style="text-align:center"><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
-      <td><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
+      <td style="text-align:center"><div class="dqn-m">Self-dismiss</div><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
+      <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
     </tr>`).join('')}</tbody></table>`;
   box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();

@@ -323,6 +323,8 @@
   .th-sort:hover{color:var(--brass-bright)}
   .th-arrow{font-size:9px;color:var(--brass-bright)}
   .seg-filter{display:flex;gap:6px;flex-wrap:wrap}
+  .goesby-in{margin-top:4px;font-size:11.5px;color:var(--brass-bright);font-style:italic}
+  .goesby-in::placeholder{color:var(--muted-2);font-style:normal}
 
   /* ---------- Weekly Supplies ---------- */
   .supply-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-soft);border-left:3px solid transparent}
@@ -790,7 +792,8 @@
         <span class="saved-note" id="ros-saved"></span>
         <span class="gate-msg" id="ros-io-msg"></span>
       </div>
-      <div class="callout" style="margin-top:18px"><b>CSV format:</b> columns <code>First, Last, Grade</code> — optionally <code>Laptop assigned, Laptop ready</code> (yes/no). A header row is auto-detected, and a single <code>Full Name, Grade</code> layout also works. Grades PK · K · 1–12 map to levels Wonderlab / LL / L1 / L2 / MS / HS. Editing is limited to admins; everyone can view.</div>
+      <div id="ros-review"></div>
+      <div class="callout" style="margin-top:18px"><b>CSV import:</b> a header row is auto-detected and columns are matched by name in any order (First/Name, Grade, Preferred name, Allergies, Medications, Notes, Media consent, Parent/Guardian + phone/email, Emergency contact, DOB). Imports <b>match existing students by first name</b> — you'll get a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
     </section>
 
     <!-- ===== DISMISSAL (carpool line) ===== -->
@@ -1370,29 +1373,41 @@ async function loadEmergency(){
 // Import that updates students already on the week (matched by first+last name)
 // instead of duplicating; new names are added. Emergency fields go to the
 // owner-only student_emergency table (written only if you're the owner).
-async function dbMergeStudents(week, arr){
-  week=+week;
-  const key=s=>((s.first||'').trim().toLowerCase()+'|'+(s.last||'').trim().toLowerCase());
-  const idx=()=>new Map((ROSTER_DATA[week]||[]).map(s=>[key(s), s]));
-  let updated=0, added=0, emerg=0;
-  for(const s of arr){
-    let row=idx().get(key(s));
-    const spatch={};
-    STUDENT_FIELDS.forEach(f=>{ if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready') spatch[f]=!!s[f]; else if((s[f]||'')!=='') spatch[f]=s[f]; } });
-    if(row){
-      if(Object.keys(spatch).length){ const err=await dbUpdateStudent(row.id, spatch); if(err) return {err}; }
-      updated++;
-    } else {
-      const err=await dbAddStudent(week, s.first, s.last, s.grade||''); if(err) return {err};
-      row=(ROSTER_DATA[week]||[]).slice(-1)[0];
-      const extra={}; STUDENT_FIELDS.forEach(f=>{ if(f!=='grade' && f in spatch) extra[f]=spatch[f]; });
-      if(row && Object.keys(extra).length){ const err2=await dbUpdateStudent(row.id, extra); if(err2) return {err:err2}; }
-      added++;
-    }
-    if(row && SESSION && SESSION.owner){
-      const epatch={}; EMERG_FIELDS.forEach(f=>{ if(f in s && (s[f]||'')!=='') epatch[f]=s[f]; });
-      if(Object.keys(epatch).length){ const err=await dbSetEmergency(row.id, epatch); if(!err) emerg++; }
-    }
+// Match an imported row to an existing student by FIRST name (disambiguate by
+// last name only if two kids share a first name); avoids reusing a match twice.
+function matchStudent(s, existing, used){
+  const norm=v=>(v||'').trim().toLowerCase();
+  const fn=norm(s.first); if(!fn) return null;
+  const same=existing.filter(e=>norm(e.first)===fn && !used.has(e.id));
+  if(same.length===1) return same[0];
+  if(same.length>1) return same.find(e=>norm(e.last)===norm(s.last)) || null;
+  return null;
+}
+function planImport(week, arr){
+  const existing=(ROSTER_DATA[+week]||[]); const used=new Set();
+  const toUpdate=[], toAdd=[];
+  arr.forEach(s=>{
+    const m=matchStudent(s, existing, used);
+    const nm=`${(s.first||'').trim()} ${(s.last||'').trim()}`.trim();
+    if(m){ used.add(m.id); toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), s}); }
+    else toAdd.push({name:nm||'(unnamed)', s});
+  });
+  return {toUpdate, toAdd};
+}
+async function applyImport(week, plan){
+  week=+week; let updated=0, added=0, emerg=0;
+  const writeEmerg=async(id,s)=>{ if(SESSION&&(SESSION.owner||SESSION.contacts)){ const ep={}; EMERG_FIELDS.forEach(f=>{ if(f in s && (s[f]||'')!=='') ep[f]=s[f]; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) emerg++; } } };
+  const patchOf=(s,skipGrade)=>{ const p={}; STUDENT_FIELDS.forEach(f=>{ if(skipGrade&&f==='grade') return; if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready') p[f]=!!s[f]; else if((s[f]||'')!=='') p[f]=s[f]; } }); return p; };
+  for(const u of plan.toUpdate){
+    const patch=patchOf(u.s,false);
+    if(Object.keys(patch).length){ const err=await dbUpdateStudent(u.id, patch); if(err) return {err}; }
+    await writeEmerg(u.id, u.s); updated++;
+  }
+  for(const a of plan.toAdd){
+    const s=a.s; const err=await dbAddStudent(week, s.first, s.last, s.grade||''); if(err) return {err};
+    const row=(ROSTER_DATA[week]||[]).slice(-1)[0];
+    if(row){ const extra=patchOf(s,true); if(Object.keys(extra).length) await dbUpdateStudent(row.id, extra); await writeEmerg(row.id, s); }
+    added++;
   }
   return {updated, added, emerg};
 }
@@ -2243,7 +2258,8 @@ function renderRosterTab(){
   const cols = ed?10:9;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
-      <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}></td>
+      <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}>
+        ${(ed||s.preferred)?`<input class="cell-input goesby-in" data-f="preferred" value="${escAttr(s.preferred)}" placeholder="goes by…" ${ed?'':'disabled'}>`:''}</td>
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
@@ -2280,9 +2296,7 @@ function renderRosterTab(){
   }));
   tbl.querySelectorAll('[data-act=del]').forEach(b=>b.addEventListener('click',async ()=>{
     const tr=b.closest('tr'); const id=tr.dataset.id;
-    const s=findStudent(id);
-    if(!confirm(`Remove ${s?(s.first+' '+s.last):'this student'} from Week ${rosWeek()}?`)) return;
-    await dbDeleteStudent(id); flash('ros-saved'); renderRosterTab();
+    await dbDeleteStudent(id); flash('ros-saved'); renderRosterTab();   // no per-row prompt — delete is immediate
   }));
   renderRosStats();
 }
@@ -2320,14 +2334,30 @@ async function rosImport(file){
   try{
     const text=await file.text();
     const parsed=parseRosterCSV(text);
-    if(!parsed.length){ msg.className='gate-msg err'; msg.textContent='No rows found — check the file has First, Last, Grade columns.'; return; }
-    if(!confirm(`Import ${parsed.length} row${parsed.length>1?'s':''} into Week ${rosWeek()}? Students already on the list (matched by name) will be updated; new names will be added.`)) return;
-    msg.className='gate-msg'; msg.textContent='Importing…';
-    const res=await dbMergeStudents(rosWeek(), parsed);
-    if(res.err){ msg.className='gate-msg err'; msg.textContent=res.err.message||'Import failed.'; return; }
-    msg.className='gate-msg ok'; msg.textContent=`Updated ${res.updated}, added ${res.added}${res.emerg?`, ${res.emerg} emergency record${res.emerg>1?'s':''}`:''} ✓`;
-    renderRosterTab(); if(typeof renderEmergency==='function') renderEmergency();
+    if(!parsed.length){ msg.className='gate-msg err'; msg.textContent='No rows found — check the file has a First/Name column.'; return; }
+    msg.textContent='';
+    showImportReview(rosWeek(), planImport(rosWeek(), parsed));
   }catch(e){ msg.className='gate-msg err'; msg.textContent='Could not read that file.'; }
+}
+function showImportReview(week, plan){
+  const box=document.getElementById('ros-review'); if(!box) return;
+  const names=arr=>arr.slice(0,40).map(x=>esc(x.name)).join(', ')+(arr.length>40?` …+${arr.length-40} more`:'');
+  box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
+    <h3 style="margin:0 0 10px">Review import — Week ${esc(week)} <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by first name)</span></h3>
+    <p class="lc-desc" style="margin:0 0 8px"><b style="color:var(--teal-bright)">${plan.toUpdate.length} will be updated</b>${plan.toUpdate.length?' — '+names(plan.toUpdate):''}</p>
+    <p class="lc-desc" style="margin:0 0 14px"><b style="color:var(--brass-bright)">${plan.toAdd.length} will be added as new</b>${plan.toAdd.length?' — '+names(plan.toAdd):''}</p>
+    <button class="btn" id="ros-review-go">Confirm import</button>
+    <button class="btn ghost" id="ros-review-cancel">Cancel</button>
+  </div>`;
+  document.getElementById('ros-review-cancel').addEventListener('click',()=>{ box.innerHTML=''; });
+  document.getElementById('ros-review-go').addEventListener('click',async()=>{
+    const m=document.getElementById('ros-io-msg'); m.className='gate-msg'; m.textContent='Importing…';
+    const res=await applyImport(week, plan);
+    box.innerHTML='';
+    if(res.err){ m.className='gate-msg err'; m.textContent=res.err.message||'Import failed.'; return; }
+    m.className='gate-msg ok'; m.textContent=`Updated ${res.updated}, added ${res.added}${res.emerg?`, ${res.emerg} contact record${res.emerg>1?'s':''}`:''} ✓`;
+    renderRosterTab(); if(typeof renderEmergency==='function') renderEmergency();
+  });
 }
 function rosterInit(){
   fillWeekSelect(document.getElementById('ros-week'));

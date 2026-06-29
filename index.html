@@ -465,6 +465,8 @@
   .nav-item.owner-only,.nav-label.owner-only,.subtab.owner-only{display:none!important}
   body.is-owner .nav-item.owner-only{display:flex!important}
   body.is-owner .nav-label.owner-only,body.is-owner .subtab.owner-only{display:inline-flex!important}
+  .nav-item.contacts-only{display:none!important}
+  body.can-contacts .nav-item.contacts-only{display:flex!important}
   body.is-admin .edit-toggle.admin-only{display:inline-flex!important}
   /* admin edit mode */
   .edit-toggle{align-items:center;gap:6px;background:var(--navy-2);border:1px solid var(--brass);color:var(--brass-bright);
@@ -564,7 +566,7 @@
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
       <button class="nav-item cat-people" data-tab="attendance">Attendance</button>
       <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
-      <button class="nav-item cat-people owner-only" data-tab="emergency">Emergency Info</button>
+      <button class="nav-item cat-people contacts-only" data-tab="emergency">Family Contacts</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item cat-logistics" data-tab="supplies">Supplies &amp; Packing</button>
@@ -826,9 +828,9 @@
 
     <!-- ===== EMERGENCY INFO (owner-only) ===== -->
     <section class="view" id="view-emergency" hidden>
-      <div class="eyebrow">Owner-only · zara.raheem@alpha.school</div>
-      <h1 class="page-title">Emergency info</h1>
-      <p class="page-lead">Guardian &amp; emergency contacts in one place — <b>visible only to you</b> (the owner). Allergies/meds are shown for context. Pick a week; edit inline or import a file in the Students tab.</p>
+      <div class="eyebrow">Restricted · Family contacts viewers only</div>
+      <h1 class="page-title">Family contacts</h1>
+      <p class="page-lead">Primary parent, secondary parent, other guardians &amp; emergency contact — one roster per week. Visible only to the people you've added to the <b>Family contacts</b> list (Access tab). Allergies/meds shown for context. Edit inline or import a file in the Students tab.</p>
       <div class="att-bar">
         <div class="field" style="max-width:220px"><label for="em-week">Week</label><select id="em-week"></select></div>
         <div class="att-stats" id="em-stats"></div>
@@ -1350,7 +1352,7 @@ async function dbBulkAddStudents(week, arr){
   return null;
 }
 const STUDENT_FIELDS=['grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready'];
-const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','emergency_contact','emergency_phone','dob'];
+const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','emergency_contact','emergency_phone','dob'];
 async function dbSetEmergency(student_id, patch){
   EMERGENCY[student_id]={...(EMERGENCY[student_id]||{}), ...patch};
   if(!SUPA) return null;
@@ -1429,9 +1431,14 @@ function parseRosterCSV(text){
           iFull=find(/^(student )?(full )?name$|^name$|^student$/),
           iGrade=find(/grade|year/), iAllerg=find(/allerg/), iMeds=find(/medic|meds|health|medical/),
           iConsent=find(/consent|photo|media/), iLapA=find(/laptop.*assign|^assigned/), iLapR=find(/laptop.*ready|^ready/),
-          iGuardian=find(/guardian|parent\s*name|parent\/guardian|caregiver|mother|father|^parent$/),
-          iGPhone=find(/(guardian|parent).*?(phone|mobile|cell|number)|^phone|primary phone|contact number/),
-          iGEmail=find(/(guardian|parent).*email|parent email|^email/),
+          iGuardian=find(/primary parent|parent ?1|guardian ?1|parent\/guardian|^guardian$|^parent$|parent\s*name|caregiver|mother/),
+          iGPhone=find(/(primary parent|parent ?1|guardian ?1|guardian|parent).*?(phone|mobile|cell|number)|^phone|primary phone|contact number/),
+          iGEmail=find(/(primary parent|parent ?1|guardian ?1|guardian|parent).*email|parent email|^email/),
+          iSecP=find(/secondary parent|parent ?2|guardian ?2|second parent|father/),
+          iSecPhone=find(/(secondary parent|parent ?2|guardian ?2|father).*(phone|mobile|cell|number)/),
+          iSecEmail=find(/(secondary parent|parent ?2|guardian ?2|father).*email/),
+          iOther=find(/other guardian|additional guardian|guardian ?3|third (parent|guardian)/),
+          iOtherPhone=find(/(other guardian|additional|guardian ?3).*(phone|mobile|number)/),
           iEC=find(/emergency.*(name|contact)|secondary contact|emergency$/),
           iEP=find(/emergency.*(phone|mobile|number)/),
           iDob=find(/dob|date of birth|birth/),
@@ -1450,6 +1457,11 @@ function parseRosterCSV(text){
       if(iGuardian>=0) o.guardian=g(iGuardian,c);
       if(iGPhone>=0) o.guardian_phone=g(iGPhone,c);
       if(iGEmail>=0) o.guardian_email=g(iGEmail,c);
+      if(iSecP>=0) o.secondary_parent=g(iSecP,c);
+      if(iSecPhone>=0) o.secondary_phone=g(iSecPhone,c);
+      if(iSecEmail>=0) o.secondary_email=g(iSecEmail,c);
+      if(iOther>=0) o.other_guardian=g(iOther,c);
+      if(iOtherPhone>=0) o.other_phone=g(iOtherPhone,c);
       if(iEC>=0) o.emergency_contact=g(iEC,c);
       if(iEP>=0) o.emergency_phone=g(iEP,c);
       if(iDob>=0) o.dob=g(iDob,c);
@@ -2344,31 +2356,41 @@ function renderEmergency(){
   const q=(document.getElementById('em-search').value||'').trim().toLowerCase();
   let studs=studentsForWeek(wk);
   if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
-  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>DOB</th><th>Guardian</th><th>Guardian phone</th><th>Guardian email</th><th>Emergency contact</th><th>Emergency phone</th><th>Allergies</th><th>Meds</th></tr></thead>`;
+  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>DOB</th>
+    <th>Primary parent</th><th>Phone</th><th>Email</th>
+    <th>Secondary parent</th><th>Phone</th><th>Email</th>
+    <th>Other guardian</th><th>Phone</th>
+    <th>Emergency contact</th><th>Phone</th>
+    <th>Allergies</th><th>Meds</th></tr></thead>`;
   const inp=(id,f,val)=>`<input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" value="${escAttr(val||'')}">`;
   const body=studs.length? studs.map((s,i)=>{ const e=EMERGENCY[s.id]||{}; return `<tr>
     <td class="role-cell">${i+1}</td>
-    <td>${esc(s.first||'')} ${esc(s.last||'')}</td>
+    <td style="white-space:nowrap">${esc(s.first||'')} ${esc(s.last||'')}</td>
     <td>${esc(s.grade||'')}</td>
     <td>${inp(s.id,'dob',e.dob)}</td>
     <td>${inp(s.id,'guardian',e.guardian)}</td>
     <td>${inp(s.id,'guardian_phone',e.guardian_phone)}</td>
     <td>${inp(s.id,'guardian_email',e.guardian_email)}</td>
+    <td>${inp(s.id,'secondary_parent',e.secondary_parent)}</td>
+    <td>${inp(s.id,'secondary_phone',e.secondary_phone)}</td>
+    <td>${inp(s.id,'secondary_email',e.secondary_email)}</td>
+    <td>${inp(s.id,'other_guardian',e.other_guardian)}</td>
+    <td>${inp(s.id,'other_phone',e.other_phone)}</td>
     <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
     <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
     <td>${esc(s.allergies||'')}</td>
     <td>${esc(s.meds||'')}</td>
-  </tr>`; }).join('') : `<tr><td colspan="11" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
+  </tr>`; }).join('') : `<tr><td colspan="16" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
-  const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone); }).length;
+  const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone||e.secondary_phone); }).length;
   const st=document.getElementById('em-stats'); if(st) st.innerHTML=`<div class="ministat p"><div class="n">${filled}</div><div class="l">With contact</div></div><div class="ministat l-late"><div class="n">${studs.length-filled}</div><div class="l">Missing</div></div><div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>`;
 }
 function emExport(){
   const wk=emWeek(); const studs=studentsForWeek(wk);
-  const rows=[["First","Last","Grade","DOB","Guardian","Guardian phone","Guardian email","Emergency contact","Emergency phone","Allergies","Meds"]];
-  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.emergency_contact||'',e.emergency_phone||'',s.allergies||'',s.meds||'']); });
-  csvDownload(`emergency-w${wk}.csv`, rows);
+  const rows=[["First","Last","Grade","DOB","Primary parent","Primary phone","Primary email","Secondary parent","Secondary phone","Secondary email","Other guardian","Other phone","Emergency contact","Emergency phone","Allergies","Meds"]];
+  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.secondary_parent||'',e.secondary_phone||'',e.secondary_email||'',e.other_guardian||'',e.other_phone||'',e.emergency_contact||'',e.emergency_phone||'',s.allergies||'',s.meds||'']); });
+  csvDownload(`family-contacts-w${wk}.csv`, rows);
 }
 function emInit(){
   const sel=document.getElementById('em-week'); if(!sel) return;
@@ -2885,10 +2907,10 @@ async function fhDelShout(id){
 
 /* =================== TAB NAV =================== */
 const tabs=['dashboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Emergency Info',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
-  if(t==='emergency' && !document.body.classList.contains('is-owner')) t='dashboard';
+  if(t==='emergency' && !document.body.classList.contains('can-contacts')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
@@ -2982,11 +3004,11 @@ function categoryFor(email){ return STAFF_DOMAINS.includes((email.split('@')[1]|
 async function dbGetAllow(){
   if(SUPA){
     const { data, error } = await SB.from('allowed_emails')
-      .select('email,is_admin,is_owner,is_leadership,full_name,category').order('is_owner',{ascending:false}).order('email');
+      .select('email,is_admin,is_owner,is_leadership,can_see_contacts,full_name,category').order('is_owner',{ascending:false}).order('email');
     if(error){ console.warn('load allow-list failed:', error); return []; }
-    return (data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner, leadership:!!(r.is_leadership||r.is_owner), name:r.full_name||'', category:r.category||'staff'}));
+    return (data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner, leadership:!!(r.is_leadership||r.is_owner), contacts:!!(r.can_see_contacts||r.is_owner), name:r.full_name||'', category:r.category||'staff'}));
   }
-  return getAllowLocal().map(u=>({email:u.email, admin:u.admin, owner:u.owner, leadership:!!(u.leadership||u.owner), name:u.name||'', category:u.category||categoryFor(u.email)}));
+  return getAllowLocal().map(u=>({email:u.email, admin:u.admin, owner:u.owner, leadership:!!(u.leadership||u.owner), contacts:!!(u.contacts||u.owner), name:u.name||'', category:u.category||categoryFor(u.email)}));
 }
 async function dbAddAllow(email){
   const category=categoryFor(email);
@@ -3005,6 +3027,10 @@ async function dbSetLeadership(email, val){
   if(SUPA){ const { error } = await SB.from('allowed_emails').update({is_leadership:val}).eq('email', email); return error; }
   const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.leadership=val; setAllowLocal(a); return null;
 }
+async function dbSetContacts(email, val){
+  if(SUPA){ const { error } = await SB.from('allowed_emails').update({can_see_contacts:val}).eq('email', email); return error; }
+  const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.contacts=val; setAllowLocal(a); return null;
+}
 async function dbSetName(email, name){
   if(SUPA){ const { error } = await SB.from('allowed_emails').update({full_name:name}).eq('email', email); return error; }
   const a=getAllowLocal(); const u=a.find(x=>x.email.toLowerCase()===email.toLowerCase()); if(u)u.name=name; setAllowLocal(a); return null;
@@ -3016,15 +3042,15 @@ async function dbSetCategory(email, category){
 async function dbCheckAccess(email){
   email=(email||'').toLowerCase();
   if(SUPA){
-    const { data } = await SB.from('allowed_emails').select('is_admin,is_owner,is_leadership').eq('email', email).maybeSingle();
-    if(!data) return {allowed:false, admin:false, owner:false, leadership:false};
-    return {allowed:true, admin: !!(data.is_admin||data.is_owner), owner: !!data.is_owner, leadership: !!(data.is_leadership||data.is_owner)};
+    const { data } = await SB.from('allowed_emails').select('is_admin,is_owner,is_leadership,can_see_contacts').eq('email', email).maybeSingle();
+    if(!data) return {allowed:false, admin:false, owner:false, leadership:false, contacts:false};
+    return {allowed:true, admin: !!(data.is_admin||data.is_owner), owner: !!data.is_owner, leadership: !!(data.is_leadership||data.is_owner), contacts: !!(data.can_see_contacts||data.is_owner)};
   }
-  if(!domainOk(email)) return {allowed:false, admin:false, owner:false, leadership:false};
-  if(email===OWNER) return {allowed:true, admin:true, owner:true, leadership:true};
-  if(getMode()==='domain') return {allowed:true, admin:false, owner:false, leadership:false};
+  if(!domainOk(email)) return {allowed:false, admin:false, owner:false, leadership:false, contacts:false};
+  if(email===OWNER) return {allowed:true, admin:true, owner:true, leadership:true, contacts:true};
+  if(getMode()==='domain') return {allowed:true, admin:false, owner:false, leadership:false, contacts:false};
   const u=getAllowLocal().find(x=>x.email.toLowerCase()===email);
-  return u ? {allowed:true, admin:!!u.admin, owner:!!u.owner, leadership:!!u.owner} : {allowed:false, admin:false, owner:false, leadership:false};
+  return u ? {allowed:true, admin:!!u.admin, owner:!!u.owner, leadership:!!u.owner, contacts:!!u.owner} : {allowed:false, admin:false, owner:false, leadership:false, contacts:false};
 }
 function isAdmin(){ return !!(SESSION && SESSION.admin); }
 function refreshAdminState(){ document.body.classList.toggle('is-admin', isAdmin()); }
@@ -3097,12 +3123,13 @@ function enterHub(sess){
   document.body.classList.remove('locked');
   document.body.classList.toggle('is-admin', !!sess.admin);
   document.body.classList.toggle('is-owner', !!sess.owner);
+  document.body.classList.toggle('can-contacts', !!(sess.contacts||sess.owner));
   document.getElementById('me-mail').textContent=sess.email;
   // record the signed-in person's Google display name (own row only, if not set yet)
   if(SUPA){ SB.auth.getUser().then(({data})=>{ const u=data&&data.user, md=u&&u.user_metadata||{}; const nm=md.full_name||md.name; if(nm) SB.rpc('claim_my_profile',{p_name:nm}).then(()=>renderAccess()).catch(()=>{}); }).catch(()=>{}); }
   renderAccess();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
-  Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState(), (sess.owner?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
+  Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState(), ((sess.contacts||sess.owner)?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
   if(!routeHash()) showTab('dashboard');  // honor a deep link like #games / #tech, else Home
 }
@@ -3113,6 +3140,7 @@ async function signOut(){
   document.body.classList.add('locked');
   document.body.classList.remove('is-admin');
   document.body.classList.remove('is-owner');
+  document.body.classList.remove('can-contacts');
   const e=document.getElementById('gate-email'); if(e) e.value='';
   const p=document.getElementById('gate-pass'); if(p) p.value='';
   const m=document.getElementById('gate-msg'); if(m){ m.className='gate-msg'; m.textContent=''; }
@@ -3180,17 +3208,18 @@ async function renderAccess(){
   a.forEach(u=>{
     const key=(u.name&&u.name.trim())?('n:'+u.name.trim().toLowerCase()):('e:'+u.email.toLowerCase());
     let g=groups.get(key);
-    if(!g){ g={name:u.name||'', category:u.category||'staff', owner:false, admin:false, leadership:false, emails:[]}; groups.set(key,g); }
+    if(!g){ g={name:u.name||'', category:u.category||'staff', owner:false, admin:false, leadership:false, contacts:false, emails:[]}; groups.set(key,g); }
     g.emails.push({email:u.email, owner:u.owner});
     if(u.owner) g.owner=true;
     if(u.admin) g.admin=true;
     if(u.leadership) g.leadership=true;
+    if(u.contacts) g.contacts=true;
     if(u.category==='external') g.category='external';
     if(u.name && !g.name) g.name=u.name;
   });
   const list=[...groups.values()].sort((x,y)=> (y.owner-x.owner) || (x.name||x.emails[0].email).localeCompare(y.name||y.emails[0].email));
   const chipStyle="display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:7px;padding:2px 7px;margin:2px 3px 2px 0;font-size:12px";
-  const head=`<thead><tr><th>Name</th><th>Category</th><th>Email(s)</th><th>Admin</th><th title="Sees all weeks' student data">Leadership</th><th></th></tr></thead>`;
+  const head=`<thead><tr><th>Name</th><th>Category</th><th>Email(s)</th><th>Admin</th><th title="Sees all weeks' student data">Leadership</th><th title="Can view the Family Contacts roster">Family contacts</th><th></th></tr></thead>`;
   const body=list.map(g=>{
     const ids=escAttr(g.emails.map(e=>e.email).join(','));
     const emailsHtml=g.emails.map(e=>`<span style="${chipStyle}">${esc(e.email)}${e.owner?'':` <button class="del" data-act="remove" data-email="${escAttr(e.email)}" title="Remove this email" style="padding:0 3px">×</button>`}</span>`).join('');
@@ -3200,6 +3229,7 @@ async function renderAccess(){
       <td>${emailsHtml}</td>
       <td>${g.owner?'<span class="pill ok">Owner</span>':`<button class="health-toggle ${g.admin?'flag':''}" data-act="admin" data-emails="${ids}" data-admin="${g.admin?1:0}">${g.admin?'Admin ✓':'Make admin'}</button>`}</td>
       <td>${g.owner?'<span class="pill ok">All weeks</span>':`<button class="health-toggle ${g.leadership?'flag':''}" data-act="lead" data-emails="${ids}" data-lead="${g.leadership?1:0}">${g.leadership?'All weeks ✓':'Limit to weeks'}</button>`}</td>
+      <td>${g.owner?'<span class="pill ok">Yes</span>':`<button class="health-toggle ${g.contacts?'flag':''}" data-act="contacts" data-emails="${ids}" data-contacts="${g.contacts?1:0}">${g.contacts?'Can view ✓':'No access'}</button>`}</td>
       <td>${g.owner?'<span class="blank">protected</span>':`<button class="del" data-act="remove-all" data-emails="${ids}" title="Remove person">×</button>`}</td>
     </tr>`;
   }).join('');
@@ -3223,6 +3253,11 @@ async function renderAccess(){
     const val=b.dataset.lead!=='1';
     for(const em of emailsOf(b)){ const err=await dbSetLeadership(em, val); if(err){ alert(err.message||'Update failed'); break; } }
     await loadWeekStaff(); renderAccess();
+  }));
+  document.querySelectorAll('#access-table [data-act=contacts]').forEach(b=>b.addEventListener('click',async()=>{
+    const val=b.dataset.contacts!=='1';
+    for(const em of emailsOf(b)){ const err=await dbSetContacts(em, val); if(err){ alert(err.message||'Update failed'); break; } }
+    renderAccess();
   }));
   document.querySelectorAll('#access-table [data-act=remove]').forEach(b=>b.addEventListener('click',async()=>{
     const err=await dbRemoveAllow(b.dataset.email); if(err){ alert(err.message||'Remove failed'); }

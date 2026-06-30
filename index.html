@@ -50,27 +50,27 @@
   /* ---------- Layout shell ---------- */
   .shell{display:flex;min-height:100vh}
   .rail{
-    width:248px;flex-shrink:0;position:sticky;top:0;height:100vh;
+    width:212px;flex-shrink:0;position:sticky;top:0;height:100vh;
     background:linear-gradient(180deg,var(--navy-2),#0a2029);
     border-right:1px solid var(--line);
     display:flex;flex-direction:column;
     z-index:30;
   }
-  .brand{padding:22px 22px 18px;border-bottom:1px solid var(--line-soft)}
+  .brand{padding:18px 18px 15px;border-bottom:1px solid var(--line-soft)}
   .brand .anchor{font-size:13px;letter-spacing:.28em;text-transform:uppercase;
     font-family:var(--mono);color:var(--brass);display:flex;align-items:center;gap:8px}
-  .brand h1{font-family:var(--display);font-weight:600;font-size:24px;line-height:1.05;
+  .brand h1{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.05;
     margin:10px 0 2px;color:var(--oyster);font-optical-sizing:auto}
   .brand .sub{font-size:12px;color:var(--muted);letter-spacing:.02em}
 
-  .nav{padding:14px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+  .nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
   .nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
     color:var(--muted-2);padding:14px 12px 6px}
   .nav-item{
     display:flex;align-items:center;gap:11px;width:100%;text-align:left;
     background:none;border:0;cursor:pointer;color:var(--muted);
-    font-family:var(--body);font-size:14.5px;font-weight:500;
-    padding:10px 12px;border-radius:10px;transition:.16s;position:relative;
+    font-family:var(--body);font-size:14px;font-weight:500;
+    padding:9px 11px;border-radius:10px;transition:.16s;position:relative;
   }
   .nav-item .ico{width:18px;height:18px;flex-shrink:0;opacity:.85}
   .nav-item:hover{background:var(--panel);color:var(--oyster)}
@@ -383,7 +383,7 @@
   .hd-k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
   .hd-v{font-size:14px;color:var(--oyster);font-weight:600}
   /* dismissal carpool line */
-  .dq-picker{display:flex;flex-wrap:wrap;gap:8px}
+  .dq-picker{display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;padding:2px}
   .dq-pick{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
     border-radius:8px;padding:7px 12px;cursor:pointer;transition:.12s}
   .dq-pick:hover{border-color:var(--brass)}
@@ -403,6 +403,7 @@
   .dqn-table{width:100%;border-collapse:collapse}
   .dqn-table th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
   .dqn-table td{padding:5px 8px;border-bottom:1px solid var(--line-soft)}
+  .dqn-m{display:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
   .dq-done{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
   .dq-done .lk{background:none;border:0;color:var(--teal-bright);cursor:pointer;font-family:var(--mono);font-size:11px}
   .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
@@ -551,12 +552,36 @@
     .health-toggle{margin-left:auto}
     .student-row .seg,.student-block .seg{margin-left:0;margin-top:2px;width:100%;order:5}
     .seg button{flex:1;padding:15px 6px;font-size:14px}
-    /* Dismissal: bigger tap targets */
-    .dq-pick{padding:13px 15px;font-size:14.5px}
-    .dq-car{flex-wrap:wrap;gap:10px}
-    .dq-car .dq-body{flex:1 1 100%;order:2}
-    .dq-dismiss{flex:1;padding:14px;font-size:15px;order:3}
-    .att-stats .ministat,.seg-filter .fbtn{flex:1}
+    /* Dismissal: stack the controls and grow tap targets */
+    .att-bar{gap:10px}
+    .att-bar .field{flex:1 1 100%}
+    .att-bar .field select,.att-bar .field input{width:100%}
+    #dq-refresh{width:100%;align-self:stretch!important}
+    .att-stats{margin-left:0;width:100%}
+    .att-stats .ministat,.seg-filter .fbtn{flex:1 1 calc(50% - 5px);min-width:0}
+    /* Add-to-line inputs full width, stacked */
+    #dq-label,#dq-search,#dq-sort{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
+    /* Student picker: a tidy two-up grid of large, left-aligned name buttons */
+    .dq-picker{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:46vh}
+    .dq-pick{padding:14px 12px;font-size:14.5px;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+    /* Carpool line card: number + name up top, full-width Dismiss below */
+    .dq-car{flex-wrap:wrap;gap:10px 12px}
+    .dq-car .dq-body{flex:1 1 0;min-width:0;order:1}
+    .dq-pos{order:0}
+    .dq-names{font-size:17px}
+    .dq-car .del{order:1;margin-left:auto;align-self:flex-start;font-size:24px;padding:4px 10px}
+    .dq-dismiss{flex:1 1 100%;padding:15px;font-size:16px;order:3}
+    /* Notes editor: stack each student into a card instead of a 3-col table */
+    .dqn-table,.dqn-table tbody,.dqn-table tr,.dqn-table td{display:block;width:100%}
+    .dqn-table thead{position:absolute;left:-9999px}
+    .dqn-table tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;background:var(--navy-2)}
+    .dqn-table td{border:0;padding:6px 0;text-align:left!important}
+    .dqn-table td.role-cell{font-size:16px;font-weight:600;color:var(--oyster);white-space:normal!important}
+    .dqn-m{display:block}
+    .dqn-table .big-check{width:26px;height:26px}
+    .dqn-table .cell-input{width:100%}
+    /* Dismissed log rows: let long name lists wrap */
+    .dq-done{flex-wrap:wrap}
   }
 </style>
 </head>
@@ -839,6 +864,10 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
           <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:220px">
           <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:180px;flex:1;max-width:280px">
+          <select class="cell-input" id="dq-sort" title="Sort the name list" style="min-width:150px;max-width:180px">
+            <option value="last">Sort: last name</option>
+            <option value="first">Sort: first name</option>
+          </select>
         </div>
         <div id="dq-picker" class="dq-picker"></div>
       </div>
@@ -2239,8 +2268,9 @@ function fillWeekSelect(sel){
 function attInit(){
   fillWeekSelect(document.getElementById('att-week'));
   const dateEl=document.getElementById('att-date');
-  // default to next active week's Monday, else today
-  dateEl.value = WEEKS[NOW].start;
+  // default to today when we're inside the active week; otherwise that week's Monday
+  const t=todayISO();
+  dateEl.value = (t>=WEEKS[NOW].start && t<=WEEKS[NOW].end) ? t : WEEKS[NOW].start;
   dateEl.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(attKey()); renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
@@ -2260,6 +2290,21 @@ function attInit(){
    tap Dismiss. Live across devices via realtime; localStorage fallback. */
 let DQ_ROWS = [];           // queue rows for the selected day
 let DQ_CHAN = null;         // realtime channel
+let DQ_SORT = 'last';       // name-list sort: 'last' or 'first'
+// Picker/notes label that follows the chosen sort, so the leading name is the
+// one you're scanning by: "Pack, Louis (Ted)" for last, "Louis (Ted) Pack" for first.
+function dqName(s){
+  const first=String(s&&s.first!=null?s.first:'').trim();
+  const last=String(s&&s.last!=null?s.last:'').trim();
+  const pref=String(s&&s.preferred!=null?s.preferred:'').trim();
+  const tag=(pref && pref.toLowerCase()!==first.toLowerCase())?` (${pref})`:'';
+  return DQ_SORT==='first' ? `${first}${tag}${last?` ${last}`:''}` : `${last}${first?`, ${first}`:''}${tag}`;
+}
+function dqSortStudents(arr){
+  return arr.slice().sort((a,b)=> DQ_SORT==='first'
+    ? (a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||'')
+    : (a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+}
 function dqDay(){ return document.getElementById('dq-date').value; }
 function dqWeek(){ return document.getElementById('dq-week').value; }
 function dqLocalKey(){ return `dq:${dqDay()}`; }
@@ -2353,14 +2398,13 @@ function renderDismissal(){
       <span class="dq-sub">${r.dismissed_at?esc(new Date(r.dismissed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''} <button class="lk" data-undo="${escAttr(r.id)}">undo</button></span>
     </div>`).join('') : '';
   log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
-  // student picker — tap to add straight into the line, sorted by last name
+  // student picker — tap to add straight into the line; full first+last name, sorted per DQ_SORT
   const picker=document.getElementById('dq-picker');
   const sq=((document.getElementById('dq-search')||{}).value||'').trim().toLowerCase();
-  let avail=studs.filter(s=>!dqStudentInQueue(s.id))
-    .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
-  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(sq));
+  let avail=dqSortStudents(studs.filter(s=>!dqStudentInQueue(s.id)));
+  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
   picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim();
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(studentLabel(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
 }
@@ -2368,13 +2412,13 @@ function renderDismissal(){
 function renderDqNotes(){
   const box=document.getElementById('dq-notes'); if(!box) return;
   if(box.contains(document.activeElement)) return;  // don't clobber a field being edited
-  const studs=studentsForWeek(dqWeek());
+  const studs=dqSortStudents(studentsForWeek(dqWeek()));
   if(!studs.length){ box.innerHTML=`<p class="lc-desc" style="margin:0">No students on this roster yet.</p>`; return; }
   box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td>
-      <td style="text-align:center"><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
-      <td><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
+      <td class="role-cell" style="white-space:nowrap">${esc(dqName(s))}</td>
+      <td style="text-align:center"><div class="dqn-m">Self-dismiss</div><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
+      <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
     </tr>`).join('')}</tbody></table>`;
   box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();
@@ -2404,6 +2448,7 @@ function dismissalInit(){
   document.getElementById('dq-export').addEventListener('click',dqExport);
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
+  const so=document.getElementById('dq-sort'); if(so){ so.value=DQ_SORT; so.addEventListener('change',()=>{ DQ_SORT=so.value; renderDismissal(); }); }
   const nt=document.getElementById('dq-notes-toggle');
   if(nt) nt.addEventListener('click',()=>{ const p=document.getElementById('dq-notes'); const open=p.style.display!=='none'; p.style.display=open?'none':'block'; nt.textContent=open?'Manage notes':'Hide notes'; if(!open) renderDqNotes(); });
 }

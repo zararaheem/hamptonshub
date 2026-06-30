@@ -840,7 +840,7 @@
         <button class="fbtn" data-cf="pending">Consent pending</button>
         <button class="fbtn" data-cf="health">⚠ Health flag</button>
       </div>
-      <datalist id="shirt-sizes"><option value="YXS"><option value="YS"><option value="YM"><option value="YL"><option value="AS"><option value="AM"><option value="AL"><option value="AXL"><option value="AXXL"></datalist>
+      <datalist id="shirt-sizes"><option value="Youth XS"><option value="Youth S"><option value="Youth M"><option value="Youth L"><option value="Youth XL"><option value="Adult S"><option value="Adult M"><option value="Adult L"><option value="Adult XL"><option value="Adult XXL"></datalist>
       <div class="tablewrap"><table id="ros-table"></table></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
@@ -1377,22 +1377,38 @@ function flash(id){ const el=document.getElementById(id); if(el) el.textContent=
    localStorage when Supabase isn't connected. */
 let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
 let EMERGENCY = {};   // owner-only: { [student_id]: {guardian, guardian_phone, ...} }
-let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last'
-const SHIRT_ORDER=['YXS','YS','YM','YL','AS','AM','AL','AXL','AXXL','XS','S','M','L','XL','XXL'];
+let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last' | 'grade' | 'birthday' | 'shirt'
+let STUDENT_DIR='asc';     // 'asc' | 'desc' (applies to the active sort key)
+const SHIRT_ORDER=['YXS','YS','YM','YL','YXL','YXXL','AXS','AS','AM','AL','AXL','AXXL','XS','S','M','L','XL','XXL'];
 function gradeNum(g){ g=String(g||'').trim().toUpperCase(); if(/^(PK|PRE-?K)$/.test(g)) return -1; if(/^K/.test(g)) return 0; const n=parseInt(g,10); return isNaN(n)?99:n; }
-function shirtRank(s){ const i=SHIRT_ORDER.indexOf(String(s||'').trim().toUpperCase().replace(/\s+/g,'')); return i<0?99:i; }
-function bdayKey(s){ const m=String(s||'').match(/(\d{1,2})\D+(\d{1,2})/); return m?(+m[1])*100+(+m[2]):9999; }
+// Normalise "Youth M", "Adult S", "YM", "M" → an ordered code, then rank by size.
+function shirtRank(s){
+  let t=String(s||'').toUpperCase().replace(/[\s_\-]/g,'');
+  t=t.replace(/YOUTH|KIDS?/,'Y').replace(/ADULT|MENS?|WOMENS?/,'A')
+     .replace(/XSMALL/,'XS').replace(/XXLARGE/,'XXL').replace(/XLARGE/,'XL').replace(/SMALL/,'S').replace(/MEDIUM/,'M').replace(/LARGE/,'L');
+  const i=SHIRT_ORDER.indexOf(t); return i<0?99:i;
+}
+// Sort birthdays by calendar month/day, accepting ISO (YYYY-MM-DD) or M/D[/Y].
+function bdayKey(s){
+  s=String(s||'').trim(); let m;
+  if((m=s.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/))) return (+m[2])*100+(+m[3]);
+  if((m=s.match(/(\d{1,2})\D+(\d{1,2})/))) return (+m[1])*100+(+m[2]);
+  return 9999;
+}
 function studentsForWeek(w){
   const arr=(ROSTER_DATA[+w]||[]).slice();
   const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
-  switch(STUDENT_SORT){
-    case 'first':    return arr.sort((a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''));
-    case 'last':     return arr.sort((a,b)=>byName(a,b));
-    case 'grade':    return arr.sort((a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b));
-    case 'birthday': return arr.sort((a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b));
-    case 'shirt':    return arr.sort((a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b));
-    default:         return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  }
+  const cmp={
+    first:(a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''),
+    last:byName,
+    grade:(a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b),
+    birthday:(a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b),
+    shirt:(a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b),
+  }[STUDENT_SORT];
+  if(!cmp) return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  arr.sort(cmp);
+  if(STUDENT_DIR==='desc') arr.reverse();
+  return arr;
 }
 function rosterLocalKey(){ return 'roster_local_v1'; }
 function persistLocalRoster(){ store.set(rosterLocalKey(), ROSTER_DATA); }
@@ -2663,7 +2679,7 @@ function renderRosterTab(){
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
-  const sortArrow=k=>STUDENT_SORT===k?' <span class="th-arrow">▲</span>':'';
+  const sortArrow=k=>STUDENT_SORT===k?` <span class="th-arrow">${STUDENT_DIR==='desc'?'▼':'▲'}</span>`:'';
   const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th><button class="th-sort" data-sort="grade">Grade${sortArrow('grade')}</button></th><th>Level</th><th><button class="th-sort" data-sort="birthday">Birthday${sortArrow('birthday')}</button></th><th><button class="th-sort" data-sort="shirt">Shirt${sortArrow('shirt')}</button></th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
   const cols = ed?11:10;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
@@ -2686,7 +2702,10 @@ function renderRosterTab(){
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('.th-sort').forEach(b=>b.addEventListener('click',()=>{
     const k=b.dataset.sort;
-    STUDENT_SORT = (STUDENT_SORT===k) ? '' : k;   // click again to return to manual order
+    // 1st click → ascending, 2nd → descending, 3rd → back to manual order
+    if(STUDENT_SORT!==k){ STUDENT_SORT=k; STUDENT_DIR='asc'; }
+    else if(STUDENT_DIR==='asc'){ STUDENT_DIR='desc'; }
+    else { STUDENT_SORT=''; STUDENT_DIR='asc'; }
     const ss=document.getElementById('ros-sort'); if(ss) ss.value=STUDENT_SORT;
     renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech();
   }));
@@ -2779,7 +2798,7 @@ function showImportReview(week, plan){
 function rosterInit(){
   fillWeekSelect(document.getElementById('ros-week'));
   document.getElementById('ros-week').addEventListener('change',renderRosterTab);
-  { const ss=document.getElementById('ros-sort'); if(ss) ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); }); }
+  { const ss=document.getElementById('ros-sort'); if(ss) ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; STUDENT_DIR='asc'; renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); }); }
   document.getElementById('ros-add').addEventListener('click',async ()=>{
     const f=document.getElementById('ros-first'), l=document.getElementById('ros-last'), g=document.getElementById('ros-grade');
     if(!f.value.trim() && !l.value.trim()){ return; }
@@ -2872,7 +2891,7 @@ function emInit(){
   sel.addEventListener('change',()=>loadEmergency().then(renderEmergency));
   document.getElementById('em-search').addEventListener('input',renderEmergency);
   document.getElementById('em-export').addEventListener('click',emExport);
-  { const ss=document.getElementById('em-sort'); if(ss){ ss.value=STUDENT_SORT||'roster'; ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; const rs=document.getElementById('ros-sort'); if(rs) rs.value=ss.value; renderEmergency(); if(typeof renderRosterTab==='function') renderRosterTab(); }); } }
+  { const ss=document.getElementById('em-sort'); if(ss){ ss.value=STUDENT_SORT||'roster'; ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; STUDENT_DIR='asc'; const rs=document.getElementById('ros-sort'); if(rs) rs.value=ss.value; renderEmergency(); if(typeof renderRosterTab==='function') renderRosterTab(); }); } }
   { const mb=document.getElementById('em-maillist'); if(mb) mb.addEventListener('click',emMailingList); }
 }
 // Parent mailing list: every unique parent/guardian email across ALL weeks,

@@ -73,18 +73,20 @@
     padding:9px 11px;border-radius:10px;transition:.16s;position:relative;
   }
   .nav-item .ico{width:18px;height:18px;flex-shrink:0;opacity:.85}
+  /* slight category tint at rest so tabs are recognisable at a glance */
+  .nav-item[class*="cat-"]{background:var(--nav-tint,transparent)}
   .nav-item:hover{background:var(--panel);color:var(--oyster)}
   .nav-item.active{background:var(--panel-2);color:var(--oyster)}
   .nav-item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
-    background:var(--brass);border-radius:0 3px 3px 0}
+    background:var(--nav-accent,var(--brass));border-radius:0 3px 3px 0}
   .nav-item .ext{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--muted-2)}
   .nav-item[class*="cat-"]{box-shadow:inset 3px 0 0 var(--nav-accent,transparent)}
-  .nav-item.cat-people{--nav-accent:var(--teal-bright)}
-  .nav-item.cat-logistics{--nav-accent:var(--brass-bright)}
-  .nav-item.cat-curriculum{--nav-accent:#9b8cff}
-  .nav-item.cat-ops{--nav-accent:var(--coral)}
-  .nav-item.cat-comms{--nav-accent:#5ab0e6}
-  .nav-item.cat-admin{--nav-accent:var(--muted-2)}
+  .nav-item.cat-people{--nav-accent:var(--teal-bright);--nav-tint:rgba(95,179,169,.08)}
+  .nav-item.cat-logistics{--nav-accent:var(--brass-bright);--nav-tint:rgba(224,171,99,.08)}
+  .nav-item.cat-curriculum{--nav-accent:#9b8cff;--nav-tint:rgba(155,140,255,.08)}
+  .nav-item.cat-ops{--nav-accent:var(--coral);--nav-tint:rgba(226,101,74,.08)}
+  .nav-item.cat-comms{--nav-accent:#5ab0e6;--nav-tint:rgba(90,176,230,.08)}
+  .nav-item.cat-admin{--nav-accent:var(--muted-2);--nav-tint:rgba(255,255,255,.035)}
   .nav-item .wip{margin-left:auto;font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:6px;padding:1px 5px}
   .wip-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:7px;padding:3px 9px;vertical-align:middle;margin-left:8px;white-space:nowrap}
   .wip-banner{margin:6px 0 14px;background:rgba(226,101,74,.12);border:1px solid var(--coral);border-radius:10px;padding:11px 14px;color:var(--coral);font-size:13.5px}
@@ -249,7 +251,7 @@
   .ministat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center;min-width:82px}
   .ministat .n{font-family:var(--display);font-weight:600;font-size:22px;line-height:1}
   .ministat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
-  .ministat.p .n{color:var(--ok)} .ministat.l-late .n{color:var(--brass-bright)} .ministat.a .n{color:var(--coral)}
+  .ministat.p .n{color:var(--ok)} .ministat.l-late .n{color:var(--brass-bright)} .ministat.a .n{color:var(--coral)} .ministat.bus .n{color:var(--brass-bright)}
 
   .student-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
   .student-row:last-child{border-bottom:0}
@@ -398,9 +400,12 @@
   .dq-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
   .dq-dismiss{flex:0 0 auto}
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
-  .dq-tag.self{font-family:var(--mono);font-size:10px;color:var(--teal-bright);border:1px solid var(--teal);border-radius:10px;padding:1px 6px;white-space:nowrap}
-  .dq-tag.bus{font-family:var(--mono);font-size:10px;color:var(--brass-bright);border:1px solid var(--brass);border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-tag.self{color:var(--teal-bright);border:1px solid var(--teal)}
+  .dq-tag.bus{color:var(--brass-bright);border:1px solid var(--brass)}
   .dq-pick.busrider{border-color:var(--brass)}
+  .pick-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 5px;border-radius:8px;border:1px solid currentColor;margin-left:5px;vertical-align:1px}
+  .pick-tag.bus{color:var(--brass-bright)} .pick-tag.self{color:var(--teal-bright)}
   .bus-chip{font-family:var(--mono);font-size:10px;color:var(--brass-bright);border:1px solid var(--brass);border-radius:10px;padding:1px 6px;white-space:nowrap;margin-left:6px}
   .dq-note{font-size:12px;color:var(--brass-bright);margin-top:3px}
   .dqn-table{width:100%;border-collapse:collapse}
@@ -785,7 +790,7 @@
             <button class="fbtn" data-af="p">Present</button>
             <button class="fbtn" data-af="l">Late</button>
             <button class="fbtn" data-af="a">Absent</button>
-            <button class="fbtn" data-af="bus">🚌 Bus</button>
+            <button class="fbtn" data-af="bus">Bus</button>
           </div>
           <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin-left:auto">Sort by
             <select class="cell-select" id="att-sort" style="width:auto;min-width:120px"><option value="last">Last name</option><option value="first">First name</option></select>
@@ -867,7 +872,7 @@
       <div class="section-title"><span class="num">↓</span>Carpool line</div>
       <div id="dq-line"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px;align-items:center">
-        <button class="btn" id="dq-busall" style="display:none">🚌 Add bus riders</button>
+        <button class="btn" id="dq-busall" style="display:none">Add bus riders</button>
         <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
         <button class="btn ghost" id="dq-export">Export CSV</button>
       </div>
@@ -882,7 +887,7 @@
             <option value="last">Sort: last name</option>
             <option value="first">Sort: first name</option>
           </select>
-          <button class="btn ghost" id="dq-multi" title="Pick several kids leaving together, then add them as one car">👥 Group</button>
+          <button class="btn ghost" id="dq-multi" title="Pick several kids leaving together, then add them as one car">Group</button>
         </div>
         <div id="dq-picker" class="dq-picker"></div>
         <div id="dq-selbar" style="display:none;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
@@ -2182,7 +2187,7 @@ function renderAtt(){
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">🚌 Bus</span>':''}${healthChips(s)}</div></div>
+        <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
@@ -2225,7 +2230,7 @@ function renderAtt(){
       tgl.classList.toggle('flag-note',flag&&!(hasAllergy||hasMed));
       tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(studentFullName(s))}`+(s.bus_rider?' <span class="bus-chip">🚌 Bus</span>':'')+healthChips(s);
+      nm.innerHTML=`${esc(studentFullName(s))}`+(s.bus_rider?' <span class="bus-chip">Bus</span>':'')+healthChips(s);
       flashSaved(); renderHealthSummary();
     });
   });
@@ -2262,7 +2267,7 @@ function renderAttStats(){
     <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
     <div class="ministat a"><div class="n">${a}</div><div class="l">Absent</div></div>
     <div class="ministat"><div class="n">${unmarked}</div><div class="l">Unmarked</div></div>
-    ${bus?`<div class="ministat l-late"><div class="n">🚌 ${bus}</div><div class="l">Bus riders</div></div>`:''}`;
+    ${bus?`<div class="ministat bus"><div class="n">${bus}</div><div class="l">Bus riders</div></div>`:''}`;
 }
 function renderLevels(){
   const data=loadAtt();
@@ -2411,7 +2416,7 @@ function renderDismissal(){
   const busEligible=studs.filter(s=>s.bus_rider && !isAbsent(s) && !dqStudentInQueue(s.id));
   const busBtn=document.getElementById('dq-busall');
   if(busBtn){
-    if(busEligible.length){ busBtn.style.display=''; busBtn.textContent=`🚌 Add bus riders (${busEligible.length})`;
+    if(busEligible.length){ busBtn.style.display=''; busBtn.textContent=`Add bus riders (${busEligible.length})`;
       busBtn.onclick=()=>dqAddStudents(busEligible.map(s=>s.id), 'Bus'); }
     else { busBtn.style.display='none'; busBtn.onclick=null; }
   }
@@ -2421,9 +2426,9 @@ function renderDismissal(){
     <div class="dq-car ${i===0?'next':''}">
       <div class="dq-pos">${i+1}</div>
       <div class="dq-body">
-        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">🚶 self</span>':'')+(s.bus?' <span class="dq-tag bus">🚌 bus</span>':'')).join(', ')}</div>
+        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">self</span>':'')+(s.bus?' <span class="dq-tag bus">bus</span>':'')).join(', ')}</div>
         <div class="dq-sub">${r.label?esc(r.label)+' · ':''}in line since ${esc(new Date(r.queued_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}${i===0?' · <b style="color:var(--brass-bright)">UP NEXT</b>':''}</div>
-        ${(r.students||[]).some(s=>s.note)?`<div class="dq-note">📝 ${(r.students||[]).filter(s=>s.note).map(s=>esc(s.note)).join(' · ')}</div>`:''}
+        ${(r.students||[]).some(s=>s.note)?`<div class="dq-note">Note: ${(r.students||[]).filter(s=>s.note).map(s=>esc(s.note)).join(' · ')}</div>`:''}
       </div>
       <button class="btn dq-dismiss" data-id="${escAttr(r.id)}">Dismiss →</button>
       <button class="del" data-rm="${escAttr(r.id)}" title="Remove from line">×</button>
@@ -2447,9 +2452,9 @@ function renderDismissal(){
   const absentHidden=notQueued.filter(isAbsent).length;   // marked Absent — kept out of the line
   let avail=dqSortStudents(notQueued.filter(s=>!isAbsent(s)));
   if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
-  const absentHint=absentHidden?`<span class="note-row" style="flex-basis:100%;grid-column:1/-1">🚫 ${absentHidden} marked absent today — hidden from the line</span>`:'';
+  const absentHint=absentHidden?`<span class="note-row" style="flex-basis:100%;grid-column:1/-1">${absentHidden} marked absent today — hidden from the line</span>`:'';
   picker.innerHTML = (avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${s.bus_rider?' busrider':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${sel?'✓ ':''}${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${s.bus_rider?' 🚌':''}${note?' 📝':''}</button>`; }).join('')
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${s.bus_rider?' busrider':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.bus_rider?' <span class="pick-tag bus">bus</span>':''}${s.self_dismiss?' <span class="pick-tag self">self</span>':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':(absentHidden?'Everyone else is in the line, dismissed, or absent.':'Everyone is in the line or dismissed.')}</span>`) + absentHint;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.pick;
@@ -2482,7 +2487,7 @@ function renderDqNotes(){
       <td style="text-align:center"><div class="dqn-m">Bus rider</div><input type="checkbox" class="big-check" data-dqn="bus" ${s.bus_rider?'checked':''}></td>
       <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
     </tr>`).join('')}</tbody></table>
-    <p class="lc-desc" style="margin:10px 0 0">🚌 <b>Bus rider</b> applies to every week this child is enrolled. Use the <b>🚌 Add bus riders</b> button on the line to send them all out together.</p>`;
+    <p class="lc-desc" style="margin:10px 0 0"><b>Bus rider</b> applies to every week this child is enrolled. Use the <b>Add bus riders</b> button on the line to send them all out together.</p>`;
   box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();
   }));
@@ -2519,7 +2524,7 @@ function dismissalInit(){
   if(mb) mb.addEventListener('click',()=>{
     DQ_MULTI=!DQ_MULTI; DQ_SEL.clear();
     mb.classList.toggle('ghost', !DQ_MULTI);   // solid = grouping is on
-    mb.textContent = DQ_MULTI ? '✓ Grouping — tap kids' : '👥 Group';
+    mb.textContent = DQ_MULTI ? 'Grouping — tap kids' : 'Group';
     renderDismissal();
   });
   const nt=document.getElementById('dq-notes-toggle');

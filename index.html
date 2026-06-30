@@ -858,18 +858,28 @@
 
       <div class="att-stats" id="dq-stats" style="margin:6px 0 18px"></div>
 
-      <div class="card" style="margin-bottom:20px">
+      <!-- Carpool line — pinned at the top so staff can dismiss fast -->
+      <div class="section-title"><span class="num">↓</span>Carpool line</div>
+      <div id="dq-line"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px;align-items:center">
+        <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
+        <button class="btn ghost" id="dq-export">Export CSV</button>
+      </div>
+
+      <div class="card" style="margin:20px 0">
         <div class="eyebrow" style="margin-bottom:8px">Add to the line</div>
-        <p class="lc-desc" style="margin:0 0 10px">Tap a student as their car pulls up — they go straight into the line. Optionally type a car label first (e.g. "Blue SUV") to tag your next tap.</p>
+        <p class="lc-desc" style="margin:0 0 10px">Tap a student as their car pulls up — they go straight into the line. To send kids out <b>together</b> (siblings, carpools), tap <b>Group</b>, select them, then add as one car. Optionally type a car label first (e.g. "Blue SUV").</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-          <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:220px">
-          <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:180px;flex:1;max-width:280px">
+          <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next add" style="min-width:200px">
+          <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:170px;flex:1;max-width:260px">
           <select class="cell-input" id="dq-sort" title="Sort the name list" style="min-width:150px;max-width:180px">
             <option value="last">Sort: last name</option>
             <option value="first">Sort: first name</option>
           </select>
+          <button class="btn ghost" id="dq-multi" title="Pick several kids leaving together, then add them as one car">👥 Group</button>
         </div>
         <div id="dq-picker" class="dq-picker"></div>
+        <div id="dq-selbar" style="display:none;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
       </div>
 
       <div class="card" style="margin-bottom:20px">
@@ -881,12 +891,6 @@
         <div id="dq-notes" style="display:none;margin-top:14px"></div>
       </div>
 
-      <div class="section-title"><span class="num">↓</span>Carpool line</div>
-      <div id="dq-line"></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
-        <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
-        <button class="btn ghost" id="dq-export">Export CSV</button>
-      </div>
       <div id="dq-log"></div>
     </section>
 
@@ -2291,6 +2295,8 @@ function attInit(){
 let DQ_ROWS = [];           // queue rows for the selected day
 let DQ_CHAN = null;         // realtime channel
 let DQ_SORT = 'last';       // name-list sort: 'last' or 'first'
+let DQ_MULTI = false;       // "group leaving together" mode: tap selects instead of adding
+let DQ_SEL = new Set();     // selected student ids while grouping
 // Picker/notes label that follows the chosen sort, so the leading name is the
 // one you're scanning by: "Pack, Louis (Ted)" for last, "Louis (Ted) Pack" for first.
 function dqName(s){
@@ -2387,7 +2393,7 @@ function renderDismissal(){
       </div>
       <button class="btn dq-dismiss" data-id="${escAttr(r.id)}">Dismiss →</button>
       <button class="del" data-rm="${escAttr(r.id)}" title="Remove from line">×</button>
-    </div>`).join('') : `<div class="callout">No cars in the line yet. Add one above as they pull up.</div>`;
+    </div>`).join('') : `<div class="callout">No cars in the line yet. Add one below as they pull up.</div>`;
   line.querySelectorAll('.dq-dismiss').forEach(b=>b.addEventListener('click',()=>dqDismiss(b.dataset.id)));
   line.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>dqRemove(b.dataset.rm)));
   // dismissed log
@@ -2398,15 +2404,33 @@ function renderDismissal(){
       <span class="dq-sub">${r.dismissed_at?esc(new Date(r.dismissed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''} <button class="lk" data-undo="${escAttr(r.id)}">undo</button></span>
     </div>`).join('') : '';
   log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
-  // student picker — tap to add straight into the line; full first+last name, sorted per DQ_SORT
+  // student picker — full first+last name, sorted per DQ_SORT.
+  // Default: tap adds straight into the line. Group mode: tap selects, then add several as one car.
   const picker=document.getElementById('dq-picker');
   const sq=((document.getElementById('dq-search')||{}).value||'').trim().toLowerCase();
+  [...DQ_SEL].forEach(id=>{ if(dqStudentInQueue(id)) DQ_SEL.delete(id); }); // drop anyone already queued
   let avail=dqSortStudents(studs.filter(s=>!dqStudentInQueue(s.id)));
   if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
-  picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim();
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
+  picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${sel?'✓ ':''}${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
-  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
+  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.pick;
+    if(DQ_MULTI){ if(DQ_SEL.has(id)) DQ_SEL.delete(id); else DQ_SEL.add(id); renderDismissal(); }
+    else dqAddStudents([id]);
+  }));
+  // group "leaving together" action bar
+  const selbar=document.getElementById('dq-selbar');
+  if(selbar){
+    if(DQ_MULTI && DQ_SEL.size){
+      selbar.style.display='flex';
+      selbar.innerHTML=`<span class="lc-desc" style="margin:0;flex:1 1 100%;min-width:0">${DQ_SEL.size} selected — they'll go out as one car.</span>
+        <button class="btn" id="dq-addtogether">Add ${DQ_SEL.size} together →</button>
+        <button class="btn ghost" id="dq-clearsel">Clear</button>`;
+      document.getElementById('dq-addtogether').addEventListener('click',()=>{ const ids=[...DQ_SEL].filter(id=>!dqStudentInQueue(id)); DQ_SEL.clear(); if(ids.length) dqAddStudents(ids); });
+      document.getElementById('dq-clearsel').addEventListener('click',()=>{ DQ_SEL.clear(); renderDismissal(); });
+    } else { selbar.style.display='none'; selbar.innerHTML=''; }
+  }
 }
 // Standing per-student dismissal instructions: self-dismiss flag + free note.
 function renderDqNotes(){
@@ -2449,6 +2473,13 @@ function dismissalInit(){
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
   const so=document.getElementById('dq-sort'); if(so){ so.value=DQ_SORT; so.addEventListener('change',()=>{ DQ_SORT=so.value; renderDismissal(); }); }
+  const mb=document.getElementById('dq-multi');
+  if(mb) mb.addEventListener('click',()=>{
+    DQ_MULTI=!DQ_MULTI; DQ_SEL.clear();
+    mb.classList.toggle('ghost', !DQ_MULTI);   // solid = grouping is on
+    mb.textContent = DQ_MULTI ? '✓ Grouping — tap kids' : '👥 Group';
+    renderDismissal();
+  });
   const nt=document.getElementById('dq-notes-toggle');
   if(nt) nt.addEventListener('click',()=>{ const p=document.getElementById('dq-notes'); const open=p.style.display!=='none'; p.style.display=open?'none':'block'; nt.textContent=open?'Manage notes':'Hide notes'; if(!open) renderDqNotes(); });
 }

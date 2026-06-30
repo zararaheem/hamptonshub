@@ -560,7 +560,8 @@
     .att-stats{margin-left:0;width:100%}
     .att-stats .ministat,.seg-filter .fbtn{flex:1 1 calc(50% - 5px);min-width:0}
     /* Add-to-line inputs full width, stacked */
-    #dq-label,#dq-search,#dq-sort{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
+    #dq-label,#dq-search,#dq-sort,#dq-multi{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
+    #dq-selbar #dq-addtogether{flex:1 1 100%}
     /* Student picker: a single-column, full-width scrollable list of names */
     .dq-picker{display:grid;grid-template-columns:1fr;gap:8px;max-height:52vh}
     .dq-pick{padding:14px 12px;font-size:14.5px;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
@@ -2314,6 +2315,10 @@ function dqSortStudents(arr){
 function dqDay(){ return document.getElementById('dq-date').value; }
 function dqWeek(){ return document.getElementById('dq-week').value; }
 function dqLocalKey(){ return `dq:${dqDay()}`; }
+// Attendance for the dismissal day (same key the Attendance tab writes). Used to
+// hide kids marked Absent from the line — they aren't here to be picked up.
+function dqAttKey(){ return `att:w${dqWeek()}:${dqDay()}`; }
+function dqAttData(){ return stateGet(dqAttKey()) || {}; }
 function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function nowTime(){ return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
 async function dqFetch(){
@@ -2370,11 +2375,13 @@ function renderDismissal(){
   const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
   const dismissed=DQ_ROWS.filter(r=>r.status==='dismissed');
   const studs=studentsForWeek(dqWeek());
+  const att=dqAttData();                      // {id:'p'|'l'|'a'} for this day
+  const isAbsent=s=>att[s.id]==='a';          // marked Absent in Attendance
   const inLineStudents=waiting.reduce((a,r)=>a+(r.students||[]).length,0);
   const dismissedStudents=dismissed.reduce((a,r)=>a+(r.students||[]).length,0);
-  // waiting-to-go = roster students not yet queued or dismissed
+  // waiting-to-go = roster students not yet queued or dismissed, excluding absentees
   const accounted=new Set(); DQ_ROWS.forEach(r=>(r.students||[]).forEach(s=>accounted.add(s.id)));
-  const notYet=studs.filter(s=>!accounted.has(s.id)).length;
+  const notYet=studs.filter(s=>!accounted.has(s.id) && !isAbsent(s)).length;
   // summary
   document.getElementById('dq-stats').innerHTML = `
     <div class="ministat l-late"><div class="n">${waiting.length}</div><div class="l">Cars in line</div></div>
@@ -2409,11 +2416,14 @@ function renderDismissal(){
   const picker=document.getElementById('dq-picker');
   const sq=((document.getElementById('dq-search')||{}).value||'').trim().toLowerCase();
   [...DQ_SEL].forEach(id=>{ if(dqStudentInQueue(id)) DQ_SEL.delete(id); }); // drop anyone already queued
-  let avail=dqSortStudents(studs.filter(s=>!dqStudentInQueue(s.id)));
+  const notQueued=studs.filter(s=>!dqStudentInQueue(s.id));
+  const absentHidden=notQueued.filter(isAbsent).length;   // marked Absent — kept out of the line
+  let avail=dqSortStudents(notQueued.filter(s=>!isAbsent(s)));
   if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
-  picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
+  const absentHint=absentHidden?`<span class="note-row" style="flex-basis:100%;grid-column:1/-1">🚫 ${absentHidden} marked absent today — hidden from the line</span>`:'';
+  picker.innerHTML = (avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
     return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${sel?'✓ ':''}${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
-    : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
+    : `<span class="note-row">${sq?'No students match — clear the search.':(absentHidden?'Everyone else is in the line, dismissed, or absent.':'Everyone is in the line or dismissed.')}</span>`) + absentHint;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.pick;
     if(DQ_MULTI){ if(DQ_SEL.has(id)) DQ_SEL.delete(id); else DQ_SEL.add(id); renderDismissal(); }
@@ -2462,11 +2472,11 @@ function dqSubscribe(){
     .on('postgres_changes', {event:'*', schema:'public', table:'dismissal_queue'}, async ()=>{ await dqFetch(); renderDismissal(); })
     .subscribe();
 }
-async function refreshDismissal(){ await dqFetch(); renderDismissal(); dqSubscribe(); }
+async function refreshDismissal(){ if(SUPA) await refreshStateKey(dqAttKey()); await dqFetch(); renderDismissal(); dqSubscribe(); }
 function dismissalInit(){
   fillWeekSelect(document.getElementById('dq-week'));
   document.getElementById('dq-date').value = todayISO();
-  document.getElementById('dq-week').addEventListener('change',()=>{ renderDismissal(); });
+  document.getElementById('dq-week').addEventListener('change',refreshDismissal);
   document.getElementById('dq-date').addEventListener('change',refreshDismissal);
   document.getElementById('dq-dismissall').addEventListener('click',dqDismissAll);
   document.getElementById('dq-export').addEventListener('click',dqExport);

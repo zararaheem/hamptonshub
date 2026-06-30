@@ -399,6 +399,9 @@
   .dq-dismiss{flex:0 0 auto}
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
   .dq-tag.self{font-family:var(--mono);font-size:10px;color:var(--teal-bright);border:1px solid var(--teal);border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-tag.bus{font-family:var(--mono);font-size:10px;color:var(--brass-bright);border:1px solid var(--brass);border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-pick.busrider{border-color:var(--brass)}
+  .bus-chip{font-family:var(--mono);font-size:10px;color:var(--brass-bright);border:1px solid var(--brass);border-radius:10px;padding:1px 6px;white-space:nowrap;margin-left:6px}
   .dq-note{font-size:12px;color:var(--brass-bright);margin-top:3px}
   .dqn-table{width:100%;border-collapse:collapse}
   .dqn-table th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
@@ -782,6 +785,7 @@
             <button class="fbtn" data-af="p">Present</button>
             <button class="fbtn" data-af="l">Late</button>
             <button class="fbtn" data-af="a">Absent</button>
+            <button class="fbtn" data-af="bus">🚌 Bus</button>
           </div>
           <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin-left:auto">Sort by
             <select class="cell-select" id="att-sort" style="width:auto;min-width:120px"><option value="last">Last name</option><option value="first">First name</option></select>
@@ -863,6 +867,7 @@
       <div class="section-title"><span class="num">↓</span>Carpool line</div>
       <div id="dq-line"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px;align-items:center">
+        <button class="btn" id="dq-busall" style="display:none">🚌 Add bus riders</button>
         <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
         <button class="btn ghost" id="dq-export">Export CSV</button>
       </div>
@@ -1379,7 +1384,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1517,6 +1522,17 @@ async function dbUpdateStudent(id, patch){
   if(SUPA){
     const { error } = await SB.from('students').update({...patch, updated_at:new Date().toISOString()}).eq('id', id);
     if(error){ console.warn('update student failed:', error); return error; }
+  } else { persistLocalRoster(); }
+  return null;
+}
+// Bus ridership is a standing arrangement — set it on every week-row for this
+// child (matched by name) so it's a mark-once flag across their whole enrollment.
+async function dbSetBusForChild(s, val){
+  const f=s.first, l=s.last;
+  for(const w in ROSTER_DATA){ ROSTER_DATA[w].forEach(x=>{ if(x.first===f && x.last===l) x.bus_rider=val; }); }
+  if(SUPA){
+    const { error } = await SB.from('students').update({bus_rider:val, updated_at:new Date().toISOString()}).eq('first', f).eq('last', l);
+    if(error){ console.warn('bus update failed:', error); return error; }
   } else { persistLocalRoster(); }
   return null;
 }
@@ -2149,9 +2165,10 @@ function renderAtt(){
     ? ((a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''))
     : ((a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'')));
   if(ATT_FILTER==='unmarked') studs=studs.filter(s=>!data[s.id]);
+  else if(ATT_FILTER==='bus') studs=studs.filter(s=>s.bus_rider);
   else if(ATT_FILTER==='p'||ATT_FILTER==='l'||ATT_FILTER==='a') studs=studs.filter(s=>data[s.id]===ATT_FILTER);
   if(!studs.length){
-    list.innerHTML = `<div class="callout">${ATT_FILTER==='unmarked'?'Everyone is marked for today ✓':'No students match this filter.'}</div>`;
+    list.innerHTML = `<div class="callout">${ATT_FILTER==='unmarked'?'Everyone is marked for today ✓':(ATT_FILTER==='bus'?'No bus riders on this roster yet — mark them in Dismissal → Manage notes.':'No students match this filter.')}</div>`;
     renderAttStats(); renderLevels(); renderHealthSummary(); return;
   }
   list.innerHTML = studs.map(s=>{
@@ -2165,7 +2182,7 @@ function renderAtt(){
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(studentFullName(s))}${healthChips(s)}</div></div>
+        <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">🚌 Bus</span>':''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
@@ -2208,7 +2225,7 @@ function renderAtt(){
       tgl.classList.toggle('flag-note',flag&&!(hasAllergy||hasMed));
       tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(studentFullName(s))}`+healthChips(s);
+      nm.innerHTML=`${esc(studentFullName(s))}`+(s.bus_rider?' <span class="bus-chip">🚌 Bus</span>':'')+healthChips(s);
       flashSaved(); renderHealthSummary();
     });
   });
@@ -2237,14 +2254,15 @@ function renderHealthSummary(){
   el.innerHTML=`<div class="meta-line" style="margin-bottom:8px"><span><b>${flagged.length}</b> student${flagged.length>1?'s':''} flagged</span><span><b>${allergyN}</b> with allergies</span><span><b>${medN}</b> on medication</span><span><b>${noteN}</b> with notes</span></div><div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>`;
 }
 function renderAttStats(){
-  const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0;
-  studs.forEach(s=>{ const v=d[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
+  const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0,bus=0;
+  studs.forEach(s=>{ const v=d[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; if(s.bus_rider)bus++; });
   const unmarked=studs.length-p-l-a;
   document.getElementById('att-stats').innerHTML = `
     <div class="ministat p"><div class="n">${p}</div><div class="l">Present</div></div>
     <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
     <div class="ministat a"><div class="n">${a}</div><div class="l">Absent</div></div>
-    <div class="ministat"><div class="n">${unmarked}</div><div class="l">Unmarked</div></div>`;
+    <div class="ministat"><div class="n">${unmarked}</div><div class="l">Unmarked</div></div>
+    ${bus?`<div class="ministat l-late"><div class="n">🚌 ${bus}</div><div class="l">Bus riders</div></div>`:''}`;
 }
 function renderLevels(){
   const data=loadAtt();
@@ -2259,9 +2277,9 @@ function renderLevels(){
 }
 function attExport(){
   const d=loadAtt(); const labels={p:'Present',l:'Late',a:'Absent'};
-  const rows=[["First","Last","Grade","Level","Email","Status","Allergies","Medications","Date"]];
+  const rows=[["First","Last","Grade","Level","Email","Status","Bus rider","Allergies","Medications","Date"]];
   studentsForWeek(curWeek()).forEach(s=>{
-    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[d[s.id]]||"Unmarked",s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
+    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[d[s.id]]||"Unmarked",s.bus_rider?'Yes':'No',s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
   });
   csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
 }
@@ -2330,11 +2348,12 @@ async function dqFetch(){
   }
 }
 function dqPersistLocal(){ store.set(dqLocalKey(), DQ_ROWS); }
-async function dqAddStudents(ids){
+async function dqAddStudents(ids, labelOverride){
   if(!ids.length) return;
-  const studs = ids.map(id=>{ const s=findStudent(id)||{}; return {id, name: s.first?studentLabel(s):'Student', note:(s.dismissal||'').trim(), self:!!s.self_dismiss}; });
-  let label = (document.getElementById('dq-label').value||'').trim();
-  if(!label && studs.length && studs.every(s=>s.self)) label='Self-dismissal';
+  const studs = ids.map(id=>{ const s=findStudent(id)||{}; return {id, name: s.first?studentLabel(s):'Student', note:(s.dismissal||'').trim(), self:!!s.self_dismiss, bus:!!s.bus_rider}; });
+  let label = labelOverride!=null ? labelOverride : (document.getElementById('dq-label').value||'').trim();
+  if(!label && studs.length && studs.every(s=>s.bus)) label='Bus';
+  else if(!label && studs.length && studs.every(s=>s.self)) label='Self-dismissal';
   const rec = { day:dqDay(), week:+dqWeek(), students:studs, label, status:'waiting', queued_at:new Date().toISOString() };
   if(SUPA){
     const { error } = await SB.from('dismissal_queue').insert(rec);
@@ -2342,7 +2361,7 @@ async function dqAddStudents(ids){
   } else {
     rec.id='loc-'+Date.now(); DQ_ROWS.push(rec); dqPersistLocal();
   }
-  document.getElementById('dq-label').value='';
+  if(labelOverride==null) document.getElementById('dq-label').value='';
   await dqFetch(); renderDismissal();
 }
 async function dqDismiss(id){
@@ -2388,13 +2407,21 @@ function renderDismissal(){
     <div class="ministat l-late"><div class="n">${inLineStudents}</div><div class="l">Students in line</div></div>
     <div class="ministat p"><div class="n">${dismissedStudents}</div><div class="l">Dismissed</div></div>
     <div class="ministat"><div class="n">${notYet}</div><div class="l">Not in line yet</div></div>`;
+  // "Add bus riders" — bus kids still here (not absent) and not already queued, sent out as one car
+  const busEligible=studs.filter(s=>s.bus_rider && !isAbsent(s) && !dqStudentInQueue(s.id));
+  const busBtn=document.getElementById('dq-busall');
+  if(busBtn){
+    if(busEligible.length){ busBtn.style.display=''; busBtn.textContent=`🚌 Add bus riders (${busEligible.length})`;
+      busBtn.onclick=()=>dqAddStudents(busEligible.map(s=>s.id), 'Bus'); }
+    else { busBtn.style.display='none'; busBtn.onclick=null; }
+  }
   // the line (FIFO, #1 at top)
   const line=document.getElementById('dq-line');
   line.innerHTML = waiting.length ? waiting.map((r,i)=>`
     <div class="dq-car ${i===0?'next':''}">
       <div class="dq-pos">${i+1}</div>
       <div class="dq-body">
-        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">🚶 self</span>':'')).join(', ')}</div>
+        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">🚶 self</span>':'')+(s.bus?' <span class="dq-tag bus">🚌 bus</span>':'')).join(', ')}</div>
         <div class="dq-sub">${r.label?esc(r.label)+' · ':''}in line since ${esc(new Date(r.queued_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}${i===0?' · <b style="color:var(--brass-bright)">UP NEXT</b>':''}</div>
         ${(r.students||[]).some(s=>s.note)?`<div class="dq-note">📝 ${(r.students||[]).filter(s=>s.note).map(s=>esc(s.note)).join(' · ')}</div>`:''}
       </div>
@@ -2422,7 +2449,7 @@ function renderDismissal(){
   if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
   const absentHint=absentHidden?`<span class="note-row" style="flex-basis:100%;grid-column:1/-1">🚫 ${absentHidden} marked absent today — hidden from the line</span>`:'';
   picker.innerHTML = (avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${sel?'✓ ':''}${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${s.bus_rider?' busrider':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${sel?'✓ ':''}${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${s.bus_rider?' 🚌':''}${note?' 📝':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':(absentHidden?'Everyone else is in the line, dismissed, or absent.':'Everyone is in the line or dismissed.')}</span>`) + absentHint;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.pick;
@@ -2448,14 +2475,19 @@ function renderDqNotes(){
   if(box.contains(document.activeElement)) return;  // don't clobber a field being edited
   const studs=dqSortStudents(studentsForWeek(dqWeek()));
   if(!studs.length){ box.innerHTML=`<p class="lc-desc" style="margin:0">No students on this roster yet.</p>`; return; }
-  box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
+  box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th style="text-align:center">Bus rider</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell" style="white-space:nowrap">${esc(dqName(s))}</td>
       <td style="text-align:center"><div class="dqn-m">Self-dismiss</div><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
+      <td style="text-align:center"><div class="dqn-m">Bus rider</div><input type="checkbox" class="big-check" data-dqn="bus" ${s.bus_rider?'checked':''}></td>
       <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
-    </tr>`).join('')}</tbody></table>`;
+    </tr>`).join('')}</tbody></table>
+    <p class="lc-desc" style="margin:10px 0 0">🚌 <b>Bus rider</b> applies to every week this child is enrolled. Use the <b>🚌 Add bus riders</b> button on the line to send them all out together.</p>`;
   box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();
+  }));
+  box.querySelectorAll('[data-dqn=bus]').forEach(el=>el.addEventListener('change',async()=>{
+    const id=el.closest('tr').dataset.id; const s=findStudent(id); if(s) await dbSetBusForChild(s, el.checked); renderDismissal();
   }));
   box.querySelectorAll('[data-dqn=note]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{dismissal:el.value.trim()}); renderDismissal();

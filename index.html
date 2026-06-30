@@ -426,6 +426,7 @@
   .fh-shout .msg{font-size:14.5px;color:var(--oyster)}
   .fh-shout .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:7px}
   .gradein{max-width:74px}
+  .bday-in{max-width:96px} .shirt-in{max-width:84px;text-transform:uppercase}
   /* roster admin-only controls (self-contained so layout is preserved) */
   #ros-addrow{display:none}
   body.is-admin #ros-addrow{display:flex}
@@ -837,6 +838,7 @@
         <button class="fbtn" data-cf="pending">Consent pending</button>
         <button class="fbtn" data-cf="health">⚠ Health flag</button>
       </div>
+      <datalist id="shirt-sizes"><option value="YXS"><option value="YS"><option value="YM"><option value="YL"><option value="AS"><option value="AM"><option value="AL"><option value="AXL"><option value="AXXL"></datalist>
       <div class="tablewrap"><table id="ros-table"></table></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
@@ -851,7 +853,7 @@
         <span class="gate-msg" id="ros-io-msg"></span>
       </div>
       <div id="ros-review"></div>
-      <div class="callout" style="margin-top:18px"><b>CSV import:</b> works with two formats, auto-detected. <b>(1) The Alpha Summer registration export</b> — one row per child with a "Weeks" column: each child is created/updated in <b>every week they attend</b>, and parent/guardian/emergency details flow straight into Family Contacts. <b>(2) A simple roster</b> — First/Name, Grade, Preferred name, Allergies, Medications, Notes, Media consent, contacts, DOB (columns matched by name, any order; imports into the selected week). Both <b>match existing students by first name</b> and show a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
+      <div class="callout" style="margin-top:18px"><b>CSV import:</b> works with two formats, auto-detected. <b>(1) The Alpha Summer registration export</b> — one row per child with a "Weeks" column: each child is created/updated in <b>every week they attend</b>, and parent/guardian/emergency details flow straight into Family Contacts. <b>(2) A simple roster</b> — First/Name, Grade, Preferred name, Birthday/DOB, Shirt size, Bus rider, Allergies, Medications, Notes, Media consent, contacts (columns matched by name, any order; imports into the selected week). Both <b>match existing students by first name</b> and show a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
     </section>
 
     <!-- ===== DISMISSAL (carpool line) ===== -->
@@ -1389,7 +1391,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1456,7 +1458,7 @@ async function dbBulkAddStudents(week, arr){
   }
   return null;
 }
-const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready'];
+const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider'];
 const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob'];
 // "Test" rule: any student whose name is a test/placeholder entry is excluded by
 // default on import, and can be purged from the roster with one click. Matches a
@@ -1580,7 +1582,8 @@ function parseRosterCSV(text){
           iEP=find(/emergency.*(phone|mobile|number)/),
           iDob=find(/dob|date of birth|birth/),
           iNotes=find(/^notes?$|important note|student note|profile note|comment/),
-          iPref=find(/preferred|nickname|goes by|known as|nick name/);
+          iPref=find(/preferred|nickname|goes by|known as|nick name/),
+          iShirt=find(/shirt|tee|t-shirt|jersey/), iBus=find(/^bus|bus rider|bus service|shuttle|transport/);
     const g=(idx,c)=> idx>=0 ? (c[idx]||'').trim() : '';
     return rows.map(c=>{
       let first=g(iFirst,c), last=g(iLast,c);
@@ -1602,9 +1605,11 @@ function parseRosterCSV(text){
       if(iOtherPhone>=0) o.other_phone=g(iOtherPhone,c);
       if(iEC>=0) o.emergency_contact=g(iEC,c);
       if(iEP>=0) o.emergency_phone=g(iEP,c);
-      if(iDob>=0) o.dob=g(iDob,c);
+      if(iDob>=0){ o.dob=g(iDob,c); o.birthday=g(iDob,c); }
       if(iNotes>=0) o.notes=g(iNotes,c);
       if(iPref>=0) o.preferred=g(iPref,c);
+      if(iShirt>=0) o.shirt_size=g(iShirt,c);
+      if(iBus>=0) o.bus_rider=truthy(g(iBus,c));
       return o;
     }).filter(s=>s.first||s.last);
   }
@@ -1657,6 +1662,7 @@ function parseRegistration(text){
     dietNotes:find(/dietary notes/), medcond:find(/medical conditions/),
     allerg:find(/medical — allergies|^allergies|allergies$/),
     media:find(/media release/), dob:find(/date of birth/),
+    shirt:find(/shirt|tee|t-shirt|jersey/), bus:find(/^bus|bus rider|bus service|shuttle|transport/),
     address:find(/household addr/),
     pName:find(/primary .*(parent|guardian).*name/), pEmail:find(/primary .*(parent|guardian).*email/), pPhone:find(/primary .*(parent|guardian).*phone/),
     sName:find(/secondary .*(parent|guardian).*name/), sEmail:find(/secondary .*(parent|guardian).*email/), sPhone:find(/secondary .*(parent|guardian).*phone/),
@@ -1694,6 +1700,7 @@ function parseRegistration(text){
       first, last, weeks,
       grade:g(c,I.grade), allergies:cleanAllergy(g(c,I.allerg)),
       notes:noteParts.join(' • '), media_consent,
+      shirt_size:g(c,I.shirt), birthday:g(c,I.dob), bus_rider:/^(1|y|yes|true|x)/i.test(g(c,I.bus)),
       contact:{
         guardian:g(c,I.pName), guardian_email:g(c,I.pEmail), guardian_phone:g(c,I.pPhone),
         secondary_parent:g(c,I.sName), secondary_email:g(c,I.sEmail), secondary_phone:g(c,I.sPhone),
@@ -1724,7 +1731,7 @@ function planRegistration(children){
 async function applyRegistration(plan){
   let updated=0, added=0, contacts=0; const weeksTouched=new Set();
   const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
-  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; return p; };
+  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; return p; };
   const writeContact=async(id,ch)=>{ if(!canContacts) return; const ep={}; Object.entries(ch.contact).forEach(([k,v])=>{ if((v||'')!=='') ep[k]=v; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) contacts++; } };
   for(const w of Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b)){
     const pw=plan.perWeek[w]; weeksTouched.add(w);
@@ -2640,13 +2647,13 @@ function rosHealthCell(s){
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
-  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="9">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
+  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="11">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
   const sortArrow=k=>STUDENT_SORT===k?' <span class="th-arrow">▲</span>':'';
-  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
-  const cols = ed?9:8;
+  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Birthday</th><th>Shirt</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
+  const cols = ed?11:10;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
       <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}>
@@ -2654,6 +2661,8 @@ function renderRosterTab(){
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
+      <td><input class="cell-input bday-in" data-f="birthday" value="${escAttr(s.birthday||'')}" placeholder="MM/DD" ${ed?'':'disabled'}></td>
+      <td><input class="cell-input shirt-in" list="shirt-sizes" data-f="shirt_size" value="${escAttr(s.shirt_size||'')}" placeholder="size" ${ed?'':'disabled'}></td>
       <td class="note-row">${rosHealthCell(s)}</td>
       <td><select class="cell-select" data-consent style="${consentColor(s.media_consent)}">
         <option value="" ${!s.media_consent?'selected':''}>— pending</option>
@@ -2712,8 +2721,8 @@ function renderRosStats(){
 function rosExport(){
   const studs=studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const label=v=>v==='yes'?'Consent':v==='no'?'No consent':'Pending';
-  const rows=[["First","Last","Grade","Level","Email","Media consent","Allergies","Medications","Laptop assigned"]];
-  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),cleanAllergy(s.allergies),s.meds||'',s.laptop_assigned?'Yes':'No']));
+  const rows=[["First","Last","Grade","Level","Birthday","Shirt size","Bus rider","Email","Media consent","Allergies","Medications","Laptop assigned"]];
+  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),s.birthday||'',s.shirt_size||'',s.bus_rider?'Yes':'No',studentEmail(s),label(s.media_consent),cleanAllergy(s.allergies),s.meds||'',s.laptop_assigned?'Yes':'No']));
   const suffix = ROS_FILTER==='all'?'':'-'+(ROS_FILTER==='yes'?'consent':ROS_FILTER==='no'?'no-consent':ROS_FILTER==='health'?'health':'pending');
   csvDownload(`roster-w${rosWeek()}${suffix}.csv`, rows);
 }

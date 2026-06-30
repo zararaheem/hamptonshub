@@ -1388,12 +1388,14 @@ function shirtRank(s){
      .replace(/XSMALL/,'XS').replace(/XXLARGE/,'XXL').replace(/XLARGE/,'XL').replace(/SMALL/,'S').replace(/MEDIUM/,'M').replace(/LARGE/,'L');
   const i=SHIRT_ORDER.indexOf(t); return i<0?99:i;
 }
-// Sort birthdays by calendar month/day, accepting ISO (YYYY-MM-DD) or M/D[/Y].
+// Sort birthdays by actual date of birth (oldest → youngest ascending).
+// Accepts ISO (YYYY-MM-DD) and M/D/Y; M/D with no year falls back to month/day.
 function bdayKey(s){
   s=String(s||'').trim(); let m;
-  if((m=s.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/))) return (+m[2])*100+(+m[3]);
+  if((m=s.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/))) return (+m[1])*10000+(+m[2])*100+(+m[3]);
+  if((m=s.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{2,4})$/))){ let y=+m[3]; if(y<100) y+=2000; return y*10000+(+m[1])*100+(+m[2]); }
   if((m=s.match(/(\d{1,2})\D+(\d{1,2})/))) return (+m[1])*100+(+m[2]);
-  return 9999;
+  return 99999999;
 }
 function studentsForWeek(w){
   const arr=(ROSTER_DATA[+w]||[]).slice();

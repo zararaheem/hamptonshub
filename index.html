@@ -201,6 +201,8 @@
   /* ---------- Tables ---------- */
   .tablewrap{border:1px solid var(--line);border-radius:var(--radius);overflow:auto;background:var(--navy-2)}
   table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  #ros-table{min-width:1040px}
+  #ros-table th,#ros-table td{white-space:nowrap}
   thead th{position:sticky;top:0;background:#0d2a37;text-align:left;font-family:var(--mono);
     font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
     padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2}
@@ -530,7 +532,7 @@
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
   .addpu-btn:hover{border-color:var(--teal)}
-  .ros-health{font-size:12px;line-height:1.45;color:var(--coral);white-space:normal;word-break:break-word;max-width:340px;margin:1px 0}
+  .ros-health{font-size:12px;line-height:1.4;color:var(--coral);max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:1px 0}
   .ros-health b{font-weight:700}
   .student-block{border-bottom:1px solid var(--line-soft)}
   .student-block:last-child{border-bottom:0}
@@ -1376,11 +1378,21 @@ function flash(id){ const el=document.getElementById(id); if(el) el.textContent=
 let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
 let EMERGENCY = {};   // owner-only: { [student_id]: {guardian, guardian_phone, ...} }
 let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last'
+const SHIRT_ORDER=['YXS','YS','YM','YL','AS','AM','AL','AXL','AXXL','XS','S','M','L','XL','XXL'];
+function gradeNum(g){ g=String(g||'').trim().toUpperCase(); if(/^(PK|PRE-?K)$/.test(g)) return -1; if(/^K/.test(g)) return 0; const n=parseInt(g,10); return isNaN(n)?99:n; }
+function shirtRank(s){ const i=SHIRT_ORDER.indexOf(String(s||'').trim().toUpperCase().replace(/\s+/g,'')); return i<0?99:i; }
+function bdayKey(s){ const m=String(s||'').match(/(\d{1,2})\D+(\d{1,2})/); return m?(+m[1])*100+(+m[2]):9999; }
 function studentsForWeek(w){
   const arr=(ROSTER_DATA[+w]||[]).slice();
-  if(STUDENT_SORT==='first') return arr.sort((a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''));
-  if(STUDENT_SORT==='last')  return arr.sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
-  return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
+  switch(STUDENT_SORT){
+    case 'first':    return arr.sort((a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''));
+    case 'last':     return arr.sort((a,b)=>byName(a,b));
+    case 'grade':    return arr.sort((a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b));
+    case 'birthday': return arr.sort((a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b));
+    case 'shirt':    return arr.sort((a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b));
+    default:         return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  }
 }
 function rosterLocalKey(){ return 'roster_local_v1'; }
 function persistLocalRoster(){ store.set(rosterLocalKey(), ROSTER_DATA); }
@@ -2640,9 +2652,9 @@ function rosHealthCell(s){
   const a=cleanAllergy(s.allergies), m=(s.meds||'').trim(), n=(s.notes||'').trim();
   if(!a&&!m&&!n) return '<span class="blank">—</span>';
   let out='';
-  if(a) out+=`<div class="ros-health"><b>Allergies:</b> ${esc(a)}</div>`;
-  if(m) out+=`<div class="ros-health"><b>Meds:</b> ${esc(m)}</div>`;
-  if(n) out+=`<div class="ros-health"><b>Note:</b> ${esc(n)}</div>`;
+  if(a) out+=`<div class="ros-health" title="Allergies: ${escAttr(a)}"><b>Allergies:</b> ${esc(a)}</div>`;
+  if(m) out+=`<div class="ros-health" title="Meds: ${escAttr(m)}"><b>Meds:</b> ${esc(m)}</div>`;
+  if(n) out+=`<div class="ros-health" title="Note: ${escAttr(n)}"><b>Note:</b> ${esc(n)}</div>`;
   return out;
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
@@ -2652,7 +2664,7 @@ function renderRosterTab(){
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
   const sortArrow=k=>STUDENT_SORT===k?' <span class="th-arrow">▲</span>':'';
-  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Birthday</th><th>Shirt</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
+  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th><button class="th-sort" data-sort="grade">Grade${sortArrow('grade')}</button></th><th>Level</th><th><button class="th-sort" data-sort="birthday">Birthday${sortArrow('birthday')}</button></th><th><button class="th-sort" data-sort="shirt">Shirt${sortArrow('shirt')}</button></th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
   const cols = ed?11:10;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>

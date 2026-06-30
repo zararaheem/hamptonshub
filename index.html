@@ -560,7 +560,7 @@
     .att-stats{margin-left:0;width:100%}
     .att-stats .ministat,.seg-filter .fbtn{flex:1 1 calc(50% - 5px);min-width:0}
     /* Add-to-line inputs full width, stacked */
-    #dq-label,#dq-search{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
+    #dq-label,#dq-search,#dq-sort{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
     /* Student picker: a tidy two-up grid of large, left-aligned name buttons */
     .dq-picker{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:46vh}
     .dq-pick{padding:14px 12px;font-size:14.5px;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
@@ -864,6 +864,10 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
           <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:220px">
           <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:180px;flex:1;max-width:280px">
+          <select class="cell-input" id="dq-sort" title="Sort the name list" style="min-width:150px;max-width:180px">
+            <option value="last">Sort: last name</option>
+            <option value="first">Sort: first name</option>
+          </select>
         </div>
         <div id="dq-picker" class="dq-picker"></div>
       </div>
@@ -2286,6 +2290,21 @@ function attInit(){
    tap Dismiss. Live across devices via realtime; localStorage fallback. */
 let DQ_ROWS = [];           // queue rows for the selected day
 let DQ_CHAN = null;         // realtime channel
+let DQ_SORT = 'last';       // name-list sort: 'last' or 'first'
+// Picker/notes label that follows the chosen sort, so the leading name is the
+// one you're scanning by: "Pack, Louis (Ted)" for last, "Louis (Ted) Pack" for first.
+function dqName(s){
+  const first=String(s&&s.first!=null?s.first:'').trim();
+  const last=String(s&&s.last!=null?s.last:'').trim();
+  const pref=String(s&&s.preferred!=null?s.preferred:'').trim();
+  const tag=(pref && pref.toLowerCase()!==first.toLowerCase())?` (${pref})`:'';
+  return DQ_SORT==='first' ? `${first}${tag}${last?` ${last}`:''}` : `${last}${first?`, ${first}`:''}${tag}`;
+}
+function dqSortStudents(arr){
+  return arr.slice().sort((a,b)=> DQ_SORT==='first'
+    ? (a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||'')
+    : (a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+}
 function dqDay(){ return document.getElementById('dq-date').value; }
 function dqWeek(){ return document.getElementById('dq-week').value; }
 function dqLocalKey(){ return `dq:${dqDay()}`; }
@@ -2379,14 +2398,13 @@ function renderDismissal(){
       <span class="dq-sub">${r.dismissed_at?esc(new Date(r.dismissed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''} <button class="lk" data-undo="${escAttr(r.id)}">undo</button></span>
     </div>`).join('') : '';
   log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
-  // student picker — tap to add straight into the line, sorted by last name
+  // student picker — tap to add straight into the line; full first+last name, sorted per DQ_SORT
   const picker=document.getElementById('dq-picker');
   const sq=((document.getElementById('dq-search')||{}).value||'').trim().toLowerCase();
-  let avail=studs.filter(s=>!dqStudentInQueue(s.id))
-    .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
-  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(sq));
+  let avail=dqSortStudents(studs.filter(s=>!dqStudentInQueue(s.id)));
+  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
   picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim();
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(studentLabel(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
 }
@@ -2394,11 +2412,11 @@ function renderDismissal(){
 function renderDqNotes(){
   const box=document.getElementById('dq-notes'); if(!box) return;
   if(box.contains(document.activeElement)) return;  // don't clobber a field being edited
-  const studs=studentsForWeek(dqWeek());
+  const studs=dqSortStudents(studentsForWeek(dqWeek()));
   if(!studs.length){ box.innerHTML=`<p class="lc-desc" style="margin:0">No students on this roster yet.</p>`; return; }
   box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td>
+      <td class="role-cell" style="white-space:nowrap">${esc(dqName(s))}</td>
       <td style="text-align:center"><div class="dqn-m">Self-dismiss</div><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
       <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
     </tr>`).join('')}</tbody></table>`;
@@ -2430,6 +2448,7 @@ function dismissalInit(){
   document.getElementById('dq-export').addEventListener('click',dqExport);
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
+  const so=document.getElementById('dq-sort'); if(so){ so.value=DQ_SORT; so.addEventListener('change',()=>{ DQ_SORT=so.value; renderDismissal(); }); }
   const nt=document.getElementById('dq-notes-toggle');
   if(nt) nt.addEventListener('click',()=>{ const p=document.getElementById('dq-notes'); const open=p.style.display!=='none'; p.style.display=open?'none':'block'; nt.textContent=open?'Manage notes':'Hide notes'; if(!open) renderDqNotes(); });
 }

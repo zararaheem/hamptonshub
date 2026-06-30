@@ -532,7 +532,8 @@
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
   .addpu-btn:hover{border-color:var(--teal)}
-  .ros-health{font-size:12px;line-height:1.4;color:var(--coral);max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:1px 0}
+  .ros-health{font-size:12px;line-height:1.4;color:var(--coral);width:260px;white-space:normal;word-break:break-word;margin:1px 0}
+  #ros-table td:has(.ros-health),#ros-table .hcell{min-width:272px;white-space:normal}
   .ros-health b{font-weight:700}
   .student-block{border-bottom:1px solid var(--line-soft)}
   .student-block:last-child{border-bottom:0}
@@ -2693,7 +2694,7 @@ function renderRosterTab(){
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
       <td><input class="cell-input bday-in" data-f="birthday" value="${escAttr(s.birthday||'')}" placeholder="MM/DD" ${ed?'':'disabled'}></td>
       <td><input class="cell-input shirt-in" list="shirt-sizes" data-f="shirt_size" value="${escAttr(s.shirt_size||'')}" placeholder="size" ${ed?'':'disabled'}></td>
-      <td class="note-row">${rosHealthCell(s)}</td>
+      <td class="note-row hcell">${rosHealthCell(s)}</td>
       <td><select class="cell-select" data-consent style="${consentColor(s.media_consent)}">
         <option value="" ${!s.media_consent?'selected':''}>— pending</option>
         <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>

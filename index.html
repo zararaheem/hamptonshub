@@ -50,27 +50,27 @@
   /* ---------- Layout shell ---------- */
   .shell{display:flex;min-height:100vh}
   .rail{
-    width:248px;flex-shrink:0;position:sticky;top:0;height:100vh;
+    width:212px;flex-shrink:0;position:sticky;top:0;height:100vh;
     background:linear-gradient(180deg,var(--navy-2),#0a2029);
     border-right:1px solid var(--line);
     display:flex;flex-direction:column;
     z-index:30;
   }
-  .brand{padding:22px 22px 18px;border-bottom:1px solid var(--line-soft)}
+  .brand{padding:18px 18px 15px;border-bottom:1px solid var(--line-soft)}
   .brand .anchor{font-size:13px;letter-spacing:.28em;text-transform:uppercase;
     font-family:var(--mono);color:var(--brass);display:flex;align-items:center;gap:8px}
-  .brand h1{font-family:var(--display);font-weight:600;font-size:24px;line-height:1.05;
+  .brand h1{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.05;
     margin:10px 0 2px;color:var(--oyster);font-optical-sizing:auto}
   .brand .sub{font-size:12px;color:var(--muted);letter-spacing:.02em}
 
-  .nav{padding:14px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+  .nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
   .nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
     color:var(--muted-2);padding:14px 12px 6px}
   .nav-item{
     display:flex;align-items:center;gap:11px;width:100%;text-align:left;
     background:none;border:0;cursor:pointer;color:var(--muted);
-    font-family:var(--body);font-size:14.5px;font-weight:500;
-    padding:10px 12px;border-radius:10px;transition:.16s;position:relative;
+    font-family:var(--body);font-size:14px;font-weight:500;
+    padding:9px 11px;border-radius:10px;transition:.16s;position:relative;
   }
   .nav-item .ico{width:18px;height:18px;flex-shrink:0;opacity:.85}
   .nav-item:hover{background:var(--panel);color:var(--oyster)}
@@ -2264,8 +2264,9 @@ function fillWeekSelect(sel){
 function attInit(){
   fillWeekSelect(document.getElementById('att-week'));
   const dateEl=document.getElementById('att-date');
-  // default to next active week's Monday, else today
-  dateEl.value = WEEKS[NOW].start;
+  // default to today when we're inside the active week; otherwise that week's Monday
+  const t=todayISO();
+  dateEl.value = (t>=WEEKS[NOW].start && t<=WEEKS[NOW].end) ? t : WEEKS[NOW].start;
   dateEl.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(attKey()); renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{

@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="#2E9BFF">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 186" fill="#2E9BFF">
   <!-- crossbar -->
   <rect x="55" y="112" width="90" height="11" rx="5"/>
-  <!-- handle -->
-  <rect x="94" y="118" width="12" height="66" rx="5"/>
+  <!-- handle (shorter) -->
+  <rect x="94" y="118" width="12" height="50" rx="5"/>
   <!-- foot -->
-  <rect x="80" y="180" width="40" height="11" rx="5"/>
+  <rect x="80" y="164" width="40" height="11" rx="5"/>
   <!-- prongs -->
   <g fill="none" stroke="#2E9BFF" stroke-width="11" stroke-linecap="round">
     <path d="M100 116 V52"/>

@@ -138,6 +138,7 @@
       const lunch = w.lunch_menu_url
         ? `The week's lunch menu is here: <a href="${esc(w.lunch_menu_url)}" target="_blank" rel="noopener">${esc(w.lunch_menu_label||'Lunch menu')}</a>.`
         : `The week's lunch menu will be shared by your campus team.`;
+      const locSet = (w.friday_showcase_loc||'').trim() && !/to be confirmed|tbd|finaliz/i.test(w.friday_showcase_loc);
       const showLoc = w.friday_showcase_loc_url
         ? `<a href="${esc(w.friday_showcase_loc_url)}" target="_blank" rel="noopener">${esc(w.friday_showcase_loc)}</a>`
         : esc(w.friday_showcase_loc);
@@ -252,7 +253,7 @@
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
         <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come. Parking will be available on-site for families that may require it.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
-        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>Please arrive at ${showLoc}, where your child shares what they've worked on all week.</p><div class="alert-soft">Location is subject to change depending on weather/ocean conditions.</div>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
+        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>${locSet ? `Please arrive at ${showLoc}, where your child shares what they've worked on all week.` : `Your child shares what they've worked on all week. We're finalizing a location and will share details closer to the day.`}</p><div class="alert-soft">Location is subject to change depending on weather/ocean conditions.</div>${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Bus Service</h2></div><div class="card">

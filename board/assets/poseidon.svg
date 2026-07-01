@@ -11,10 +11,10 @@
     <path d="M66 112 C46 94 46 74 54 58"/>
     <path d="M134 112 C154 94 154 74 146 58"/>
   </g>
-  <!-- arrowheads, all pointing up (symmetric barbs) -->
+  <!-- arrowheads: centre points up (both barbs); sides point outward (one barb each) -->
   <g fill="#2E9BFF">
     <g transform="translate(100 50)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
-    <g transform="translate(54 54)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
-    <g transform="translate(146 54)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
+    <g transform="translate(54 56) rotate(-16)"><path d="M0 -30 L-18 7 L0 -5 Z"/></g>
+    <g transform="translate(146 56) rotate(16)"><path d="M0 -30 L18 7 L0 -5 Z"/></g>
   </g>
 </svg>

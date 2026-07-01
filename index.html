@@ -862,7 +862,7 @@
 
       <div class="att-bar">
         <div class="field"><label for="ros-week">Week</label><select id="ros-week"></select></div>
-        <div class="field"><label for="ros-sort">Sort by</label><select id="ros-sort"><option value="roster">Roster order</option><option value="first">First name</option><option value="last">Last name</option></select></div>
+        <div class="field"><label for="ros-sort">Sort by</label><select id="ros-sort"><option value="level">Level (LL→HS), then last name</option><option value="roster">Roster order</option><option value="first">First name</option><option value="last">Last name</option></select></div>
         <div class="att-stats" id="ros-stats"></div>
       </div>
 
@@ -964,6 +964,7 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
         <input class="cell-input" id="em-search" placeholder="Search name…" style="max-width:240px">
         <select id="em-sort" class="cell-input" style="max-width:170px" title="Sort the roster">
+          <option value="level">Sort: level, last name</option>
           <option value="roster">Sort: roster order</option>
           <option value="first">Sort: first name</option>
           <option value="last">Sort: last name</option>
@@ -1020,7 +1021,7 @@
 
       <div class="card" style="margin-top:18px">
         <div class="eyebrow" style="margin-bottom:10px">Award points</div>
-        <input class="cell-input" id="award-reason" placeholder="What for? (optional — e.g. “Won the relay race”)" style="width:100%;max-width:520px;margin-bottom:14px">
+        <input class="cell-input" id="award-reason" placeholder="Default reason (optional) — you'll be asked to confirm/edit on each tap" style="width:100%;max-width:520px;margin-bottom:14px">
         <div class="award-rows">
           <div class="award-row">
             <span class="award-tribe helios">☀️ Helios</span>
@@ -1464,7 +1465,7 @@ function flash(id){ const el=document.getElementById(id); if(el) el.textContent=
    localStorage when Supabase isn't connected. */
 let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
 let EMERGENCY = {};   // owner-only: { [student_id]: {guardian, guardian_phone, ...} }
-let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last' | 'grade' | 'birthday' | 'shirt'
+let STUDENT_SORT='level'; // 'level' | 'roster' | 'first' | 'last' | 'grade' | 'birthday' | 'shirt'
 let STUDENT_DIR='asc';     // 'asc' | 'desc' (applies to the active sort key)
 const SHIRT_ORDER=['YXS','YS','YM','YL','YXL','YXXL','AXS','AS','AM','AL','AXL','AXXL','XS','S','M','L','XL','XXL'];
 function gradeNum(g){ g=String(g||'').trim().toUpperCase(); if(/^(PK|PRE-?K)$/.test(g)) return -1; if(/^K/.test(g)) return 0; const n=parseInt(g,10); return isNaN(n)?99:n; }
@@ -1487,9 +1488,11 @@ function bdayKey(s){
 function studentsForWeek(w){
   const arr=(ROSTER_DATA[+w]||[]).slice();
   const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
+  const lvlIdx=x=>{ const i=LEVELS.findIndex(l=>l.key===levelOf(x.grade)); return i<0?99:i; };
   const cmp={
     first:(a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''),
     last:byName,
+    level:(a,b)=>lvlIdx(a)-lvlIdx(b)||byName(a,b),
     grade:(a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b),
     birthday:(a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b),
     shirt:(a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b),
@@ -2696,9 +2699,9 @@ function renderScoreLog(){
     </div>`; }).join('');
   el.querySelectorAll('[data-delaward]').forEach(b=>b.addEventListener('click',()=>scoreRemove(b.dataset.delaward)));
 }
-async function awardPoints(tribe, pts){
+async function awardPoints(tribe, pts, reasonArg){
   pts=parseInt(pts,10); if(!pts || !TRIBES[tribe]) return;
-  const reason=(document.getElementById('award-reason').value||'').trim();
+  const reason=(reasonArg!==undefined ? reasonArg : (document.getElementById('award-reason').value||'')).trim();
   const by=(SESSION&&SESSION.email)||'';
   const rec={tribe, points:pts, reason, awarded_by:by};
   const msg=document.getElementById('award-msg');
@@ -2722,8 +2725,16 @@ async function refreshScore(){ await scoreFetch(); renderScore(); scoreSubscribe
 function scoreInit(){
   document.querySelectorAll('#view-scoreboard .award-btns').forEach(g=>{ const tribe=g.dataset.tribe;
     g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>{
-      if(b.dataset.pts==='other'){ const v=prompt(`Points for ${TRIBES[tribe].name}? (any number — negative corrects a mistake)`); if(v!=null && String(v).trim()!=='') awardPoints(tribe, v); }
-      else awardPoints(tribe, b.dataset.pts);
+      const nm=TRIBES[tribe].name; const preset=(document.getElementById('award-reason').value||'').trim();
+      if(b.dataset.pts==='other'){
+        const v=prompt(`Points for ${nm}? (any number — negative corrects a mistake)`); if(v==null || String(v).trim()==='') return;
+        const r=prompt(`Quick reason? (optional — for the receipt)`, preset); if(r===null) return;
+        awardPoints(tribe, v, r);
+      } else {
+        const pretty=(+b.dataset.pts>0?'+':'')+b.dataset.pts;
+        const r=prompt(`${nm} ${pretty} — quick reason? (optional, e.g. “Won the relay”)`, preset); if(r===null) return;
+        awardPoints(tribe, b.dataset.pts, r);
+      }
     })); });
   scoreClockTick(); setInterval(scoreClockTick, 1000);
   renderScore();

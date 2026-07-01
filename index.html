@@ -2755,19 +2755,20 @@ function renderTribeRosters(){
   const studs=studentsForWeek(SCORE_WK);
   const g={helios:[],poseidon:[],none:[]};
   studs.forEach(s=>{ g[(s.tribe==='helios'||s.tribe==='poseidon')?s.tribe:'none'].push(s); });
-  const byLast=(a,b)=>(a.last||'').localeCompare(b.last||'');
-  const names=arr=>arr.slice().sort(byLast).map(s=>esc(studentFullName(s))).join('<br>')||'<span style="color:var(--muted)">—</span>';
+  const fn=s=>(s.preferred||s.first||'').trim();
+  const byFirst=(a,b)=>fn(a).localeCompare(fn(b));
+  const names=arr=>arr.slice().sort(byFirst).map(s=>esc(fn(s))).join(' · ')||'<span style="color:var(--muted)">—</span>';
   box.innerHTML=`<div class="tr-grid">
     <div class="tr-col helios"><div class="tr-head"><span>☀️ Helios</span><span>${g.helios.length}</span></div><div class="tr-names">${names(g.helios)}</div></div>
     <div class="tr-col poseidon"><div class="tr-head"><span>🔱 Poseidon</span><span>${g.poseidon.length}</span></div><div class="tr-names">${names(g.poseidon)}</div></div>
-  </div>${g.none.length?`<p class="lc-desc" style="margin-top:8px"><b style="color:var(--coral)">${g.none.length} not assigned:</b> ${g.none.slice().sort(byLast).map(s=>esc(studentFullName(s))).join(', ')}</p>`:''}`;
+  </div>${g.none.length?`<p class="lc-desc" style="margin-top:8px"><b style="color:var(--coral)">${g.none.length} not assigned:</b> ${g.none.slice().sort(byFirst).map(s=>esc(fn(s))).join(' · ')}</p>`:''}`;
 }
 function renderTribeAssign(){
   const box=document.getElementById('tribe-assign'); if(!box) return;
   const studs=studentsForWeek(SCORE_WK).slice().sort((a,b)=>(a.last||'').localeCompare(b.last||''));
   box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th>Grade</th><th>Tribe</th></tr></thead><tbody>${
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td><td>${esc(s.grade||'')}</td>
+      <td class="role-cell" style="white-space:nowrap">${esc(((s.preferred||s.first||'')+' '+(s.last||'')).trim())}</td><td>${esc(s.grade||'')}</td>
       <td style="white-space:nowrap">
         <button class="tr-btn ${s.tribe==='helios'?'on-h':''}" data-tr="helios">☀️ Helios</button>
         <button class="tr-btn ${s.tribe==='poseidon'?'on-p':''}" data-tr="poseidon">🔱 Poseidon</button>

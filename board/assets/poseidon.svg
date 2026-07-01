@@ -1,12 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 166" fill="#2E9BFF">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 144" fill="#2E9BFF">
   <!-- bowl-shaped crossbar (concave up, like the emoji) -->
   <path d="M46 88 Q100 116 154 88 L154 99 Q100 128 46 99 Z"/>
   <!-- short shaft -->
-  <rect x="94" y="112" width="12" height="22" rx="5"/>
-  <!-- base bar -->
-  <rect x="72" y="130" width="56" height="11" rx="5"/>
-  <!-- ball -->
-  <circle cx="100" cy="152" r="8.5"/>
+  <rect x="94" y="112" width="12" height="24" rx="6"/>
   <!-- prongs: centre straight, outer two bow outward -->
   <g fill="none" stroke="#2E9BFF" stroke-width="12" stroke-linecap="round">
     <path d="M100 110 V44"/>

@@ -1,20 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 184" fill="#2E9BFF">
-  <!-- crossbar -->
-  <rect x="55" y="108" width="90" height="11" rx="5"/>
-  <!-- handle (short) -->
-  <rect x="94" y="114" width="12" height="48" rx="5"/>
-  <!-- foot -->
-  <rect x="80" y="158" width="40" height="11" rx="5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 196" fill="#2E9BFF">
+  <!-- bowl-shaped crossbar (concave up, like the emoji) -->
+  <path d="M46 88 Q100 116 154 88 L154 99 Q100 128 46 99 Z"/>
+  <!-- shaft -->
+  <rect x="94" y="112" width="12" height="52" rx="5"/>
+  <!-- base bar -->
+  <rect x="72" y="158" width="56" height="11" rx="5"/>
+  <!-- ball -->
+  <circle cx="100" cy="181" r="8.5"/>
   <!-- prongs: centre straight, outer two bow outward -->
-  <g fill="none" stroke="#2E9BFF" stroke-width="11" stroke-linecap="round">
-    <path d="M100 112 V54"/>
-    <path d="M66 112 C46 94 46 74 54 58"/>
-    <path d="M134 112 C154 94 154 74 146 58"/>
+  <g fill="none" stroke="#2E9BFF" stroke-width="12" stroke-linecap="round">
+    <path d="M100 110 V44"/>
+    <path d="M60 100 C50 78 52 56 62 44"/>
+    <path d="M140 100 C150 78 148 56 138 44"/>
   </g>
   <!-- arrowheads: centre points up (both barbs); sides point outward (one barb each) -->
   <g fill="#2E9BFF">
-    <g transform="translate(100 50)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
-    <g transform="translate(54 56) rotate(-16)"><path d="M0 -30 L-18 7 L0 -5 Z"/></g>
-    <g transform="translate(146 56) rotate(16)"><path d="M0 -30 L18 7 L0 -5 Z"/></g>
+    <g transform="translate(100 44)"><path d="M0 -28 L-16 7 L0 -6 L16 7 Z"/></g>
+    <g transform="translate(62 46) rotate(-16)"><path d="M0 -28 L-17 7 L0 -5 Z"/></g>
+    <g transform="translate(138 46) rotate(16)"><path d="M0 -28 L17 7 L0 -5 Z"/></g>
   </g>
 </svg>

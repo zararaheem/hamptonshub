@@ -85,6 +85,7 @@
   .nav-item.cat-ops{--nav-accent:var(--coral)}
   .nav-item.cat-comms{--nav-accent:#5ab0e6}
   .nav-item.cat-admin{--nav-accent:var(--muted-2)}
+  .nav-item.cat-games{--nav-accent:#E8B84B}
   .nav-item .wip{margin-left:auto;font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:6px;padding:1px 5px}
   .wip-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:7px;padding:3px 9px;vertical-align:middle;margin-left:8px;white-space:nowrap}
   .wip-banner{margin:6px 0 14px;background:rgba(226,101,74,.12);border:1px solid var(--coral);border-radius:10px;padding:11px 14px;color:var(--coral);font-size:13.5px}
@@ -397,6 +398,42 @@
   .dq-names{font-size:15.5px;font-weight:600;color:var(--oyster)}
   .dq-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
   .dq-dismiss{flex:0 0 auto}
+  /* Tribe scoreboard */
+  .tribe-board{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .tribe-panel{border-radius:16px;padding:26px 18px 20px;text-align:center;border:2px solid;position:relative;transition:box-shadow .3s}
+  .tribe-panel.helios{border-color:#E8B84B;background:linear-gradient(165deg,rgba(232,184,75,.17),rgba(232,184,75,.03))}
+  .tribe-panel.poseidon{border-color:#3E8EDE;background:linear-gradient(165deg,rgba(62,142,222,.18),rgba(62,142,222,.03))}
+  .tribe-panel.helios.leading{box-shadow:0 0 28px rgba(232,184,75,.4)}
+  .tribe-panel.poseidon.leading{box-shadow:0 0 28px rgba(62,142,222,.4)}
+  .tribe-emoji{font-size:38px;line-height:1}
+  .tribe-name{font-size:20px;font-weight:800;letter-spacing:.06em;margin-top:6px;text-transform:uppercase}
+  .tribe-panel.helios .tribe-name,.tribe-panel.helios .tribe-score{color:#E8B84B}
+  .tribe-panel.poseidon .tribe-name,.tribe-panel.poseidon .tribe-score{color:#5AA0F0}
+  .tribe-score{font-size:clamp(46px,12vw,74px);font-weight:900;line-height:1.05}
+  .tribe-pts{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.16em}
+  .tribe-lead-tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--navy);border-radius:10px;padding:2px 8px;margin-top:8px}
+  .tribe-panel.helios .tribe-lead-tag{background:#E8B84B}
+  .tribe-panel.poseidon .tribe-lead-tag{background:#5AA0F0}
+  .tribe-bar{height:8px;border-radius:6px;background:var(--navy-2);margin-top:14px;overflow:hidden}
+  .tribe-bar span{display:block;height:100%;border-radius:6px;transition:width .5s}
+  .tribe-panel.helios .tribe-bar span{background:#E8B84B}
+  .tribe-panel.poseidon .tribe-bar span{background:#5AA0F0}
+  .award-rows{display:flex;flex-direction:column;gap:10px}
+  .award-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .award-tribe{font-weight:800;font-size:15px;min-width:120px}
+  .award-tribe.helios{color:#E8B84B} .award-tribe.poseidon{color:#5AA0F0}
+  .award-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .award-btn{font-family:var(--mono);font-size:14px;font-weight:700;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);border-radius:10px;padding:9px 15px;cursor:pointer}
+  .award-btn:hover{border-color:var(--brass);color:var(--brass-bright)}
+  .award-btn.ghost{font-weight:600}
+  .award-custom-wrap{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  .score-logrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line-soft);font-size:13px}
+  .slr-tribe{font-weight:700;min-width:104px}
+  .slr-tribe.helios{color:#E8B84B} .slr-tribe.poseidon{color:#5AA0F0}
+  .slr-pts{font-family:var(--mono);font-weight:700;min-width:34px}
+  .slr-reason{flex:1;min-width:120px;color:var(--oyster)}
+  .slr-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .slr-rm{background:none;border:0;color:var(--coral);cursor:pointer;font-family:var(--mono);font-size:11px}
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
   .dq-tag.self{font-family:var(--mono);font-size:10px;color:var(--teal-bright);border:1px solid var(--teal);border-radius:10px;padding:1px 6px;white-space:nowrap}
   .dq-note{font-size:12px;color:var(--brass-bright);margin-top:3px}
@@ -588,6 +625,8 @@
     </div>
     <nav class="nav" id="nav">
       <button class="nav-item active" data-tab="dashboard">Dashboard</button>
+      <div class="nav-label">Camp Games</div>
+      <button class="nav-item cat-games" data-tab="scoreboard">Tribe Scoreboard<span class="ext">live</span></button>
       <div class="nav-label">Rostering</div>
       <button class="nav-item cat-people" data-tab="staffing">Staff Roster</button>
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
@@ -914,6 +953,49 @@
       <div class="editor-wrap" id="events-editor"></div>
 
       <div class="callout" style="margin-top:6px">The full signage wish list with renderings lives in the <a data-jump="signage" style="color:var(--brass-bright);cursor:pointer">Signage Wish List</a> tab (live Google Sheet).</div>
+    </section>
+
+    <!-- ===== TRIBE SCOREBOARD ===== -->
+    <section class="view" id="view-scoreboard" hidden>
+      <div class="eyebrow">Camp Games · Live</div>
+      <h1 class="page-title">Tribe Scoreboard</h1>
+      <p class="page-lead">Helios vs Poseidon — points update live for everyone the moment they're awarded. Award below, or from the <b>#tribe-games</b> Slack channel.</p>
+
+      <div id="tribe-board" class="tribe-board"></div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="eyebrow" style="margin-bottom:10px">Award points</div>
+        <input class="cell-input" id="award-reason" placeholder="What for? (optional — e.g. “Won the relay race”)" style="width:100%;max-width:520px;margin-bottom:14px">
+        <div class="award-rows">
+          <div class="award-row">
+            <span class="award-tribe helios">☀️ Helios</span>
+            <div class="award-btns" data-tribe="helios">
+              <button class="award-btn" data-pts="1">+1</button>
+              <button class="award-btn" data-pts="2">+2</button>
+              <button class="award-btn" data-pts="3">+3</button>
+              <button class="award-btn" data-pts="5">+5</button>
+            </div>
+          </div>
+          <div class="award-row">
+            <span class="award-tribe poseidon">🌊 Poseidon</span>
+            <div class="award-btns" data-tribe="poseidon">
+              <button class="award-btn" data-pts="1">+1</button>
+              <button class="award-btn" data-pts="2">+2</button>
+              <button class="award-btn" data-pts="3">+3</button>
+              <button class="award-btn" data-pts="5">+5</button>
+            </div>
+          </div>
+        </div>
+        <div class="award-custom-wrap">
+          <input class="cell-input" id="award-custom" type="number" placeholder="custom #" style="max-width:110px">
+          <button class="award-btn ghost" id="award-custom-helios">→ Helios</button>
+          <button class="award-btn ghost" id="award-custom-poseidon">→ Poseidon</button>
+          <span class="gate-msg" id="award-msg" style="margin-left:6px"></span>
+        </div>
+        <p class="lc-desc" style="margin:12px 0 0;color:var(--muted)">Tip: a negative custom number corrects a mistake. Admins can remove any entry in the log below.</p>
+      </div>
+
+      <div id="tribe-log" style="margin-top:22px"></div>
     </section>
 
     <!-- ===== ACCESS MANAGEMENT ===== -->
@@ -2408,6 +2490,77 @@ function dismissalInit(){
   if(nt) nt.addEventListener('click',()=>{ const p=document.getElementById('dq-notes'); const open=p.style.display!=='none'; p.style.display=open?'none':'block'; nt.textContent=open?'Manage notes':'Hide notes'; if(!open) renderDqNotes(); });
 }
 
+/* =================== TRIBE SCOREBOARD (live) =================== */
+const TRIBES={helios:{name:'Helios',emoji:'☀️'}, poseidon:{name:'Poseidon',emoji:'🌊'}};
+let SCORE_ROWS=[]; let SCORE_CHAN=null;
+async function scoreFetch(){
+  if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').order('created_at',{ascending:false}); SCORE_ROWS=(!error&&data)?data:[]; }
+  else { SCORE_ROWS=store.get('tribe_awards')||[]; }
+}
+function scoreTotals(){ const t={helios:0,poseidon:0}; SCORE_ROWS.forEach(r=>{ if(t[r.tribe]!=null) t[r.tribe]+=(+r.points||0); }); return t; }
+function whoShort(w){ w=(w||'').trim(); if(!w) return ''; const at=w.indexOf('@'); return at>0?w.slice(0,at):w; }
+function renderScore(){
+  const board=document.getElementById('tribe-board'); if(!board) return;
+  const t=scoreTotals(); const total=t.helios+t.poseidon; const max=Math.max(t.helios,t.poseidon,1);
+  const lead = t.helios===t.poseidon ? '' : (t.helios>t.poseidon?'helios':'poseidon');
+  board.innerHTML=['helios','poseidon'].map(k=>{ const T=TRIBES[k];
+    return `<div class="tribe-panel ${k} ${lead===k?'leading':''}">
+      <div class="tribe-emoji">${T.emoji}</div>
+      <div class="tribe-name">${T.name}</div>
+      <div class="tribe-score">${t[k]}</div>
+      <div class="tribe-pts">points</div>
+      ${lead===k?`<div class="tribe-lead-tag">LEADING</div>`:(lead===''&&total>0?`<div class="tribe-pts" style="margin-top:8px">tied</div>`:'<div style="height:22px"></div>')}
+      <div class="tribe-bar"><span style="width:${Math.round(t[k]/max*100)}%"></span></div>
+    </div>`; }).join('');
+  renderScoreLog();
+}
+function renderScoreLog(){
+  const el=document.getElementById('tribe-log'); if(!el) return;
+  if(!SCORE_ROWS.length){ el.innerHTML=`<div class="callout">No points awarded yet. Use the buttons above to get the games started.</div>`; return; }
+  const admin=isAdmin();
+  el.innerHTML=`<div class="eyebrow" style="margin-bottom:8px">Recent awards (${SCORE_ROWS.length})</div>`+SCORE_ROWS.slice(0,50).map(r=>{ const T=TRIBES[r.tribe]||{name:r.tribe,emoji:''};
+    const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div class="score-logrow">
+      <span class="slr-tribe ${r.tribe}">${T.emoji} ${esc(T.name)}</span>
+      <span class="slr-pts">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
+      <span class="slr-reason">${esc(r.reason||'—')}</span>
+      <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
+      ${admin?`<button class="slr-rm" data-delaward="${escAttr(r.id)}">remove</button>`:''}
+    </div>`; }).join('');
+  el.querySelectorAll('[data-delaward]').forEach(b=>b.addEventListener('click',()=>scoreRemove(b.dataset.delaward)));
+}
+async function awardPoints(tribe, pts){
+  pts=parseInt(pts,10); if(!pts || !TRIBES[tribe]) return;
+  const reason=(document.getElementById('award-reason').value||'').trim();
+  const by=(SESSION&&SESSION.email)||'';
+  const rec={tribe, points:pts, reason, awarded_by:by};
+  const msg=document.getElementById('award-msg');
+  if(SUPA){ const {error}=await SB.from('tribe_awards').insert(rec); if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not award — try again.';} return; } }
+  else { rec.id='loc-'+Date.now(); rec.created_at=new Date().toISOString(); SCORE_ROWS.unshift(rec); store.set('tribe_awards',SCORE_ROWS); }
+  if(msg){ msg.className='gate-msg ok'; msg.textContent=`${pts>0?'+':''}${pts} to ${TRIBES[tribe].name}${reason?` — ${reason}`:''} ✓`; }
+  const rf=document.getElementById('award-reason'); if(rf) rf.value=''; const cf=document.getElementById('award-custom'); if(cf) cf.value='';
+  await scoreFetch(); renderScore();
+}
+async function scoreRemove(id){
+  if(!confirm('Remove this award from the tally?')) return;
+  if(SUPA){ await SB.from('tribe_awards').delete().eq('id',id); }
+  else { SCORE_ROWS=SCORE_ROWS.filter(x=>x.id!==id); store.set('tribe_awards',SCORE_ROWS); }
+  await scoreFetch(); renderScore();
+}
+function scoreSubscribe(){
+  if(!SUPA || SCORE_CHAN) return;
+  SCORE_CHAN=SB.channel('tribe-live').on('postgres_changes',{event:'*',schema:'public',table:'tribe_awards'},async()=>{ await scoreFetch(); renderScore(); }).subscribe();
+}
+async function refreshScore(){ await scoreFetch(); renderScore(); scoreSubscribe(); }
+function scoreInit(){
+  document.querySelectorAll('#view-scoreboard .award-btns').forEach(g=>{ const tribe=g.dataset.tribe;
+    g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>awardPoints(tribe, b.dataset.pts))); });
+  const cv=()=>document.getElementById('award-custom').value;
+  const ch=document.getElementById('award-custom-helios'); if(ch) ch.addEventListener('click',()=>awardPoints('helios', cv()));
+  const cp=document.getElementById('award-custom-poseidon'); if(cp) cp.addEventListener('click',()=>awardPoints('poseidon', cv()));
+  renderScore();
+}
+
 /* =================== REFERENCES =================== */
 function renderRefs(){
   document.getElementById('refs').innerHTML = CHECKLISTS.map(c=>`
@@ -3255,8 +3408,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
   if(t==='emergency' && !document.body.classList.contains('can-contacts')) t='dashboard';
@@ -3270,6 +3423,7 @@ function showTab(t){
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
+  if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
@@ -3810,7 +3964,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); emInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); emInit(); scoreInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();

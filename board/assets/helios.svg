@@ -1,22 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
-  <defs><path id="hr" d="M100 4 L107.5 52 L92.5 52 Z" fill="#F0C13B"/></defs>
+  <defs>
+    <!-- one wavy flame ray, curling to one side -->
+    <path id="hr" d="M95 54 C84 38 99 24 103 5 C108 25 113 40 106 54 Z" fill="#F0C13B"/>
+  </defs>
   <g>
     <use href="#hr" transform="rotate(0 100 100)"/>
-    <use href="#hr" transform="rotate(22.5 100 100)"/>
-    <use href="#hr" transform="rotate(45 100 100)"/>
-    <use href="#hr" transform="rotate(67.5 100 100)"/>
+    <use href="#hr" transform="rotate(30 100 100)"/>
+    <use href="#hr" transform="rotate(60 100 100)"/>
     <use href="#hr" transform="rotate(90 100 100)"/>
-    <use href="#hr" transform="rotate(112.5 100 100)"/>
-    <use href="#hr" transform="rotate(135 100 100)"/>
-    <use href="#hr" transform="rotate(157.5 100 100)"/>
+    <use href="#hr" transform="rotate(120 100 100)"/>
+    <use href="#hr" transform="rotate(150 100 100)"/>
     <use href="#hr" transform="rotate(180 100 100)"/>
-    <use href="#hr" transform="rotate(202.5 100 100)"/>
-    <use href="#hr" transform="rotate(225 100 100)"/>
-    <use href="#hr" transform="rotate(247.5 100 100)"/>
+    <use href="#hr" transform="rotate(210 100 100)"/>
+    <use href="#hr" transform="rotate(240 100 100)"/>
     <use href="#hr" transform="rotate(270 100 100)"/>
-    <use href="#hr" transform="rotate(292.5 100 100)"/>
-    <use href="#hr" transform="rotate(315 100 100)"/>
-    <use href="#hr" transform="rotate(337.5 100 100)"/>
+    <use href="#hr" transform="rotate(300 100 100)"/>
+    <use href="#hr" transform="rotate(330 100 100)"/>
   </g>
   <circle cx="100" cy="100" r="46" fill="#F0C13B"/>
   <g fill="#CE9A24" stroke="#CE9A24">

@@ -1,20 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 186" fill="#2E9BFF">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 184" fill="#2E9BFF">
   <!-- crossbar -->
-  <rect x="55" y="112" width="90" height="11" rx="5"/>
-  <!-- handle (shorter) -->
-  <rect x="94" y="118" width="12" height="50" rx="5"/>
+  <rect x="55" y="108" width="90" height="11" rx="5"/>
+  <!-- handle (short) -->
+  <rect x="94" y="114" width="12" height="48" rx="5"/>
   <!-- foot -->
-  <rect x="80" y="164" width="40" height="11" rx="5"/>
-  <!-- prongs -->
+  <rect x="80" y="158" width="40" height="11" rx="5"/>
+  <!-- prongs: centre straight, outer two bow outward -->
   <g fill="none" stroke="#2E9BFF" stroke-width="11" stroke-linecap="round">
-    <path d="M100 116 V52"/>
-    <path d="M64 118 C49 100 46 76 58 56"/>
-    <path d="M136 118 C151 100 154 76 142 56"/>
+    <path d="M100 112 V54"/>
+    <path d="M66 112 C46 94 46 74 54 58"/>
+    <path d="M134 112 C154 94 154 74 146 58"/>
   </g>
-  <!-- arrowhead tips -->
+  <!-- arrowheads, all pointing up (symmetric barbs) -->
   <g fill="#2E9BFF">
-    <g transform="translate(100 50)"><path d="M0 -28 L-16 6 L0 -6 L16 6 Z"/></g>
-    <g transform="translate(58 56) rotate(-26)"><path d="M0 -28 L-16 6 L0 -6 L16 6 Z"/></g>
-    <g transform="translate(142 56) rotate(26)"><path d="M0 -28 L-16 6 L0 -6 L16 6 Z"/></g>
+    <g transform="translate(100 50)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
+    <g transform="translate(54 54)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
+    <g transform="translate(146 54)"><path d="M0 -30 L-17 7 L0 -7 L17 7 Z"/></g>
   </g>
 </svg>

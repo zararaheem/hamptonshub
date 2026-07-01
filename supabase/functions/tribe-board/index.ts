@@ -27,7 +27,15 @@ Deno.serve(async (req) => {
     rows.forEach((r: { tribe: string; points: number }) => {
       if (r.tribe in totals) (totals as Record<string, number>)[r.tribe] += Number(r.points) || 0;
     });
-    return new Response(JSON.stringify({ ok: true, totals, recent: rows.slice(0, 12) }), {
+    // Tribe rosters — first names only (Week 1).
+    const { data: studs } = await sb.from("students").select("first, preferred, tribe").eq("week", 1);
+    const rosters: Record<string, string[]> = { helios: [], poseidon: [] };
+    (studs ?? []).forEach((s: { first: string; preferred: string | null; tribe: string | null }) => {
+      if (s.tribe === "helios" || s.tribe === "poseidon") rosters[s.tribe].push((s.preferred || s.first || "").trim());
+    });
+    rosters.helios.sort((a, b) => a.localeCompare(b));
+    rosters.poseidon.sort((a, b) => a.localeCompare(b));
+    return new Response(JSON.stringify({ ok: true, totals, recent: rows.slice(0, 12), rosters }), {
       headers: { ...CORS, "Content-Type": "application/json" },
     });
   } catch (_e) {

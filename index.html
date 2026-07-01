@@ -1044,8 +1044,15 @@
             </div>
           </div>
         </div>
+        <div id="award-pending" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border:1px solid var(--brass);border-radius:12px;background:rgba(212,160,74,.06)">
+          <span id="award-pending-label" style="font-weight:800"></span>
+          <input class="cell-input" id="award-pending-pts" type="number" placeholder="pts" style="max-width:90px;display:none">
+          <input class="cell-input" id="award-pending-reason" placeholder="Quick reason (optional) — e.g. “Won the relay”" style="flex:1;min-width:200px;max-width:360px">
+          <button class="btn" id="award-pending-go">Add point</button>
+          <button class="btn ghost" id="award-pending-cancel">Cancel</button>
+        </div>
         <div style="margin-top:12px"><span class="gate-msg" id="award-msg"></span></div>
-        <p class="lc-desc" style="margin:10px 0 0;color:var(--muted)">“Other…” lets you enter any amount (a negative number corrects a mistake). Admins can remove any entry in the feed below.</p>
+        <p class="lc-desc" style="margin:10px 0 0;color:var(--muted)">Tap a tribe's button, add a quick reason, then <b>Add point</b>. “Other…” lets you enter any amount (a negative number corrects a mistake). Admins can remove any entry in the feed below.</p>
       </div>
 
       <div class="eyebrow" style="margin:22px 0 0">Latest points earned · live</div>
@@ -2723,19 +2730,37 @@ function scoreSubscribe(){
 }
 async function refreshScore(){ await scoreFetch(); renderScore(); scoreSubscribe(); }
 function scoreInit(){
+  // Inline reason capture (no browser prompt — works in every browser/webview).
+  let pending=null;
+  const pbar=document.getElementById('award-pending');
+  const plabel=document.getElementById('award-pending-label');
+  const preason=document.getElementById('award-pending-reason');
+  const ppts=document.getElementById('award-pending-pts');
+  function openPending(tribe, ptsRaw){
+    const other = ptsRaw==='other';
+    pending={tribe, pts: other?null:ptsRaw};
+    const nm=TRIBES[tribe].name;
+    plabel.textContent = other ? `${TRIBES[tribe].emoji} ${nm} —` : `${TRIBES[tribe].emoji} ${nm} ${(+ptsRaw>0?'+':'')}${ptsRaw}`;
+    plabel.style.color = tribe==='helios' ? '#E8B84B' : '#5AA0F0';
+    ppts.style.display = other ? 'inline-block' : 'none'; ppts.value='';
+    preason.value=(document.getElementById('award-reason').value||'').trim();
+    pbar.style.display='flex';
+    (other?ppts:preason).focus();
+  }
+  function closePending(){ pending=null; pbar.style.display='none'; }
+  function commitPending(){
+    if(!pending) return;
+    const pts = pending.pts!=null ? pending.pts : ppts.value;
+    if(!parseInt(pts,10)){ ppts.focus(); return; }
+    awardPoints(pending.tribe, pts, preason.value);
+    const rf=document.getElementById('award-reason'); if(rf) rf.value='';
+    closePending();
+  }
   document.querySelectorAll('#view-scoreboard .award-btns').forEach(g=>{ const tribe=g.dataset.tribe;
-    g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>{
-      const nm=TRIBES[tribe].name; const preset=(document.getElementById('award-reason').value||'').trim();
-      if(b.dataset.pts==='other'){
-        const v=prompt(`Points for ${nm}? (any number — negative corrects a mistake)`); if(v==null || String(v).trim()==='') return;
-        const r=prompt(`Quick reason? (optional — for the receipt)`, preset); if(r===null) return;
-        awardPoints(tribe, v, r);
-      } else {
-        const pretty=(+b.dataset.pts>0?'+':'')+b.dataset.pts;
-        const r=prompt(`${nm} ${pretty} — quick reason? (optional, e.g. “Won the relay”)`, preset); if(r===null) return;
-        awardPoints(tribe, b.dataset.pts, r);
-      }
-    })); });
+    g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>openPending(tribe, b.dataset.pts))); });
+  document.getElementById('award-pending-go').addEventListener('click', commitPending);
+  document.getElementById('award-pending-cancel').addEventListener('click', closePending);
+  [preason, ppts].forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter') commitPending(); if(e.key==='Escape') closePending(); }));
   scoreClockTick(); setInterval(scoreClockTick, 1000);
   renderScore();
 }

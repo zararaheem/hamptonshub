@@ -134,6 +134,8 @@
   .voyage-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
   .voyage-head .tline{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
   .voyage-head .tline b{color:var(--brass-bright)}
+  .voyage-head .tsub{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--muted-2);letter-spacing:.03em;line-height:1.5}
+  .voyage-head .tsub b{color:var(--muted)}
   .ports{position:relative;display:grid;grid-template-columns:repeat(9,1fr);gap:10px}
   .ports::before{content:"";position:absolute;left:0;right:0;top:54px;height:2px;
     background:linear-gradient(90deg,transparent,var(--line),var(--line),transparent)}
@@ -2145,12 +2147,29 @@ function renderPorts(){
       ${w.flag?`<span class="flag">⚓ ${w.flag}</span>`:''}
     </a>`).join('');
 }
+// Coordinator + guide crew for a given week index, read live from the roster.
+function weekStaff(idx){
+  const rows = (typeof CONTENT!=='undefined' && CONTENT.roster) ? CONTENT.roster : ROSTER;
+  const cell = name => { const r=rows.find(x=>x.role===name); return r?String(r.cells[idx]||'').trim():''; };
+  const coord = cell('Campus Coordinator').replace(/\s+AND\s+/gi,' & ');
+  const guides = [];
+  rows.forEach(r=>{ if(/^(lead guide|guide\s*\d)/i.test(r.role)){ const v=String(r.cells[idx]||'').trim(); if(v && v.toUpperCase()!=='TBD') guides.push(v); }});
+  return { coord, guides };
+}
+function weekStaffLine(idx){
+  const {coord, guides} = weekStaff(idx);
+  const bits=[];
+  if(coord) bits.push(`Camp coordinator: <b>${esc(coord)}</b>`);
+  bits.push(`<b>${guides.length}</b> guide${guides.length===1?'':'s'}${guides.length?` (${esc(guides.join(', '))})`:''}`);
+  return bits.join(' · ');
+}
 function renderCountdown(){
   const w = WEEKS[NOW];
   const days = Math.round((new Date(w.start+"T00:00:00") - TODAY)/86400000);
   const el = document.getElementById('countdown');
   if(days>0) el.innerHTML = `T-minus <b>${days} days</b> to Week ${w.n} · ${w.theme} (${w.range})`;
   else el.innerHTML = `Now sailing · <b>Week ${w.n} · ${w.theme}</b> (${w.range})`;
+  el.innerHTML += `<div class="tsub">${weekStaffLine(NOW)}</div>`;
 }
 function renderTiles(){
   document.getElementById('tiles').innerHTML = (CONTENT.tiles||[]).map(t=>`

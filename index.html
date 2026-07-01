@@ -698,7 +698,6 @@
       <a class="nav-item cat-curriculum" href="https://alpha-guide-platform.vercel.app/auth/guide/eyJsaW5rX2lkIjoiZDJjYjk4MzUtMWI3OS00MmQ4LWIzNzgtYzdlYzkwNGViMzBjIiwiY2FtcHVzX2lkIjoiY2QyOWU1MDQtNmU2MS00YmU2LWE2MTAtYjFkMGU2NmYzZGJlIiwic2Vzc2lvbl9pZCI6ImI5Mzc0NTk3LTE5MGMtNDc3NS1hYjYwLWRhMDBlMTNhOGZiMiIsImV4cCI6MTc4MzMxNzYwMCwiaWF0IjoxNzgyNzAzNDg0fQ.BRltgXsE0oP4sZ5isqFh3cwUk-eA7NiAvlFdgIVq1GA" target="_blank" rel="noopener">Accountability Hub<span class="ext">↗</span></a>
       <button class="nav-item cat-curriculum" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item cat-curriculum" data-tab="resources">Resources<span class="ext">live ↗</span></button>
-      <button class="nav-item cat-logistics" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
       <div class="nav-label admin-only">Team Comms</div>
       <button class="nav-item admin-only cat-comms" data-tab="slack">Weekly Slack</button>
       <div class="nav-label">Parent Comms</div>
@@ -1024,7 +1023,7 @@
       <div id="events-groups" class="editable-disp"></div>
       <div class="editor-wrap" id="events-editor"></div>
 
-      <div class="callout" style="margin-top:6px">The full signage wish list with renderings lives in the <a data-jump="signage" style="color:var(--brass-bright);cursor:pointer">Signage Wish List</a> tab (live Google Sheet).</div>
+      <div class="callout" style="margin-top:6px">The full signage wish list with renderings lives in the <a href="https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342" target="_blank" rel="noopener" style="color:var(--brass-bright)">shared Google Sheet ↗</a>.</div>
     </section>
 
     <!-- ===== TRIBE SCOREBOARD ===== -->
@@ -1138,21 +1137,6 @@
     </section>
 
     <!-- ===== SIGNAGE WISH LIST ===== -->
-    <section class="view" id="view-signage" hidden>
-      <div class="eyebrow">Branding · Decor &amp; signage</div>
-      <h1 class="page-title">Signage &amp; posters wish list</h1>
-      <p class="page-lead">Everything we want printed, posted, or branded on-site — live from the shared sheet. Add a row in the sheet and it shows here.</p>
-      <div class="embed-head">
-        <div class="meta-line" style="margin:0"><span>Signage / branding · shared sheet</span></div>
-        <a class="btn" href="https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342" target="_blank" rel="noopener">Open sheet ↗</a>
-      </div>
-      <div class="embed-frame" id="signage-embed">
-        <div class="embed-fallback">
-          <div>Loading the signage wish list…</div>
-          <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342" target="_blank" rel="noopener">If it doesn't appear, open in a new tab ↗</a>
-        </div>
-      </div>
-    </section>
 
     <!-- ===== FAMILY GUIDE (weekly, parent-facing) ===== -->
     <section class="view" id="view-slack" hidden>
@@ -3708,8 +3692,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','slack','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
@@ -3719,7 +3703,6 @@ function showTab(t){
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
   if(t==='supplies'){ if(SUPA) refreshStateKey(supKey()).then(renderSup); else renderSup(); }
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
-  if(t==='signage') lazyEmbed('signage-embed','https://docs.google.com/spreadsheets/d/1SWTKxZnkGYOMJYKpD5y-Gi7feqY_gWLiwNnY7BaHyU0/edit?gid=252651342&widget=true&headers=false&rm=minimal');
   if(t==='famguide') loadFamGuide();
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();

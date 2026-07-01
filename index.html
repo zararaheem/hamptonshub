@@ -734,6 +734,9 @@
       </div>
       <div class="editor-wrap" id="tiles-editor"></div>
 
+      <div class="eyebrow" style="margin:2px 0 8px" id="week-summary-head">This week at a glance</div>
+      <div class="att-stats" id="week-summary" style="margin-bottom:20px"></div>
+
       <div class="grid g3 editable-disp" id="jump-grid"></div>
       <div class="editor-wrap" id="jump-editor"></div>
 
@@ -2152,6 +2155,26 @@ function renderCountdown(){
 function renderTiles(){
   document.getElementById('tiles').innerHTML = (CONTENT.tiles||[]).map(t=>`
     <div class="tile ${esc(t.c||'')}"><div class="k">${esc(t.k)}</div><div class="v">${esc(t.v)}</div><div class="d">${esc(t.d)}</div></div>`).join('');
+}
+// Live "This week at a glance" bar on the dashboard for the current week.
+function renderWeekSummary(){
+  const el=document.getElementById('week-summary'); if(!el) return;
+  const w=WEEKS[NOW]; const wk=w.n; const today=todayISO();
+  const studs=studentsForWeek(wk);
+  const enrolled=studs.length;
+  const bus=studs.filter(s=>s.bus_rider).length;
+  const inWeek = today>=w.start && today<=w.end;
+  const att = (typeof stateGet==='function' && stateGet(`att:w${wk}:${today}`)) || {};
+  let p=0,l=0,a=0; studs.forEach(s=>{ const v=(typeof attStat==='function')?attStat(att[s.id]):att[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
+  const unmarked=enrolled-p-l-a;
+  const hd=document.getElementById('week-summary-head'); if(hd) hd.textContent=`This week at a glance — Week ${wk} · ${w.theme} · ${w.range}`;
+  el.innerHTML=`
+    <div class="ministat"><div class="n">${enrolled}</div><div class="l">Enrolled</div></div>
+    <div class="ministat p"><div class="n">${p}</div><div class="l">Present${inWeek?' today':''}</div></div>
+    <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
+    <div class="ministat a"><div class="n">${a}</div><div class="l">Absent</div></div>
+    <div class="ministat"><div class="n">${unmarked}</div><div class="l">Not marked</div></div>
+    ${bus?`<div class="ministat bus"><div class="n">${bus}</div><div class="l">Bus riders</div></div>`:''}`;
 }
 
 /* =================== RENDER: STAFFING TABLES =================== */
@@ -3707,6 +3730,7 @@ function showTab(t){
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
+  if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
   if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
@@ -4238,7 +4262,7 @@ function renderGames(){
 }
 
 /* =================== INIT =================== */
-renderPorts(); renderCountdown(); renderTiles(); renderJumpCards(); renderRhythm();
+renderPorts(); renderCountdown(); renderTiles(); renderWeekSummary(); renderJumpCards(); renderRhythm();
 renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster(); renderOps(); renderSummary();
 renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
 /* Guide Hub: toggle between the weekly brief and filler games (also updates the URL) */

@@ -409,7 +409,8 @@
   .tribe-panel.poseidon{border-color:#3E8EDE;background:linear-gradient(165deg,rgba(62,142,222,.18),rgba(62,142,222,.03))}
   .tribe-panel.helios.leading{box-shadow:0 0 28px rgba(232,184,75,.4)}
   .tribe-panel.poseidon.leading{box-shadow:0 0 28px rgba(62,142,222,.4)}
-  .tribe-emoji{font-size:38px;line-height:1}
+  .tribe-emoji{font-size:38px;line-height:1;min-height:56px;display:flex;align-items:center;justify-content:center}
+  .tribe-logo{height:60px;width:auto;max-width:130px;object-fit:contain}
   .tribe-name{font-size:20px;font-weight:800;letter-spacing:.06em;margin-top:6px;text-transform:uppercase}
   .tribe-panel.helios .tribe-name,.tribe-panel.helios .tribe-score{color:#E8B84B}
   .tribe-panel.poseidon .tribe-name,.tribe-panel.poseidon .tribe-score{color:#5AA0F0}
@@ -434,7 +435,8 @@
   .score-logrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line-soft);font-size:13px}
   .slr-tribe{font-weight:700;min-width:104px}
   .slr-tribe.helios{color:#E8B84B} .slr-tribe.poseidon{color:#5AA0F0}
-  .slr-pts{font-family:var(--mono);font-weight:700;min-width:34px}
+  .slr-pts{font-family:var(--mono);font-weight:800;font-size:16px;min-width:40px}
+  .slr-pts.helios{color:#E8B84B} .slr-pts.poseidon{color:#5AA0F0}
   .slr-reason{flex:1;min-width:120px;color:var(--oyster)}
   .slr-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .slr-rm{background:none;border:0;color:var(--coral);cursor:pointer;font-family:var(--mono);font-size:11px}
@@ -1006,8 +1008,8 @@
 
     <!-- ===== TRIBE SCOREBOARD ===== -->
     <section class="view" id="view-scoreboard" hidden>
-      <div class="eyebrow">Camp Games · Live</div>
-      <h1 class="page-title">Tribe Scoreboard</h1>
+      <div class="eyebrow" id="score-clock">—</div>
+      <h1 class="page-title">Alpha Survivor · Week 1</h1>
       <p class="page-lead">Helios vs Poseidon — points update live for everyone the moment they're awarded. Award below, or from the <b>#tribe-games</b> Slack channel.</p>
 
       <div style="display:flex;justify-content:flex-end;margin:-4px 0 4px">
@@ -1023,31 +1025,25 @@
             <span class="award-tribe helios">☀️ Helios</span>
             <div class="award-btns" data-tribe="helios">
               <button class="award-btn" data-pts="1">+1</button>
-              <button class="award-btn" data-pts="2">+2</button>
               <button class="award-btn" data-pts="3">+3</button>
-              <button class="award-btn" data-pts="5">+5</button>
+              <button class="award-btn" data-pts="other">Other…</button>
             </div>
           </div>
           <div class="award-row">
-            <span class="award-tribe poseidon">🌊 Poseidon</span>
+            <span class="award-tribe poseidon">🔱 Poseidon</span>
             <div class="award-btns" data-tribe="poseidon">
               <button class="award-btn" data-pts="1">+1</button>
-              <button class="award-btn" data-pts="2">+2</button>
               <button class="award-btn" data-pts="3">+3</button>
-              <button class="award-btn" data-pts="5">+5</button>
+              <button class="award-btn" data-pts="other">Other…</button>
             </div>
           </div>
         </div>
-        <div class="award-custom-wrap">
-          <input class="cell-input" id="award-custom" type="number" placeholder="custom #" style="max-width:110px">
-          <button class="award-btn ghost" id="award-custom-helios">→ Helios</button>
-          <button class="award-btn ghost" id="award-custom-poseidon">→ Poseidon</button>
-          <span class="gate-msg" id="award-msg" style="margin-left:6px"></span>
-        </div>
-        <p class="lc-desc" style="margin:12px 0 0;color:var(--muted)">Tip: a negative custom number corrects a mistake. Admins can remove any entry in the log below.</p>
+        <div style="margin-top:12px"><span class="gate-msg" id="award-msg"></span></div>
+        <p class="lc-desc" style="margin:10px 0 0;color:var(--muted)">“Other…” lets you enter any amount (a negative number corrects a mistake). Admins can remove any entry in the feed below.</p>
       </div>
 
-      <div id="tribe-log" style="margin-top:22px"></div>
+      <div class="eyebrow" style="margin:22px 0 0">Latest points earned · live</div>
+      <div id="tribe-log" style="margin-top:8px"></div>
     </section>
 
     <!-- ===== ACCESS MANAGEMENT ===== -->
@@ -2655,7 +2651,7 @@ function dismissalInit(){
 }
 
 /* =================== TRIBE SCOREBOARD (live) =================== */
-const TRIBES={helios:{name:'Helios',emoji:'☀️'}, poseidon:{name:'Poseidon',emoji:'🌊'}};
+const TRIBES={helios:{name:'Helios',emoji:'☀️'}, poseidon:{name:'Poseidon',emoji:'🔱'}};
 let SCORE_ROWS=[]; let SCORE_CHAN=null;
 async function scoreFetch(){
   if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').order('created_at',{ascending:false}); SCORE_ROWS=(!error&&data)?data:[]; }
@@ -2669,7 +2665,7 @@ function renderScore(){
   const lead = t.helios===t.poseidon ? '' : (t.helios>t.poseidon?'helios':'poseidon');
   board.innerHTML=['helios','poseidon'].map(k=>{ const T=TRIBES[k];
     return `<div class="tribe-panel ${k} ${lead===k?'leading':''}">
-      <div class="tribe-emoji">${T.emoji}</div>
+      <div class="tribe-emoji"><img class="tribe-logo" src="board/assets/${k}.png" alt="${T.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">${T.emoji}</span></div>
       <div class="tribe-name">${T.name}</div>
       <div class="tribe-score">${t[k]}</div>
       <div class="tribe-pts">points</div>
@@ -2682,11 +2678,11 @@ function renderScoreLog(){
   const el=document.getElementById('tribe-log'); if(!el) return;
   if(!SCORE_ROWS.length){ el.innerHTML=`<div class="callout">No points awarded yet. Use the buttons above to get the games started.</div>`; return; }
   const admin=isAdmin();
-  el.innerHTML=`<div class="eyebrow" style="margin-bottom:8px">Recent awards (${SCORE_ROWS.length})</div>`+SCORE_ROWS.slice(0,50).map(r=>{ const T=TRIBES[r.tribe]||{name:r.tribe,emoji:''};
+  el.innerHTML=SCORE_ROWS.slice(0,50).map(r=>{ const T=TRIBES[r.tribe]||{name:r.tribe,emoji:''};
     const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     return `<div class="score-logrow">
+      <span class="slr-pts ${r.tribe}">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
       <span class="slr-tribe ${r.tribe}">${T.emoji} ${esc(T.name)}</span>
-      <span class="slr-pts">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
       <span class="slr-reason">${esc(r.reason||'—')}</span>
       <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
       ${admin?`<button class="slr-rm" data-delaward="${escAttr(r.id)}">remove</button>`:''}
@@ -2702,7 +2698,7 @@ async function awardPoints(tribe, pts){
   if(SUPA){ const {error}=await SB.from('tribe_awards').insert(rec); if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not award — try again.';} return; } }
   else { rec.id='loc-'+Date.now(); rec.created_at=new Date().toISOString(); SCORE_ROWS.unshift(rec); store.set('tribe_awards',SCORE_ROWS); }
   if(msg){ msg.className='gate-msg ok'; msg.textContent=`${pts>0?'+':''}${pts} to ${TRIBES[tribe].name}${reason?` — ${reason}`:''} ✓`; }
-  const rf=document.getElementById('award-reason'); if(rf) rf.value=''; const cf=document.getElementById('award-custom'); if(cf) cf.value='';
+  const rf=document.getElementById('award-reason'); if(rf) rf.value='';
   await scoreFetch(); renderScore();
 }
 async function scoreRemove(id){
@@ -2718,11 +2714,17 @@ function scoreSubscribe(){
 async function refreshScore(){ await scoreFetch(); renderScore(); scoreSubscribe(); }
 function scoreInit(){
   document.querySelectorAll('#view-scoreboard .award-btns').forEach(g=>{ const tribe=g.dataset.tribe;
-    g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>awardPoints(tribe, b.dataset.pts))); });
-  const cv=()=>document.getElementById('award-custom').value;
-  const ch=document.getElementById('award-custom-helios'); if(ch) ch.addEventListener('click',()=>awardPoints('helios', cv()));
-  const cp=document.getElementById('award-custom-poseidon'); if(cp) cp.addEventListener('click',()=>awardPoints('poseidon', cv()));
+    g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>{
+      if(b.dataset.pts==='other'){ const v=prompt(`Points for ${TRIBES[tribe].name}? (any number — negative corrects a mistake)`); if(v!=null && String(v).trim()!=='') awardPoints(tribe, v); }
+      else awardPoints(tribe, b.dataset.pts);
+    })); });
+  scoreClockTick(); setInterval(scoreClockTick, 1000);
   renderScore();
+}
+function scoreClockTick(){
+  const el=document.getElementById('score-clock'); if(!el) return;
+  const d=new Date();
+  el.textContent=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
 
 /* =================== REFERENCES =================== */

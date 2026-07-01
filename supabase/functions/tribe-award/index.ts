@@ -23,9 +23,9 @@ const SIGNING_SECRET = Deno.env.get("SLACK_SIGNING_SECRET") ?? "";
 
 const TRIBES: Record<string, string> = {
   helios: "helios", sun: "helios", gold: "helios", yellow: "helios", "☀️": "helios",
-  poseidon: "poseidon", sea: "poseidon", ocean: "poseidon", blue: "poseidon", water: "poseidon", "🌊": "poseidon",
+  poseidon: "poseidon", sea: "poseidon", ocean: "poseidon", blue: "poseidon", water: "poseidon", trident: "poseidon", "🔱": "poseidon", "🌊": "poseidon",
 };
-const NICE: Record<string, string> = { helios: "☀️ Helios", poseidon: "🌊 Poseidon" };
+const NICE: Record<string, string> = { helios: "☀️ Helios", poseidon: "🔱 Poseidon" };
 
 const reply = (text: string, inChannel = false) =>
   new Response(JSON.stringify({ response_type: inChannel ? "in_channel" : "ephemeral", text }), {
@@ -60,7 +60,7 @@ async function totals(sb: ReturnType<typeof createClient>) {
   return t;
 }
 const scoreLine = (t: { helios: number; poseidon: number }) =>
-  `☀️ *Helios ${t.helios}*  —  ${t.poseidon} *Poseidon* 🌊` +
+  `☀️ *Helios ${t.helios}*  —  ${t.poseidon} *Poseidon* 🔱` +
   (t.helios === t.poseidon ? "  (tied)" : `  (${t.helios > t.poseidon ? "Helios" : "Poseidon"} leads)`);
 
 Deno.serve(async (req) => {

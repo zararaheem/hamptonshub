@@ -14,7 +14,10 @@
   body{background:radial-gradient(120% 120% at 50% 0%,#12233a 0%,var(--ink) 60%);
     color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
     overflow:hidden;height:100vh;display:flex;flex-direction:column}
-  header{text-align:center;padding:2.4vh 2vw 1vh}
+  header{text-align:center;padding:1.8vh 2vw 1vh}
+  .clock{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(12px,1.6vw,20px);
+    letter-spacing:.12em;color:#9fb4c9;margin-bottom:.8vh}
+  .emoji .logo{height:clamp(48px,8vw,120px);width:auto;max-width:22vw;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4))}
   h1{font-size:clamp(20px,3.4vw,42px);font-weight:800;letter-spacing:.04em;text-transform:uppercase}
   h1 .vs{color:#8aa0b7;opacity:.6;margin:0 .4em;font-weight:600}
   .sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(10px,1.2vw,14px);
@@ -47,20 +50,21 @@
 </head>
 <body>
   <header>
-    <h1><span style="color:var(--gold-2)">Helios</span><span class="vs">vs</span><span style="color:var(--blue-2)">Poseidon</span></h1>
-    <div class="sub">Alpha Summer · Live Tribe Scoreboard</div>
+    <div class="clock" id="clock">—</div>
+    <h1>Alpha Survivor · Week 1</h1>
+    <div class="sub"><span style="color:var(--gold-2)">Helios</span> &nbsp;vs&nbsp; <span style="color:var(--blue-2)">Poseidon</span> · Live Tribe Scoreboard</div>
   </header>
   <div class="board">
     <div class="panel helios" id="p-helios">
       <div class="crown">👑</div>
-      <div class="emoji">☀️</div>
+      <div class="emoji"><img class="logo" src="assets/helios.png" alt="Helios" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="efallback" style="display:none">☀️</span></div>
       <div class="tname">Helios</div>
       <div class="score" id="s-helios">0</div>
       <div class="plabel">points</div>
     </div>
     <div class="panel poseidon" id="p-poseidon">
       <div class="crown">👑</div>
-      <div class="emoji">🌊</div>
+      <div class="emoji"><img class="logo" src="assets/poseidon.png" alt="Poseidon" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="efallback" style="display:none">🔱</span></div>
       <div class="tname">Poseidon</div>
       <div class="score" id="s-poseidon">0</div>
       <div class="plabel">points</div>
@@ -73,8 +77,16 @@
     const FN='https://qwmetffzspobjamwwhca.supabase.co/functions/v1/tribe-board';
     const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
     const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const nice={helios:'☀️ Helios',poseidon:'🌊 Poseidon'};
+    const nice={helios:'☀️ Helios',poseidon:'🔱 Poseidon'};
     let last={helios:null,poseidon:null};
+
+    function clockTick(){
+      const d=new Date();
+      document.getElementById('clock').textContent =
+        d.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'}) + '  ·  ' +
+        d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+    clockTick(); setInterval(clockTick, 1000);
 
     function paint(t, recent){
       ['helios','poseidon'].forEach(k=>{

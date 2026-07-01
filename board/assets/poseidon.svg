@@ -1,24 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 165" fill="none">
-  <g fill="#2E9BFF">
-    <!-- shorter shaft -->
-    <rect x="93" y="96" width="14" height="46" rx="7"/>
-    <!-- base grip -->
-    <rect x="78" y="138" width="44" height="12" rx="6"/>
-    <!-- crossbar (arched) -->
-    <path d="M46 100 Q100 80 154 100 L154 88 Q100 68 46 88 Z"/>
-  </g>
-  <g fill="none" stroke="#2E9BFF" stroke-width="13" stroke-linecap="round">
-    <!-- center prong -->
-    <path d="M100 92 V40"/>
-    <!-- left prong — curves outward -->
-    <path d="M60 94 C42 78 40 60 46 42"/>
-    <!-- right prong — curves outward -->
-    <path d="M140 94 C158 78 160 60 154 42"/>
-  </g>
-  <g fill="#2E9BFF">
-    <!-- barbed tips -->
-    <path d="M100 18 l12 28 h-24 z"/>
-    <path d="M46 22 l13 26 -23 4 z"/>
-    <path d="M154 22 l-13 26 23 4 z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="#2E9BFF">
+  <!-- shorter shaft -->
+  <rect x="94" y="94" width="12" height="46" rx="4"/>
+  <!-- base grip -->
+  <rect x="80" y="136" width="40" height="11" rx="5"/>
+  <!-- crossbar (arched) -->
+  <path d="M48 98 Q100 80 152 98 L152 88 Q100 70 48 88 Z"/>
+  <!-- center tine — sharp point -->
+  <path d="M93 94 L100 18 L107 94 Z"/>
+  <!-- left tine — curves outward to a sharp point -->
+  <path d="M58 94 C44 76 42 54 44 28 C49 54 55 76 67 94 Z"/>
+  <!-- right tine — curves outward to a sharp point -->
+  <path d="M142 94 C156 76 158 54 156 28 C151 54 145 76 133 94 Z"/>
 </svg>

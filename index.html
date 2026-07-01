@@ -2665,7 +2665,7 @@ function renderScore(){
   const lead = t.helios===t.poseidon ? '' : (t.helios>t.poseidon?'helios':'poseidon');
   board.innerHTML=['helios','poseidon'].map(k=>{ const T=TRIBES[k];
     return `<div class="tribe-panel ${k} ${lead===k?'leading':''}">
-      <div class="tribe-emoji"><img class="tribe-logo" src="board/assets/${k}.png" alt="${T.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">${T.emoji}</span></div>
+      <div class="tribe-emoji"><img class="tribe-logo" src="board/assets/${k}.svg" alt="${T.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">${T.emoji}</span></div>
       <div class="tribe-name">${T.name}</div>
       <div class="tribe-score">${t[k]}</div>
       <div class="tribe-pts">points</div>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs><path id="hr" d="M100 4 L107.5 52 L92.5 52 Z" fill="#F0C13B"/></defs>
+  <g>
+    <use href="#hr" transform="rotate(0 100 100)"/>
+    <use href="#hr" transform="rotate(22.5 100 100)"/>
+    <use href="#hr" transform="rotate(45 100 100)"/>
+    <use href="#hr" transform="rotate(67.5 100 100)"/>
+    <use href="#hr" transform="rotate(90 100 100)"/>
+    <use href="#hr" transform="rotate(112.5 100 100)"/>
+    <use href="#hr" transform="rotate(135 100 100)"/>
+    <use href="#hr" transform="rotate(157.5 100 100)"/>
+    <use href="#hr" transform="rotate(180 100 100)"/>
+    <use href="#hr" transform="rotate(202.5 100 100)"/>
+    <use href="#hr" transform="rotate(225 100 100)"/>
+    <use href="#hr" transform="rotate(247.5 100 100)"/>
+    <use href="#hr" transform="rotate(270 100 100)"/>
+    <use href="#hr" transform="rotate(292.5 100 100)"/>
+    <use href="#hr" transform="rotate(315 100 100)"/>
+    <use href="#hr" transform="rotate(337.5 100 100)"/>
+  </g>
+  <circle cx="100" cy="100" r="46" fill="#F0C13B"/>
+  <g fill="#CE9A24" stroke="#CE9A24">
+    <circle cx="85" cy="95" r="5.5" stroke="none"/>
+    <circle cx="115" cy="95" r="5.5" stroke="none"/>
+    <path d="M82 112 Q100 130 118 112" stroke-width="6" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -13,6 +13,18 @@ optional Slack slash command so anyone can award points from Slack.
   whether from the hub or Slack.
 - **Seeded:** Helios +3 (Launch games).
 
+## Big-screen live board (for projecting)
+
+A standalone, **no-login** full-screen scoreboard lives at **`/board/`**
+(e.g. `https://hamptonshub.vercel.app/board/`). Open it on a TV/laptop and it
+shows Helios vs Poseidon in huge numbers, highlights the leader, runs a ticker
+of recent awards, and refreshes every 5 seconds. There's an **“📺 Open live
+board ↗”** button on the hub's Tribe Scoreboard tab. It reads through the public
+`tribe-board` edge function (only the two scores + award reasons are exposed).
+
+No extra Vercel setup — `board/index.html` deploys as a subpath of the existing
+hub project.
+
 ## Award from Slack (one-time setup, ~5 min)
 
 The `tribe-award` edge function is deployed. To connect Slack:

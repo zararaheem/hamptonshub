@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tribe Scoreboard — Helios vs Poseidon</title>
+<style>
+  :root{
+    --gold:#E8B84B; --gold-2:#F6D479; --blue:#3E8EDE; --blue-2:#68B0F5;
+    --ink:#0b1622; --panel:#0f1c2b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:radial-gradient(120% 120% at 50% 0%,#12233a 0%,var(--ink) 60%);
+    color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    overflow:hidden;height:100vh;display:flex;flex-direction:column}
+  header{text-align:center;padding:2.4vh 2vw 1vh}
+  h1{font-size:clamp(20px,3.4vw,42px);font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  h1 .vs{color:#8aa0b7;opacity:.6;margin:0 .4em;font-weight:600}
+  .sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(10px,1.2vw,14px);
+    letter-spacing:.22em;text-transform:uppercase;color:#7c93aa;margin-top:.6vh}
+  .board{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2vw;padding:1vh 2.2vw 2vh;min-height:0}
+  .panel{position:relative;border-radius:28px;border:3px solid;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;overflow:hidden;transition:box-shadow .5s,transform .4s}
+  .panel.helios{border-color:var(--gold);background:linear-gradient(170deg,rgba(232,184,75,.20),rgba(232,184,75,.03))}
+  .panel.poseidon{border-color:var(--blue);background:linear-gradient(170deg,rgba(62,142,222,.22),rgba(62,142,222,.03))}
+  .panel.lead.helios{box-shadow:0 0 90px rgba(232,184,75,.55) inset,0 0 40px rgba(232,184,75,.3)}
+  .panel.lead.poseidon{box-shadow:0 0 90px rgba(62,142,222,.55) inset,0 0 40px rgba(62,142,222,.3)}
+  .emoji{font-size:clamp(40px,7vw,110px);line-height:1;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4))}
+  .tname{font-size:clamp(24px,4.6vw,72px);font-weight:900;letter-spacing:.05em;text-transform:uppercase;margin-top:.3vh}
+  .helios .tname{color:var(--gold-2)} .poseidon .tname{color:var(--blue-2)}
+  .score{font-size:clamp(90px,20vw,300px);font-weight:900;line-height:.9;margin:.5vh 0}
+  .helios .score{color:var(--gold)} .poseidon .score{color:var(--blue)}
+  .plabel{font-family:ui-monospace,monospace;font-size:clamp(11px,1.4vw,17px);letter-spacing:.28em;
+    text-transform:uppercase;color:#8ea4ba}
+  .crown{position:absolute;top:2.5vh;font-size:clamp(20px,3vw,44px);opacity:0;transition:opacity .5s}
+  .panel.lead .crown{opacity:1}
+  .bump{animation:bump .55s ease}
+  @keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+  .ticker{flex:0 0 auto;background:rgba(0,0,0,.28);border-top:1px solid rgba(255,255,255,.08);
+    padding:1.4vh 2.2vw;font-size:clamp(12px,1.5vw,19px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    color:#c7d6e6;text-align:center}
+  .ticker b.h{color:var(--gold-2)} .ticker b.p{color:var(--blue-2)}
+  .foot{position:fixed;bottom:8px;right:14px;font-family:ui-monospace,monospace;font-size:11px;color:#4a6076}
+  @media (max-width:640px){ .board{gap:3vw} .score{font-size:24vw} }
+</style>
+</head>
+<body>
+  <header>
+    <h1><span style="color:var(--gold-2)">Helios</span><span class="vs">vs</span><span style="color:var(--blue-2)">Poseidon</span></h1>
+    <div class="sub">Alpha Summer · Live Tribe Scoreboard</div>
+  </header>
+  <div class="board">
+    <div class="panel helios" id="p-helios">
+      <div class="crown">👑</div>
+      <div class="emoji">☀️</div>
+      <div class="tname">Helios</div>
+      <div class="score" id="s-helios">0</div>
+      <div class="plabel">points</div>
+    </div>
+    <div class="panel poseidon" id="p-poseidon">
+      <div class="crown">👑</div>
+      <div class="emoji">🌊</div>
+      <div class="tname">Poseidon</div>
+      <div class="score" id="s-poseidon">0</div>
+      <div class="plabel">points</div>
+    </div>
+  </div>
+  <div class="ticker" id="ticker">Waiting for the games to begin…</div>
+  <div class="foot" id="foot">connecting…</div>
+
+  <script>
+    const FN='https://qwmetffzspobjamwwhca.supabase.co/functions/v1/tribe-board';
+    const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+    const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const nice={helios:'☀️ Helios',poseidon:'🌊 Poseidon'};
+    let last={helios:null,poseidon:null};
+
+    function paint(t, recent){
+      ['helios','poseidon'].forEach(k=>{
+        const el=document.getElementById('s-'+k);
+        if(last[k]!==null && t[k]!==last[k]){ el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+        el.textContent=t[k]; last[k]=t[k];
+      });
+      const lead = t.helios===t.poseidon ? '' : (t.helios>t.poseidon?'helios':'poseidon');
+      document.getElementById('p-helios').classList.toggle('lead', lead==='helios');
+      document.getElementById('p-poseidon').classList.toggle('lead', lead==='poseidon');
+      const tick=document.getElementById('ticker');
+      if(recent && recent.length){
+        tick.innerHTML = recent.slice(0,6).map(r=>{
+          const cls=r.tribe==='helios'?'h':'p';
+          const pts=(Number(r.points)>0?'+':'')+r.points;
+          return `<b class="${cls}">${esc(nice[r.tribe]||r.tribe)} ${pts}</b>${r.reason?` ${esc(r.reason)}`:''}`;
+        }).join('  ·  ');
+      } else { tick.textContent='Waiting for the games to begin…'; }
+    }
+    async function tick(){
+      try{
+        const res=await fetch(FN,{method:'POST',headers:{'Authorization':'Bearer '+ANON,'Content-Type':'application/json'},body:'{}'});
+        const j=await res.json();
+        if(j&&j.ok){ paint(j.totals,j.recent); document.getElementById('foot').textContent='live · updates every 5s'; }
+      }catch(e){ document.getElementById('foot').textContent='reconnecting…'; }
+    }
+    tick(); setInterval(tick, 5000);
+  </script>
+</body>
+</html>

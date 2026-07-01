@@ -50,42 +50,44 @@
   /* ---------- Layout shell ---------- */
   .shell{display:flex;min-height:100vh}
   .rail{
-    width:248px;flex-shrink:0;position:sticky;top:0;height:100vh;
+    width:212px;flex-shrink:0;position:sticky;top:0;height:100vh;
     background:linear-gradient(180deg,var(--navy-2),#0a2029);
     border-right:1px solid var(--line);
     display:flex;flex-direction:column;
     z-index:30;
   }
-  .brand{padding:22px 22px 18px;border-bottom:1px solid var(--line-soft)}
+  .brand{padding:18px 18px 15px;border-bottom:1px solid var(--line-soft)}
   .brand .anchor{font-size:13px;letter-spacing:.28em;text-transform:uppercase;
     font-family:var(--mono);color:var(--brass);display:flex;align-items:center;gap:8px}
-  .brand h1{font-family:var(--display);font-weight:600;font-size:24px;line-height:1.05;
+  .brand h1{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.05;
     margin:10px 0 2px;color:var(--oyster);font-optical-sizing:auto}
   .brand .sub{font-size:12px;color:var(--muted);letter-spacing:.02em}
 
-  .nav{padding:14px 12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+  .nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
   .nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
     color:var(--muted-2);padding:14px 12px 6px}
   .nav-item{
     display:flex;align-items:center;gap:11px;width:100%;text-align:left;
     background:none;border:0;cursor:pointer;color:var(--muted);
-    font-family:var(--body);font-size:14.5px;font-weight:500;
-    padding:10px 12px;border-radius:10px;transition:.16s;position:relative;
+    font-family:var(--body);font-size:14px;font-weight:500;
+    padding:9px 11px;border-radius:10px;transition:.16s;position:relative;
   }
   .nav-item .ico{width:18px;height:18px;flex-shrink:0;opacity:.85}
+  /* slight category tint at rest so tabs are recognisable at a glance */
+  .nav-item[class*="cat-"]{background:var(--nav-tint,transparent)}
   .nav-item:hover{background:var(--panel);color:var(--oyster)}
   .nav-item.active{background:var(--panel-2);color:var(--oyster)}
   .nav-item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
-    background:var(--brass);border-radius:0 3px 3px 0}
+    background:var(--nav-accent,var(--brass));border-radius:0 3px 3px 0}
   .nav-item .ext{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--muted-2)}
   .nav-item[class*="cat-"]{box-shadow:inset 3px 0 0 var(--nav-accent,transparent)}
-  .nav-item.cat-people{--nav-accent:var(--teal-bright)}
-  .nav-item.cat-logistics{--nav-accent:var(--brass-bright)}
-  .nav-item.cat-curriculum{--nav-accent:#9b8cff}
-  .nav-item.cat-ops{--nav-accent:var(--coral)}
-  .nav-item.cat-comms{--nav-accent:#5ab0e6}
-  .nav-item.cat-admin{--nav-accent:var(--muted-2)}
-  .nav-item.cat-games{--nav-accent:#E8B84B}
+  .nav-item.cat-people{--nav-accent:var(--teal-bright);--nav-tint:rgba(95,179,169,.08)}
+  .nav-item.cat-logistics{--nav-accent:var(--brass-bright);--nav-tint:rgba(224,171,99,.08)}
+  .nav-item.cat-curriculum{--nav-accent:#9b8cff;--nav-tint:rgba(155,140,255,.08)}
+  .nav-item.cat-ops{--nav-accent:var(--coral);--nav-tint:rgba(226,101,74,.08)}
+  .nav-item.cat-comms{--nav-accent:#5ab0e6;--nav-tint:rgba(90,176,230,.08)}
+  .nav-item.cat-admin{--nav-accent:var(--muted-2);--nav-tint:rgba(255,255,255,.035)}
+  .nav-item.cat-games{--nav-accent:#E8B84B;--nav-tint:rgba(232,184,75,.08)}
   .nav-item .wip{margin-left:auto;font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:6px;padding:1px 5px}
   .wip-tag{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--coral);border:1px solid var(--coral);border-radius:7px;padding:3px 9px;vertical-align:middle;margin-left:8px;white-space:nowrap}
   .wip-banner{margin:6px 0 14px;background:rgba(226,101,74,.12);border:1px solid var(--coral);border-radius:10px;padding:11px 14px;color:var(--coral);font-size:13.5px}
@@ -200,6 +202,8 @@
   /* ---------- Tables ---------- */
   .tablewrap{border:1px solid var(--line);border-radius:var(--radius);overflow:auto;background:var(--navy-2)}
   table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  #ros-table{min-width:1040px}
+  #ros-table th,#ros-table td{white-space:nowrap}
   thead th{position:sticky;top:0;background:#0d2a37;text-align:left;font-family:var(--mono);
     font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
     padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2}
@@ -250,7 +254,7 @@
   .ministat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center;min-width:82px}
   .ministat .n{font-family:var(--display);font-weight:600;font-size:22px;line-height:1}
   .ministat .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
-  .ministat.p .n{color:var(--ok)} .ministat.l-late .n{color:var(--brass-bright)} .ministat.a .n{color:var(--coral)}
+  .ministat.p .n{color:var(--ok)} .ministat.l-late .n{color:var(--brass-bright)} .ministat.a .n{color:var(--coral)} .ministat.bus .n{color:var(--brass-bright)}
 
   .student-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-soft)}
   .student-row:last-child{border-bottom:0}
@@ -326,7 +330,7 @@
   .th-sort:hover{color:var(--brass-bright)}
   .th-arrow{font-size:9px;color:var(--brass-bright)}
   .seg-filter{display:flex;gap:6px;flex-wrap:wrap}
-  .goesby-in{margin-top:4px;font-size:11.5px;color:var(--brass-bright);font-style:italic}
+  .goesby-in{display:block;margin-top:4px;font-size:11.5px;color:var(--brass-bright);font-style:italic}
   .goesby-in::placeholder{color:var(--muted-2);font-style:normal}
 
   /* ---------- Weekly Supplies ---------- */
@@ -384,7 +388,7 @@
   .hd-k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
   .hd-v{font-size:14px;color:var(--oyster);font-weight:600}
   /* dismissal carpool line */
-  .dq-picker{display:flex;flex-wrap:wrap;gap:8px}
+  .dq-picker{display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;padding:2px}
   .dq-pick{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);
     border-radius:8px;padding:7px 12px;cursor:pointer;transition:.12s}
   .dq-pick:hover{border-color:var(--brass)}
@@ -435,11 +439,18 @@
   .slr-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .slr-rm{background:none;border:0;color:var(--coral);cursor:pointer;font-family:var(--mono);font-size:11px}
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
-  .dq-tag.self{font-family:var(--mono);font-size:10px;color:var(--teal-bright);border:1px solid var(--teal);border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:10px;padding:1px 6px;white-space:nowrap}
+  .dq-tag.self{color:var(--teal-bright);border:1px solid var(--teal)}
+  .dq-tag.bus{color:var(--brass-bright);border:1px solid var(--brass)}
+  .dq-pick.busrider{border-color:var(--brass)}
+  .pick-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 5px;border-radius:8px;border:1px solid currentColor;margin-left:5px;vertical-align:1px}
+  .pick-tag.bus{color:var(--brass-bright)} .pick-tag.self{color:var(--teal-bright)}
+  .bus-chip{font-family:var(--mono);font-size:10px;color:var(--brass-bright);border:1px solid var(--brass);border-radius:10px;padding:1px 6px;white-space:nowrap;margin-left:6px}
   .dq-note{font-size:12px;color:var(--brass-bright);margin-top:3px}
   .dqn-table{width:100%;border-collapse:collapse}
   .dqn-table th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
   .dqn-table td{padding:5px 8px;border-bottom:1px solid var(--line-soft)}
+  .dqn-m{display:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
   .dq-done{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
   .dq-done .lk{background:none;border:0;color:var(--teal-bright);cursor:pointer;font-family:var(--mono);font-size:11px}
   .big-check{width:18px;height:18px;accent-color:var(--brass);cursor:pointer}
@@ -454,6 +465,7 @@
   .fh-shout .msg{font-size:14.5px;color:var(--oyster)}
   .fh-shout .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:7px}
   .gradein{max-width:74px}
+  .bday-in{min-width:122px} .shirt-in{min-width:142px;text-transform:uppercase}
   /* roster admin-only controls (self-contained so layout is preserved) */
   #ros-addrow{display:none}
   body.is-admin #ros-addrow{display:flex}
@@ -557,7 +569,8 @@
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
   .addpu-btn:hover{border-color:var(--teal)}
-  .ros-health{font-size:12px;line-height:1.45;color:var(--coral);white-space:normal;word-break:break-word;max-width:340px;margin:1px 0}
+  .ros-health{font-size:12px;line-height:1.4;color:var(--coral);width:260px;white-space:normal;word-break:break-word;margin:1px 0}
+  #ros-table td:has(.ros-health),#ros-table .hcell{min-width:272px;white-space:normal}
   .ros-health b{font-weight:700}
   .student-block{border-bottom:1px solid var(--line-soft)}
   .student-block:last-child{border-bottom:0}
@@ -568,7 +581,7 @@
     .ports::before{display:none}
     .port .theme{min-height:auto}
   }
-  @media (max-width:760px){
+  @media (max-width:760px), (max-width:980px) and (pointer:coarse){
     .rail{position:fixed;left:0;top:0;transform:translateX(-100%);transition:.25s;box-shadow:var(--shadow)}
     .rail.open{transform:none}
     .topbar{display:flex}
@@ -578,7 +591,7 @@
     .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;display:none}
     .scrim.show{display:block}
   }
-  @media (max-width:760px){
+  @media (max-width:760px), (max-width:980px) and (pointer:coarse){
     .levels{grid-template-columns:repeat(3,1fr)}
     .health-panel{padding-left:14px}
     .health-panel .hgrid{grid-template-columns:1fr}
@@ -588,12 +601,37 @@
     .health-toggle{margin-left:auto}
     .student-row .seg,.student-block .seg{margin-left:0;margin-top:2px;width:100%;order:5}
     .seg button{flex:1;padding:15px 6px;font-size:14px}
-    /* Dismissal: bigger tap targets */
-    .dq-pick{padding:13px 15px;font-size:14.5px}
-    .dq-car{flex-wrap:wrap;gap:10px}
-    .dq-car .dq-body{flex:1 1 100%;order:2}
-    .dq-dismiss{flex:1;padding:14px;font-size:15px;order:3}
-    .att-stats .ministat,.seg-filter .fbtn{flex:1}
+    /* Dismissal: stack the controls and grow tap targets */
+    .att-bar{gap:10px}
+    .att-bar .field{flex:1 1 100%}
+    .att-bar .field select,.att-bar .field input{width:100%}
+    #dq-refresh{width:100%;align-self:stretch!important}
+    .att-stats{margin-left:0;width:100%}
+    .att-stats .ministat,.seg-filter .fbtn{flex:1 1 calc(50% - 5px);min-width:0}
+    /* Add-to-line inputs full width, stacked */
+    #dq-label,#dq-search,#dq-sort,#dq-multi{flex:1 1 100%!important;max-width:none!important;min-width:0!important}
+    #dq-selbar #dq-addtogether{flex:1 1 100%}
+    /* Student picker: a single-column, full-width scrollable list of names */
+    .dq-picker{display:grid;grid-template-columns:1fr;gap:8px;max-height:52vh}
+    .dq-pick{padding:14px 12px;font-size:14.5px;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+    /* Carpool line card: number + name up top, full-width Dismiss below */
+    .dq-car{flex-wrap:wrap;gap:10px 12px}
+    .dq-car .dq-body{flex:1 1 0;min-width:0;order:1}
+    .dq-pos{order:0}
+    .dq-names{font-size:17px}
+    .dq-car .del{order:1;margin-left:auto;align-self:flex-start;font-size:24px;padding:4px 10px}
+    .dq-dismiss{flex:1 1 100%;padding:15px;font-size:16px;order:3}
+    /* Notes editor: stack each student into a card instead of a 3-col table */
+    .dqn-table,.dqn-table tbody,.dqn-table tr,.dqn-table td{display:block;width:100%}
+    .dqn-table thead{position:absolute;left:-9999px}
+    .dqn-table tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;background:var(--navy-2)}
+    .dqn-table td{border:0;padding:6px 0;text-align:left!important}
+    .dqn-table td.role-cell{font-size:16px;font-weight:600;color:var(--oyster);white-space:normal!important}
+    .dqn-m{display:block}
+    .dqn-table .big-check{width:26px;height:26px}
+    .dqn-table .cell-input{width:100%}
+    /* Dismissed log rows: let long name lists wrap */
+    .dq-done{flex-wrap:wrap}
   }
 </style>
 </head>
@@ -795,6 +833,7 @@
             <button class="fbtn" data-af="p">Present</button>
             <button class="fbtn" data-af="l">Late</button>
             <button class="fbtn" data-af="a">Absent</button>
+            <button class="fbtn" data-af="bus">Bus</button>
           </div>
           <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin-left:auto">Sort by
             <select class="cell-select" id="att-sort" style="width:auto;min-width:120px"><option value="last">Last name</option><option value="first">First name</option></select>
@@ -841,6 +880,7 @@
         <button class="fbtn" data-cf="pending">Consent pending</button>
         <button class="fbtn" data-cf="health">⚠ Health flag</button>
       </div>
+      <datalist id="shirt-sizes"><option value="Youth XS"><option value="Youth S"><option value="Youth M"><option value="Youth L"><option value="Youth XL"><option value="Adult S"><option value="Adult M"><option value="Adult L"><option value="Adult XL"><option value="Adult XXL"></datalist>
       <div class="tablewrap"><table id="ros-table"></table></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
@@ -855,7 +895,7 @@
         <span class="gate-msg" id="ros-io-msg"></span>
       </div>
       <div id="ros-review"></div>
-      <div class="callout" style="margin-top:18px"><b>CSV import:</b> works with two formats, auto-detected. <b>(1) The Alpha Summer registration export</b> — one row per child with a "Weeks" column: each child is created/updated in <b>every week they attend</b>, and parent/guardian/emergency details flow straight into Family Contacts. <b>(2) A simple roster</b> — First/Name, Grade, Preferred name, Allergies, Medications, Notes, Media consent, contacts, DOB (columns matched by name, any order; imports into the selected week). Both <b>match existing students by first name</b> and show a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
+      <div class="callout" style="margin-top:18px"><b>CSV import:</b> works with two formats, auto-detected. <b>(1) The Alpha Summer registration export</b> — one row per child with a "Weeks" column: each child is created/updated in <b>every week they attend</b>, and parent/guardian/emergency details flow straight into Family Contacts. <b>(2) A simple roster</b> — First/Name, Grade, Preferred name, Birthday/DOB, Shirt size, Bus rider, Allergies, Medications, Notes, Media consent, contacts (columns matched by name, any order; imports into the selected week). Both <b>match existing students by first name</b> and show a review screen before anything saves. Editing is limited to admins; everyone can view.</div>
     </section>
 
     <!-- ===== DISMISSAL (carpool line) ===== -->
@@ -872,14 +912,29 @@
 
       <div class="att-stats" id="dq-stats" style="margin:6px 0 18px"></div>
 
-      <div class="card" style="margin-bottom:20px">
+      <!-- Carpool line — pinned at the top so staff can dismiss fast -->
+      <div class="section-title"><span class="num">↓</span>Carpool line</div>
+      <div id="dq-line"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px;align-items:center">
+        <button class="btn" id="dq-busall" style="display:none">Add bus riders</button>
+        <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
+        <button class="btn ghost" id="dq-export">Export CSV</button>
+      </div>
+
+      <div class="card" style="margin:20px 0">
         <div class="eyebrow" style="margin-bottom:8px">Add to the line</div>
-        <p class="lc-desc" style="margin:0 0 10px">Tap a student as their car pulls up — they go straight into the line. Optionally type a car label first (e.g. "Blue SUV") to tag your next tap.</p>
+        <p class="lc-desc" style="margin:0 0 10px">Tap a student as their car pulls up — they go straight into the line. To send kids out <b>together</b> (siblings, carpools), tap <b>Group</b>, select them, then add as one car. Optionally type a car label first (e.g. "Blue SUV").</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-          <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next tap" style="min-width:220px">
-          <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:180px;flex:1;max-width:280px">
+          <input class="cell-input" id="dq-label" placeholder="Car label (optional) — applies to your next add" style="min-width:200px">
+          <input class="cell-input" id="dq-search" placeholder="🔍 Search a student…" style="min-width:170px;flex:1;max-width:260px">
+          <select class="cell-input" id="dq-sort" title="Sort the name list" style="min-width:150px;max-width:180px">
+            <option value="last">Sort: last name</option>
+            <option value="first">Sort: first name</option>
+          </select>
+          <button class="btn ghost" id="dq-multi" title="Pick several kids leaving together, then add them as one car">Group</button>
         </div>
         <div id="dq-picker" class="dq-picker"></div>
+        <div id="dq-selbar" style="display:none;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
       </div>
 
       <div class="card" style="margin-bottom:20px">
@@ -891,12 +946,6 @@
         <div id="dq-notes" style="display:none;margin-top:14px"></div>
       </div>
 
-      <div class="section-title"><span class="num">↓</span>Carpool line</div>
-      <div id="dq-line"></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center">
-        <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
-        <button class="btn ghost" id="dq-export">Export CSV</button>
-      </div>
       <div id="dq-log"></div>
     </section>
 
@@ -1411,12 +1460,40 @@ function flash(id){ const el=document.getElementById(id); if(el) el.textContent=
    localStorage when Supabase isn't connected. */
 let ROSTER_DATA = {}; // { [week]: [ {id, week, first, last, grade, laptop_assigned, laptop_ready, allergies, meds, sort_order} ] }
 let EMERGENCY = {};   // owner-only: { [student_id]: {guardian, guardian_phone, ...} }
-let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last'
+let STUDENT_SORT='roster'; // 'roster' | 'first' | 'last' | 'grade' | 'birthday' | 'shirt'
+let STUDENT_DIR='asc';     // 'asc' | 'desc' (applies to the active sort key)
+const SHIRT_ORDER=['YXS','YS','YM','YL','YXL','YXXL','AXS','AS','AM','AL','AXL','AXXL','XS','S','M','L','XL','XXL'];
+function gradeNum(g){ g=String(g||'').trim().toUpperCase(); if(/^(PK|PRE-?K)$/.test(g)) return -1; if(/^K/.test(g)) return 0; const n=parseInt(g,10); return isNaN(n)?99:n; }
+// Normalise "Youth M", "Adult S", "YM", "M" → an ordered code, then rank by size.
+function shirtRank(s){
+  let t=String(s||'').toUpperCase().replace(/[\s_\-]/g,'');
+  t=t.replace(/YOUTH|KIDS?/,'Y').replace(/ADULT|MENS?|WOMENS?/,'A')
+     .replace(/XSMALL/,'XS').replace(/XXLARGE/,'XXL').replace(/XLARGE/,'XL').replace(/SMALL/,'S').replace(/MEDIUM/,'M').replace(/LARGE/,'L');
+  const i=SHIRT_ORDER.indexOf(t); return i<0?99:i;
+}
+// Sort birthdays by actual date of birth (oldest → youngest ascending).
+// Accepts ISO (YYYY-MM-DD) and M/D/Y; M/D with no year falls back to month/day.
+function bdayKey(s){
+  s=String(s||'').trim(); let m;
+  if((m=s.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/))) return (+m[1])*10000+(+m[2])*100+(+m[3]);
+  if((m=s.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{2,4})$/))){ let y=+m[3]; if(y<100) y+=2000; return y*10000+(+m[1])*100+(+m[2]); }
+  if((m=s.match(/(\d{1,2})\D+(\d{1,2})/))) return (+m[1])*100+(+m[2]);
+  return 99999999;
+}
 function studentsForWeek(w){
   const arr=(ROSTER_DATA[+w]||[]).slice();
-  if(STUDENT_SORT==='first') return arr.sort((a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''));
-  if(STUDENT_SORT==='last')  return arr.sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
-  return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
+  const cmp={
+    first:(a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''),
+    last:byName,
+    grade:(a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b),
+    birthday:(a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b),
+    shirt:(a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b),
+  }[STUDENT_SORT];
+  if(!cmp) return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  arr.sort(cmp);
+  if(STUDENT_DIR==='desc') arr.reverse();
+  return arr;
 }
 function rosterLocalKey(){ return 'roster_local_v1'; }
 function persistLocalRoster(){ store.set(rosterLocalKey(), ROSTER_DATA); }
@@ -1427,7 +1504,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1494,7 +1571,7 @@ async function dbBulkAddStudents(week, arr){
   }
   return null;
 }
-const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready'];
+const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider'];
 const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob'];
 // "Test" rule: any student whose name is a test/placeholder entry is excluded by
 // default on import, and can be purged from the roster with one click. Matches a
@@ -1568,6 +1645,17 @@ async function dbUpdateStudent(id, patch){
   } else { persistLocalRoster(); }
   return null;
 }
+// Bus ridership is a standing arrangement — set it on every week-row for this
+// child (matched by name) so it's a mark-once flag across their whole enrollment.
+async function dbSetBusForChild(s, val){
+  const f=s.first, l=s.last;
+  for(const w in ROSTER_DATA){ ROSTER_DATA[w].forEach(x=>{ if(x.first===f && x.last===l) x.bus_rider=val; }); }
+  if(SUPA){
+    const { error } = await SB.from('students').update({bus_rider:val, updated_at:new Date().toISOString()}).eq('first', f).eq('last', l);
+    if(error){ console.warn('bus update failed:', error); return error; }
+  } else { persistLocalRoster(); }
+  return null;
+}
 async function dbDeleteStudent(id){
   for(const w in ROSTER_DATA){ const i=ROSTER_DATA[w].findIndex(x=>x.id===id); if(i>=0){ ROSTER_DATA[w].splice(i,1); break; } }
   if(SUPA){ const { error } = await SB.from('students').delete().eq('id', id); if(error){ console.warn('delete failed', error); return error; } }
@@ -1607,7 +1695,8 @@ function parseRosterCSV(text){
           iEP=find(/emergency.*(phone|mobile|number)/),
           iDob=find(/dob|date of birth|birth/),
           iNotes=find(/^notes?$|important note|student note|profile note|comment/),
-          iPref=find(/preferred|nickname|goes by|known as|nick name/);
+          iPref=find(/preferred|nickname|goes by|known as|nick name/),
+          iShirt=find(/shirt|tee|t-shirt|jersey/), iBus=find(/^bus|bus rider|bus service|shuttle|transport/);
     const g=(idx,c)=> idx>=0 ? (c[idx]||'').trim() : '';
     return rows.map(c=>{
       let first=g(iFirst,c), last=g(iLast,c);
@@ -1629,9 +1718,11 @@ function parseRosterCSV(text){
       if(iOtherPhone>=0) o.other_phone=g(iOtherPhone,c);
       if(iEC>=0) o.emergency_contact=g(iEC,c);
       if(iEP>=0) o.emergency_phone=g(iEP,c);
-      if(iDob>=0) o.dob=g(iDob,c);
+      if(iDob>=0){ o.dob=g(iDob,c); o.birthday=g(iDob,c); }
       if(iNotes>=0) o.notes=g(iNotes,c);
       if(iPref>=0) o.preferred=g(iPref,c);
+      if(iShirt>=0) o.shirt_size=g(iShirt,c);
+      if(iBus>=0) o.bus_rider=truthy(g(iBus,c));
       return o;
     }).filter(s=>s.first||s.last);
   }
@@ -1684,6 +1775,7 @@ function parseRegistration(text){
     dietNotes:find(/dietary notes/), medcond:find(/medical conditions/),
     allerg:find(/medical — allergies|^allergies|allergies$/),
     media:find(/media release/), dob:find(/date of birth/),
+    shirt:find(/shirt|tee|t-shirt|jersey/), bus:find(/^bus|bus rider|bus service|shuttle|transport/),
     address:find(/household addr/),
     pName:find(/primary .*(parent|guardian).*name/), pEmail:find(/primary .*(parent|guardian).*email/), pPhone:find(/primary .*(parent|guardian).*phone/),
     sName:find(/secondary .*(parent|guardian).*name/), sEmail:find(/secondary .*(parent|guardian).*email/), sPhone:find(/secondary .*(parent|guardian).*phone/),
@@ -1721,6 +1813,7 @@ function parseRegistration(text){
       first, last, weeks,
       grade:g(c,I.grade), allergies:cleanAllergy(g(c,I.allerg)),
       notes:noteParts.join(' • '), media_consent,
+      shirt_size:g(c,I.shirt), birthday:g(c,I.dob), bus_rider:/^(1|y|yes|true|x)/i.test(g(c,I.bus)),
       contact:{
         guardian:g(c,I.pName), guardian_email:g(c,I.pEmail), guardian_phone:g(c,I.pPhone),
         secondary_parent:g(c,I.sName), secondary_email:g(c,I.sEmail), secondary_phone:g(c,I.sPhone),
@@ -1751,7 +1844,7 @@ function planRegistration(children){
 async function applyRegistration(plan){
   let updated=0, added=0, contacts=0; const weeksTouched=new Set();
   const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
-  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; return p; };
+  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; return p; };
   const writeContact=async(id,ch)=>{ if(!canContacts) return; const ep={}; Object.entries(ch.contact).forEach(([k,v])=>{ if((v||'')!=='') ep[k]=v; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) contacts++; } };
   for(const w of Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b)){
     const pw=plan.perWeek[w]; weeksTouched.add(w);
@@ -2197,9 +2290,10 @@ function renderAtt(){
     ? ((a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''))
     : ((a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'')));
   if(ATT_FILTER==='unmarked') studs=studs.filter(s=>!data[s.id]);
+  else if(ATT_FILTER==='bus') studs=studs.filter(s=>s.bus_rider);
   else if(ATT_FILTER==='p'||ATT_FILTER==='l'||ATT_FILTER==='a') studs=studs.filter(s=>data[s.id]===ATT_FILTER);
   if(!studs.length){
-    list.innerHTML = `<div class="callout">${ATT_FILTER==='unmarked'?'Everyone is marked for today ✓':'No students match this filter.'}</div>`;
+    list.innerHTML = `<div class="callout">${ATT_FILTER==='unmarked'?'Everyone is marked for today ✓':(ATT_FILTER==='bus'?'No bus riders on this roster yet — mark them in Dismissal → Manage notes.':'No students match this filter.')}</div>`;
     renderAttStats(); renderLevels(); renderHealthSummary(); return;
   }
   list.innerHTML = studs.map(s=>{
@@ -2213,7 +2307,7 @@ function renderAtt(){
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(studentFullName(s))}${healthChips(s)}</div></div>
+        <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
@@ -2256,7 +2350,7 @@ function renderAtt(){
       tgl.classList.toggle('flag-note',flag&&!(hasAllergy||hasMed));
       tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(studentFullName(s))}`+healthChips(s);
+      nm.innerHTML=`${esc(studentFullName(s))}`+(s.bus_rider?' <span class="bus-chip">Bus</span>':'')+healthChips(s);
       flashSaved(); renderHealthSummary();
     });
   });
@@ -2285,14 +2379,15 @@ function renderHealthSummary(){
   el.innerHTML=`<div class="meta-line" style="margin-bottom:8px"><span><b>${flagged.length}</b> student${flagged.length>1?'s':''} flagged</span><span><b>${allergyN}</b> with allergies</span><span><b>${medN}</b> on medication</span><span><b>${noteN}</b> with notes</span></div><div class="tablewrap"><table>${head}<tbody>${body}</tbody></table></div>`;
 }
 function renderAttStats(){
-  const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0;
-  studs.forEach(s=>{ const v=d[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
+  const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0,bus=0;
+  studs.forEach(s=>{ const v=d[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; if(s.bus_rider)bus++; });
   const unmarked=studs.length-p-l-a;
   document.getElementById('att-stats').innerHTML = `
     <div class="ministat p"><div class="n">${p}</div><div class="l">Present</div></div>
     <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
     <div class="ministat a"><div class="n">${a}</div><div class="l">Absent</div></div>
-    <div class="ministat"><div class="n">${unmarked}</div><div class="l">Unmarked</div></div>`;
+    <div class="ministat"><div class="n">${unmarked}</div><div class="l">Unmarked</div></div>
+    ${bus?`<div class="ministat bus"><div class="n">${bus}</div><div class="l">Bus riders</div></div>`:''}`;
 }
 function renderLevels(){
   const data=loadAtt();
@@ -2307,9 +2402,9 @@ function renderLevels(){
 }
 function attExport(){
   const d=loadAtt(); const labels={p:'Present',l:'Late',a:'Absent'};
-  const rows=[["First","Last","Grade","Level","Email","Status","Allergies","Medications","Date"]];
+  const rows=[["First","Last","Grade","Level","Email","Status","Bus rider","Allergies","Medications","Date"]];
   studentsForWeek(curWeek()).forEach(s=>{
-    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[d[s.id]]||"Unmarked",s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
+    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[d[s.id]]||"Unmarked",s.bus_rider?'Yes':'No',s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
   });
   csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
 }
@@ -2321,8 +2416,9 @@ function fillWeekSelect(sel){
 function attInit(){
   fillWeekSelect(document.getElementById('att-week'));
   const dateEl=document.getElementById('att-date');
-  // default to next active week's Monday, else today
-  dateEl.value = WEEKS[NOW].start;
+  // default to today when we're inside the active week; otherwise that week's Monday
+  const t=todayISO();
+  dateEl.value = (t>=WEEKS[NOW].start && t<=WEEKS[NOW].end) ? t : WEEKS[NOW].start;
   dateEl.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(attKey()); renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
@@ -2342,9 +2438,30 @@ function attInit(){
    tap Dismiss. Live across devices via realtime; localStorage fallback. */
 let DQ_ROWS = [];           // queue rows for the selected day
 let DQ_CHAN = null;         // realtime channel
+let DQ_SORT = 'last';       // name-list sort: 'last' or 'first'
+let DQ_MULTI = false;       // "group leaving together" mode: tap selects instead of adding
+let DQ_SEL = new Set();     // selected student ids while grouping
+// Picker/notes label that follows the chosen sort, so the leading name is the
+// one you're scanning by: "Pack, Louis (Ted)" for last, "Louis (Ted) Pack" for first.
+function dqName(s){
+  const first=String(s&&s.first!=null?s.first:'').trim();
+  const last=String(s&&s.last!=null?s.last:'').trim();
+  const pref=String(s&&s.preferred!=null?s.preferred:'').trim();
+  const tag=(pref && pref.toLowerCase()!==first.toLowerCase())?` (${pref})`:'';
+  return DQ_SORT==='first' ? `${first}${tag}${last?` ${last}`:''}` : `${last}${first?`, ${first}`:''}${tag}`;
+}
+function dqSortStudents(arr){
+  return arr.slice().sort((a,b)=> DQ_SORT==='first'
+    ? (a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||'')
+    : (a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+}
 function dqDay(){ return document.getElementById('dq-date').value; }
 function dqWeek(){ return document.getElementById('dq-week').value; }
 function dqLocalKey(){ return `dq:${dqDay()}`; }
+// Attendance for the dismissal day (same key the Attendance tab writes). Used to
+// hide kids marked Absent from the line — they aren't here to be picked up.
+function dqAttKey(){ return `att:w${dqWeek()}:${dqDay()}`; }
+function dqAttData(){ return stateGet(dqAttKey()) || {}; }
 function todayISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function nowTime(){ return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
 async function dqFetch(){
@@ -2356,11 +2473,12 @@ async function dqFetch(){
   }
 }
 function dqPersistLocal(){ store.set(dqLocalKey(), DQ_ROWS); }
-async function dqAddStudents(ids){
+async function dqAddStudents(ids, labelOverride){
   if(!ids.length) return;
-  const studs = ids.map(id=>{ const s=findStudent(id)||{}; return {id, name: s.first?studentLabel(s):'Student', note:(s.dismissal||'').trim(), self:!!s.self_dismiss}; });
-  let label = (document.getElementById('dq-label').value||'').trim();
-  if(!label && studs.length && studs.every(s=>s.self)) label='Self-dismissal';
+  const studs = ids.map(id=>{ const s=findStudent(id)||{}; return {id, name: s.first?studentLabel(s):'Student', note:(s.dismissal||'').trim(), self:!!s.self_dismiss, bus:!!s.bus_rider}; });
+  let label = labelOverride!=null ? labelOverride : (document.getElementById('dq-label').value||'').trim();
+  if(!label && studs.length && studs.every(s=>s.bus)) label='Bus';
+  else if(!label && studs.length && studs.every(s=>s.self)) label='Self-dismissal';
   const rec = { day:dqDay(), week:+dqWeek(), students:studs, label, status:'waiting', queued_at:new Date().toISOString() };
   if(SUPA){
     const { error } = await SB.from('dismissal_queue').insert(rec);
@@ -2368,7 +2486,7 @@ async function dqAddStudents(ids){
   } else {
     rec.id='loc-'+Date.now(); DQ_ROWS.push(rec); dqPersistLocal();
   }
-  document.getElementById('dq-label').value='';
+  if(labelOverride==null) document.getElementById('dq-label').value='';
   await dqFetch(); renderDismissal();
 }
 async function dqDismiss(id){
@@ -2401,30 +2519,40 @@ function renderDismissal(){
   const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
   const dismissed=DQ_ROWS.filter(r=>r.status==='dismissed');
   const studs=studentsForWeek(dqWeek());
+  const att=dqAttData();                      // {id:'p'|'l'|'a'} for this day
+  const isAbsent=s=>att[s.id]==='a';          // marked Absent in Attendance
   const inLineStudents=waiting.reduce((a,r)=>a+(r.students||[]).length,0);
   const dismissedStudents=dismissed.reduce((a,r)=>a+(r.students||[]).length,0);
-  // waiting-to-go = roster students not yet queued or dismissed
+  // waiting-to-go = roster students not yet queued or dismissed, excluding absentees
   const accounted=new Set(); DQ_ROWS.forEach(r=>(r.students||[]).forEach(s=>accounted.add(s.id)));
-  const notYet=studs.filter(s=>!accounted.has(s.id)).length;
+  const notYet=studs.filter(s=>!accounted.has(s.id) && !isAbsent(s)).length;
   // summary
   document.getElementById('dq-stats').innerHTML = `
     <div class="ministat l-late"><div class="n">${waiting.length}</div><div class="l">Cars in line</div></div>
     <div class="ministat l-late"><div class="n">${inLineStudents}</div><div class="l">Students in line</div></div>
     <div class="ministat p"><div class="n">${dismissedStudents}</div><div class="l">Dismissed</div></div>
     <div class="ministat"><div class="n">${notYet}</div><div class="l">Not in line yet</div></div>`;
+  // "Add bus riders" — bus kids still here (not absent) and not already queued, sent out as one car
+  const busEligible=studs.filter(s=>s.bus_rider && !isAbsent(s) && !dqStudentInQueue(s.id));
+  const busBtn=document.getElementById('dq-busall');
+  if(busBtn){
+    if(busEligible.length){ busBtn.style.display=''; busBtn.textContent=`Add bus riders (${busEligible.length})`;
+      busBtn.onclick=()=>dqAddStudents(busEligible.map(s=>s.id), 'Bus'); }
+    else { busBtn.style.display='none'; busBtn.onclick=null; }
+  }
   // the line (FIFO, #1 at top)
   const line=document.getElementById('dq-line');
   line.innerHTML = waiting.length ? waiting.map((r,i)=>`
     <div class="dq-car ${i===0?'next':''}">
       <div class="dq-pos">${i+1}</div>
       <div class="dq-body">
-        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">🚶 self</span>':'')).join(', ')}</div>
+        <div class="dq-names">${(r.students||[]).map(s=>esc(s.name)+(s.self?' <span class="dq-tag self">self</span>':'')+(s.bus?' <span class="dq-tag bus">bus</span>':'')).join(', ')}</div>
         <div class="dq-sub">${r.label?esc(r.label)+' · ':''}in line since ${esc(new Date(r.queued_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}${i===0?' · <b style="color:var(--brass-bright)">UP NEXT</b>':''}</div>
-        ${(r.students||[]).some(s=>s.note)?`<div class="dq-note">📝 ${(r.students||[]).filter(s=>s.note).map(s=>esc(s.note)).join(' · ')}</div>`:''}
+        ${(r.students||[]).some(s=>s.note)?`<div class="dq-note">Note: ${(r.students||[]).filter(s=>s.note).map(s=>esc(s.note)).join(' · ')}</div>`:''}
       </div>
       <button class="btn dq-dismiss" data-id="${escAttr(r.id)}">Dismiss →</button>
       <button class="del" data-rm="${escAttr(r.id)}" title="Remove from line">×</button>
-    </div>`).join('') : `<div class="callout">No cars in the line yet. Add one above as they pull up.</div>`;
+    </div>`).join('') : `<div class="callout">No cars in the line yet. Add one below as they pull up.</div>`;
   line.querySelectorAll('.dq-dismiss').forEach(b=>b.addEventListener('click',()=>dqDismiss(b.dataset.id)));
   line.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>dqRemove(b.dataset.rm)));
   // dismissed log
@@ -2435,31 +2563,56 @@ function renderDismissal(){
       <span class="dq-sub">${r.dismissed_at?esc(new Date(r.dismissed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})):''} <button class="lk" data-undo="${escAttr(r.id)}">undo</button></span>
     </div>`).join('') : '';
   log.querySelectorAll('[data-undo]').forEach(b=>b.addEventListener('click',()=>dqUndo(b.dataset.undo)));
-  // student picker — tap to add straight into the line, sorted by last name
+  // student picker — full first+last name, sorted per DQ_SORT.
+  // Default: tap adds straight into the line. Group mode: tap selects, then add several as one car.
   const picker=document.getElementById('dq-picker');
   const sq=((document.getElementById('dq-search')||{}).value||'').trim().toLowerCase();
-  let avail=studs.filter(s=>!dqStudentInQueue(s.id))
-    .sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
-  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(sq));
-  picker.innerHTML = avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim();
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(studentLabel(s))}${s.self_dismiss?' 🚶':''}${note?' 📝':''}</button>`; }).join('')
-    : `<span class="note-row">${sq?'No students match — clear the search.':'Everyone is in the line or dismissed.'}</span>`;
-  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>dqAddStudents([b.dataset.pick])));
+  [...DQ_SEL].forEach(id=>{ if(dqStudentInQueue(id)) DQ_SEL.delete(id); }); // drop anyone already queued
+  const notQueued=studs.filter(s=>!dqStudentInQueue(s.id));
+  const absentHidden=notQueued.filter(isAbsent).length;   // marked Absent — kept out of the line
+  let avail=dqSortStudents(notQueued.filter(s=>!isAbsent(s)));
+  if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
+  const absentHint=absentHidden?`<span class="note-row" style="flex-basis:100%;grid-column:1/-1">${absentHidden} marked absent today — hidden from the line</span>`:'';
+  picker.innerHTML = (avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${s.bus_rider?' busrider':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.bus_rider?' <span class="pick-tag bus">bus</span>':''}${s.self_dismiss?' <span class="pick-tag self">self</span>':''}</button>`; }).join('')
+    : `<span class="note-row">${sq?'No students match — clear the search.':(absentHidden?'Everyone else is in the line, dismissed, or absent.':'Everyone is in the line or dismissed.')}</span>`) + absentHint;
+  picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.pick;
+    if(DQ_MULTI){ if(DQ_SEL.has(id)) DQ_SEL.delete(id); else DQ_SEL.add(id); renderDismissal(); }
+    else dqAddStudents([id]);
+  }));
+  // group "leaving together" action bar
+  const selbar=document.getElementById('dq-selbar');
+  if(selbar){
+    if(DQ_MULTI && DQ_SEL.size){
+      selbar.style.display='flex';
+      selbar.innerHTML=`<span class="lc-desc" style="margin:0;flex:1 1 100%;min-width:0">${DQ_SEL.size} selected — they'll go out as one car.</span>
+        <button class="btn" id="dq-addtogether">Add ${DQ_SEL.size} together →</button>
+        <button class="btn ghost" id="dq-clearsel">Clear</button>`;
+      document.getElementById('dq-addtogether').addEventListener('click',()=>{ const ids=[...DQ_SEL].filter(id=>!dqStudentInQueue(id)); DQ_SEL.clear(); if(ids.length) dqAddStudents(ids); });
+      document.getElementById('dq-clearsel').addEventListener('click',()=>{ DQ_SEL.clear(); renderDismissal(); });
+    } else { selbar.style.display='none'; selbar.innerHTML=''; }
+  }
 }
 // Standing per-student dismissal instructions: self-dismiss flag + free note.
 function renderDqNotes(){
   const box=document.getElementById('dq-notes'); if(!box) return;
   if(box.contains(document.activeElement)) return;  // don't clobber a field being edited
-  const studs=studentsForWeek(dqWeek());
+  const studs=dqSortStudents(studentsForWeek(dqWeek()));
   if(!studs.length){ box.innerHTML=`<p class="lc-desc" style="margin:0">No students on this roster yet.</p>`; return; }
-  box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
+  box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th style="text-align:center">Self-dismiss</th><th style="text-align:center">Bus rider</th><th>Pickup / dismissal note</th></tr></thead><tbody>${
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td>
-      <td style="text-align:center"><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
-      <td><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
-    </tr>`).join('')}</tbody></table>`;
+      <td class="role-cell" style="white-space:nowrap">${esc(dqName(s))}</td>
+      <td style="text-align:center"><div class="dqn-m">Self-dismiss</div><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
+      <td style="text-align:center"><div class="dqn-m">Bus rider</div><input type="checkbox" class="big-check" data-dqn="bus" ${s.bus_rider?'checked':''}></td>
+      <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
+    </tr>`).join('')}</tbody></table>
+    <p class="lc-desc" style="margin:10px 0 0"><b>Bus rider</b> applies to every week this child is enrolled. Use the <b>Add bus riders</b> button on the line to send them all out together.</p>`;
   box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();
+  }));
+  box.querySelectorAll('[data-dqn=bus]').forEach(el=>el.addEventListener('change',async()=>{
+    const id=el.closest('tr').dataset.id; const s=findStudent(id); if(s) await dbSetBusForChild(s, el.checked); renderDismissal();
   }));
   box.querySelectorAll('[data-dqn=note]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{dismissal:el.value.trim()}); renderDismissal();
@@ -2476,16 +2629,24 @@ function dqSubscribe(){
     .on('postgres_changes', {event:'*', schema:'public', table:'dismissal_queue'}, async ()=>{ await dqFetch(); renderDismissal(); })
     .subscribe();
 }
-async function refreshDismissal(){ await dqFetch(); renderDismissal(); dqSubscribe(); }
+async function refreshDismissal(){ if(SUPA) await refreshStateKey(dqAttKey()); await dqFetch(); renderDismissal(); dqSubscribe(); }
 function dismissalInit(){
   fillWeekSelect(document.getElementById('dq-week'));
   document.getElementById('dq-date').value = todayISO();
-  document.getElementById('dq-week').addEventListener('change',()=>{ renderDismissal(); });
+  document.getElementById('dq-week').addEventListener('change',refreshDismissal);
   document.getElementById('dq-date').addEventListener('change',refreshDismissal);
   document.getElementById('dq-dismissall').addEventListener('click',dqDismissAll);
   document.getElementById('dq-export').addEventListener('click',dqExport);
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
+  const so=document.getElementById('dq-sort'); if(so){ so.value=DQ_SORT; so.addEventListener('change',()=>{ DQ_SORT=so.value; renderDismissal(); }); }
+  const mb=document.getElementById('dq-multi');
+  if(mb) mb.addEventListener('click',()=>{
+    DQ_MULTI=!DQ_MULTI; DQ_SEL.clear();
+    mb.classList.toggle('ghost', !DQ_MULTI);   // solid = grouping is on
+    mb.textContent = DQ_MULTI ? 'Grouping — tap kids' : 'Group';
+    renderDismissal();
+  });
   const nt=document.getElementById('dq-notes-toggle');
   if(nt) nt.addEventListener('click',()=>{ const p=document.getElementById('dq-notes'); const open=p.style.display!=='none'; p.style.display=open?'none':'block'; nt.textContent=open?'Manage notes':'Hide notes'; if(!open) renderDqNotes(); });
 }
@@ -2663,20 +2824,20 @@ function rosHealthCell(s){
   const a=cleanAllergy(s.allergies), m=(s.meds||'').trim(), n=(s.notes||'').trim();
   if(!a&&!m&&!n) return '<span class="blank">—</span>';
   let out='';
-  if(a) out+=`<div class="ros-health"><b>Allergies:</b> ${esc(a)}</div>`;
-  if(m) out+=`<div class="ros-health"><b>Meds:</b> ${esc(m)}</div>`;
-  if(n) out+=`<div class="ros-health"><b>Note:</b> ${esc(n)}</div>`;
+  if(a) out+=`<div class="ros-health" title="Allergies: ${escAttr(a)}"><b>Allergies:</b> ${esc(a)}</div>`;
+  if(m) out+=`<div class="ros-health" title="Meds: ${escAttr(m)}"><b>Meds:</b> ${esc(m)}</div>`;
+  if(n) out+=`<div class="ros-health" title="Note: ${escAttr(n)}"><b>Note:</b> ${esc(n)}</div>`;
   return out;
 }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
-  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="9">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
+  if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="11">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
   const ed = isAdmin();
   const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
-  const sortArrow=k=>STUDENT_SORT===k?' <span class="th-arrow">▲</span>':'';
-  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th>Grade</th><th>Level</th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
-  const cols = ed?9:8;
+  const sortArrow=k=>STUDENT_SORT===k?` <span class="th-arrow">${STUDENT_DIR==='desc'?'▼':'▲'}</span>`:'';
+  const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th><button class="th-sort" data-sort="grade">Grade${sortArrow('grade')}</button></th><th>Level</th><th><button class="th-sort" data-sort="birthday">Birthday${sortArrow('birthday')}</button></th><th><button class="th-sort" data-sort="shirt">Shirt${sortArrow('shirt')}</button></th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
+  const cols = ed?11:10;
   const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell">${i+1}</td>
       <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}>
@@ -2684,7 +2845,9 @@ function renderRosterTab(){
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
-      <td class="note-row">${rosHealthCell(s)}</td>
+      <td><input class="cell-input bday-in" data-f="birthday" value="${escAttr(s.birthday||'')}" placeholder="MM/DD" ${ed?'':'disabled'}></td>
+      <td><input class="cell-input shirt-in" list="shirt-sizes" data-f="shirt_size" value="${escAttr(s.shirt_size||'')}" placeholder="size" ${ed?'':'disabled'}></td>
+      <td class="note-row hcell">${rosHealthCell(s)}</td>
       <td><select class="cell-select" data-consent style="${consentColor(s.media_consent)}">
         <option value="" ${!s.media_consent?'selected':''}>— pending</option>
         <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>
@@ -2695,7 +2858,10 @@ function renderRosterTab(){
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('.th-sort').forEach(b=>b.addEventListener('click',()=>{
     const k=b.dataset.sort;
-    STUDENT_SORT = (STUDENT_SORT===k) ? '' : k;   // click again to return to manual order
+    // 1st click → ascending, 2nd → descending, 3rd → back to manual order
+    if(STUDENT_SORT!==k){ STUDENT_SORT=k; STUDENT_DIR='asc'; }
+    else if(STUDENT_DIR==='asc'){ STUDENT_DIR='desc'; }
+    else { STUDENT_SORT=''; STUDENT_DIR='asc'; }
     const ss=document.getElementById('ros-sort'); if(ss) ss.value=STUDENT_SORT;
     renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech();
   }));
@@ -2742,8 +2908,8 @@ function renderRosStats(){
 function rosExport(){
   const studs=studentsForWeek(rosWeek()).filter(rosConsentMatch);
   const label=v=>v==='yes'?'Consent':v==='no'?'No consent':'Pending';
-  const rows=[["First","Last","Grade","Level","Email","Media consent","Allergies","Medications","Laptop assigned"]];
-  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),label(s.media_consent),cleanAllergy(s.allergies),s.meds||'',s.laptop_assigned?'Yes':'No']));
+  const rows=[["First","Last","Grade","Level","Birthday","Shirt size","Bus rider","Email","Media consent","Allergies","Medications","Laptop assigned"]];
+  studs.forEach(s=>rows.push([s.first,s.last,s.grade,levelOf(s.grade),s.birthday||'',s.shirt_size||'',s.bus_rider?'Yes':'No',studentEmail(s),label(s.media_consent),cleanAllergy(s.allergies),s.meds||'',s.laptop_assigned?'Yes':'No']));
   const suffix = ROS_FILTER==='all'?'':'-'+(ROS_FILTER==='yes'?'consent':ROS_FILTER==='no'?'no-consent':ROS_FILTER==='health'?'health':'pending');
   csvDownload(`roster-w${rosWeek()}${suffix}.csv`, rows);
 }
@@ -2788,7 +2954,7 @@ function showImportReview(week, plan){
 function rosterInit(){
   fillWeekSelect(document.getElementById('ros-week'));
   document.getElementById('ros-week').addEventListener('change',renderRosterTab);
-  { const ss=document.getElementById('ros-sort'); if(ss) ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); }); }
+  { const ss=document.getElementById('ros-sort'); if(ss) ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; STUDENT_DIR='asc'; renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); }); }
   document.getElementById('ros-add').addEventListener('click',async ()=>{
     const f=document.getElementById('ros-first'), l=document.getElementById('ros-last'), g=document.getElementById('ros-grade');
     if(!f.value.trim() && !l.value.trim()){ return; }
@@ -2881,7 +3047,7 @@ function emInit(){
   sel.addEventListener('change',()=>loadEmergency().then(renderEmergency));
   document.getElementById('em-search').addEventListener('input',renderEmergency);
   document.getElementById('em-export').addEventListener('click',emExport);
-  { const ss=document.getElementById('em-sort'); if(ss){ ss.value=STUDENT_SORT||'roster'; ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; const rs=document.getElementById('ros-sort'); if(rs) rs.value=ss.value; renderEmergency(); if(typeof renderRosterTab==='function') renderRosterTab(); }); } }
+  { const ss=document.getElementById('em-sort'); if(ss){ ss.value=STUDENT_SORT||'roster'; ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; STUDENT_DIR='asc'; const rs=document.getElementById('ros-sort'); if(rs) rs.value=ss.value; renderEmergency(); if(typeof renderRosterTab==='function') renderRosterTab(); }); } }
   { const mb=document.getElementById('em-maillist'); if(mb) mb.addEventListener('click',emMailingList); }
 }
 // Parent mailing list: every unique parent/guardian email across ALL weeks,

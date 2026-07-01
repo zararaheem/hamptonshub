@@ -430,6 +430,7 @@
   .award-btns{display:flex;gap:8px;flex-wrap:wrap}
   .award-btn{font-family:var(--mono);font-size:14px;font-weight:700;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);border-radius:10px;padding:9px 15px;cursor:pointer}
   .award-btn:hover{border-color:var(--brass);color:var(--brass-bright)}
+  .award-btn.deduct{color:var(--coral)} .award-btn.deduct:hover{border-color:var(--coral);color:var(--coral)}
   .award-btn.ghost{font-weight:600}
   .award-custom-wrap{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
   .score-logrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line-soft);font-size:13px}
@@ -1026,6 +1027,8 @@
             <div class="award-btns" data-tribe="helios">
               <button class="award-btn" data-pts="1">+1</button>
               <button class="award-btn" data-pts="3">+3</button>
+              <button class="award-btn deduct" data-pts="-1">−1</button>
+              <button class="award-btn deduct" data-pts="-3">−3</button>
               <button class="award-btn" data-pts="other">Other…</button>
             </div>
           </div>
@@ -1034,6 +1037,8 @@
             <div class="award-btns" data-tribe="poseidon">
               <button class="award-btn" data-pts="1">+1</button>
               <button class="award-btn" data-pts="3">+3</button>
+              <button class="award-btn deduct" data-pts="-1">−1</button>
+              <button class="award-btn deduct" data-pts="-3">−3</button>
               <button class="award-btn" data-pts="other">Other…</button>
             </div>
           </div>

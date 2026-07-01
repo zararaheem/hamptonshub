@@ -25,33 +25,37 @@ board ↗”** button on the hub's Tribe Scoreboard tab. It reads through the pu
 No extra Vercel setup — `board/index.html` deploys as a subpath of the existing
 hub project.
 
-## Award from Slack (one-time setup, ~5 min)
+## Award from Slack — interactive buttons (private channel)
 
-The `tribe-award` edge function is deployed. To connect Slack:
+Private channel **`#tribe_points_week1`** is already created. People are given
+**buttons only** — no free typing: **+1 / +3** (award) and **−1 / −3** (deduct)
+per tribe, **Other…** (custom amount + reason), and **Receipts** (recent log).
+Each tap posts a receipt to the channel and updates the hub + big board live.
 
-1. **Create the channel** in Slack: `#tribe-games` (new channel → invite the team).
-2. **Create a Slack app** at <https://api.slack.com/apps> → *Create New App* →
+The `tribe-interact` edge function is deployed. One-time Slack app setup:
+
+1. **Create a Slack app** at <https://api.slack.com/apps> → *Create New App* →
    *From scratch* → pick your workspace.
-3. **Add a slash command:** app → *Slash Commands* → *Create New Command*
-   - **Command:** `/point`
-   - **Request URL:** `https://qwmetffzspobjamwwhca.supabase.co/functions/v1/tribe-award`
-   - **Short description:** `Award tribe points`
-   - **Usage hint:** `helios 3 won the relay`
-4. **Copy the Signing Secret:** app → *Basic Information* → *Signing Secret*.
-5. **Add it to Supabase:** Supabase dashboard → *Project Settings → Edge
-   Functions → Secrets* → add `SLACK_SIGNING_SECRET` = that value.
-   (Until this is set the endpoint accepts unsigned requests, so set it to lock down.)
-6. **Install** the app to the workspace and **invite it to `#tribe-games`**.
+2. **Bot token scopes:** *OAuth & Permissions* → Bot Token Scopes → add
+   `chat:write` and `commands`. Then *Install to Workspace* and copy the
+   **Bot User OAuth Token** (`xoxb-…`).
+3. **Slash command:** *Slash Commands* → *Create New Command*
+   - **Command:** `/points`
+   - **Request URL:** `https://qwmetffzspobjamwwhca.supabase.co/functions/v1/tribe-interact`
+   - **Short description:** `Open the tribe points panel`
+4. **Interactivity:** *Interactivity & Shortcuts* → toggle on →
+   **Request URL:** `https://qwmetffzspobjamwwhca.supabase.co/functions/v1/tribe-interact`
+5. **Signing Secret:** *Basic Information* → copy **Signing Secret**.
+6. **Add secrets in Supabase** → *Project Settings → Edge Functions → Secrets*:
+   - `SLACK_SIGNING_SECRET` = the signing secret (required — locks down the endpoint)
+   - `SLACK_BOT_TOKEN` = the `xoxb-…` token (enables the **Other…** custom modal)
+7. **Invite the app** to `#tribe_points_week1` (`/invite @YourApp`), then type
+   **`/points`** in the channel to drop the buttons panel. Pin it.
 
-### Using it
+Once live: tapping a button awards/deducts and posts a receipt; **Other…** opens
+a little form (tribe + amount + optional reason); **Receipts** shows the last 15.
+Everything flows into the same `tribe_awards` table, so the hub tab and the
+projected board stay in sync.
 
-```
-/point helios 3 won the relay
-/point poseidon 2 best cabin cleanup
-/point score            → shows the current score in-channel
-/point help             → usage
-```
-
-Tribe aliases: `helios / gold / sun` and `poseidon / blue / sea`. A negative
-number (e.g. `/point helios -1 penalty`) corrects a mistake. Every award posts
-the running score back to the channel **and** updates the hub scoreboard live.
+> A simpler typed **`/point`** slash command (`tribe-award` function) is also
+> deployed if you ever want free-text awarding instead of buttons.

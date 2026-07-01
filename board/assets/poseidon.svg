@@ -1,24 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 210" fill="none">
-  <g fill="#2E9BFF">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 224" fill="none">
+  <defs>
+    <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7CC3FF"/>
+      <stop offset="55%" stop-color="#2E9BFF"/>
+      <stop offset="100%" stop-color="#1E6FD0"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#pg)" stroke="url(#pg)" stroke-linejoin="round" stroke-linecap="round">
     <!-- shaft -->
-    <rect x="93" y="86" width="14" height="104" rx="7"/>
-    <!-- base grip -->
-    <rect x="78" y="182" width="44" height="12" rx="6"/>
+    <rect x="92" y="92" width="16" height="104" rx="8" stroke="none"/>
+    <!-- bottom grip -->
+    <rect x="76" y="188" width="48" height="13" rx="6.5" stroke="none"/>
     <!-- crossbar (arched) -->
-    <path d="M48 98 Q100 78 152 98 L152 86 Q100 66 48 86 Z"/>
+    <path d="M44 104 Q100 80 156 104 L156 90 Q100 66 44 90 Z" stroke="none"/>
+    <!-- three prongs -->
+    <path d="M100 92 V40" fill="none" stroke-width="15"/>
+    <path d="M54 98 C46 66 50 46 62 32" fill="none" stroke-width="15"/>
+    <path d="M146 98 C154 66 150 46 138 32" fill="none" stroke-width="15"/>
   </g>
-  <g fill="none" stroke="#2E9BFF" stroke-width="13" stroke-linecap="round">
-    <!-- center prong -->
-    <path d="M100 86 V36"/>
-    <!-- left prong -->
-    <path d="M56 92 C50 66 52 48 62 34"/>
-    <!-- right prong -->
-    <path d="M144 92 C150 66 148 48 138 34"/>
-  </g>
-  <g fill="#2E9BFF">
+  <g fill="url(#pg)">
     <!-- barbed tips -->
-    <path d="M100 18 l12 28 h-24 z"/>
-    <path d="M62 22 l13 26 -23 4 z"/>
-    <path d="M138 22 l-13 26 23 4 z"/>
+    <path d="M100 14 l14 34 h-28 z"/>
+    <path d="M62 20 l16 30 -27 5 z"/>
+    <path d="M138 20 l-16 30 27 5 z"/>
   </g>
+  <!-- center gem -->
+  <path d="M100 108 l13 14 -13 14 -13 -14 z" fill="#BFE2FF"/>
 </svg>

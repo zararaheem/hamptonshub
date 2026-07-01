@@ -441,6 +441,16 @@
   .slr-reason{flex:1;min-width:120px;color:var(--oyster)}
   .slr-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .slr-rm{background:none;border:0;color:var(--coral);cursor:pointer;font-family:var(--mono);font-size:11px}
+  .tr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .tr-col{border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-top-width:3px}
+  .tr-col.helios{border-top-color:#E8B84B} .tr-col.poseidon{border-top-color:#5AA0F0}
+  .tr-head{font-weight:800;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .tr-col.helios .tr-head{color:#E8B84B} .tr-col.poseidon .tr-head{color:#5AA0F0}
+  .tr-head span{font-family:var(--mono);font-size:13px}
+  .tr-names{font-size:14px;line-height:1.85}
+  .tr-btn{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 9px;cursor:pointer;margin-right:5px}
+  .tr-btn.on-h{border-color:#E8B84B;color:#E8B84B;font-weight:700} .tr-btn.on-p{border-color:#5AA0F0;color:#5AA0F0;font-weight:700} .tr-btn.on-x{color:var(--oyster)}
+  @media (max-width:560px){ .tr-grid{grid-template-columns:1fr} }
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
   .dq-tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:10px;padding:1px 6px;white-space:nowrap}
   .dq-tag.self{color:var(--teal-bright);border:1px solid var(--teal)}
@@ -1044,16 +1054,27 @@
             </div>
           </div>
         </div>
-        <div id="award-pending" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border:1px solid var(--brass);border-radius:12px;background:rgba(212,160,74,.06)">
-          <span id="award-pending-label" style="font-weight:800"></span>
-          <input class="cell-input" id="award-pending-pts" type="number" placeholder="pts" style="max-width:90px;display:none">
-          <input class="cell-input" id="award-pending-reason" placeholder="Quick reason (optional) — e.g. “Won the relay”" style="flex:1;min-width:200px;max-width:360px">
-          <button class="btn" id="award-pending-go">Add point</button>
-          <button class="btn ghost" id="award-pending-cancel">Cancel</button>
+        <div id="award-pending" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(6,12,20,.6);align-items:center;justify-content:center;padding:20px">
+          <div style="background:#0f1d2c;border:1px solid var(--brass);border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55)">
+            <div id="award-pending-label" style="font-weight:800;font-size:18px;margin-bottom:14px"></div>
+            <input class="cell-input" id="award-pending-pts" type="number" inputmode="numeric" placeholder="Points (– to deduct)" style="width:100%;margin-bottom:10px;display:none">
+            <input class="cell-input" id="award-pending-reason" placeholder="Quick reason (optional) — e.g. Won the relay" style="width:100%;margin-bottom:16px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn ghost" id="award-pending-cancel">Cancel</button>
+              <button class="btn" id="award-pending-go">Add point</button>
+            </div>
+          </div>
         </div>
         <div style="margin-top:12px"><span class="gate-msg" id="award-msg"></span></div>
         <p class="lc-desc" style="margin:10px 0 0;color:var(--muted)">Tap a tribe's button, add a quick reason, then <b>Add point</b>. “Other…” lets you enter any amount (a negative number corrects a mistake). Admins can remove any entry in the feed below.</p>
       </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 0;gap:10px;flex-wrap:wrap">
+        <div class="eyebrow" style="margin:0">Tribe rosters</div>
+        <button class="btn ghost admin-only" id="tr-manage" style="padding:6px 12px">Assign students</button>
+      </div>
+      <div id="tribe-rosters" style="margin-top:8px"></div>
+      <div id="tribe-assign" style="display:none;margin-top:12px"></div>
 
       <div class="eyebrow" style="margin:22px 0 0">Latest points earned · live</div>
       <div id="tribe-log" style="margin-top:8px"></div>
@@ -1518,7 +1539,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,tribe,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -2728,7 +2749,37 @@ function scoreSubscribe(){
   if(!SUPA || SCORE_CHAN) return;
   SCORE_CHAN=SB.channel('tribe-live').on('postgres_changes',{event:'*',schema:'public',table:'tribe_awards'},async()=>{ await scoreFetch(); renderScore(); }).subscribe();
 }
-async function refreshScore(){ await scoreFetch(); renderScore(); scoreSubscribe(); }
+const SCORE_WK=1; // Alpha Survivor tribes are set on the Week 1 roster
+function renderTribeRosters(){
+  const box=document.getElementById('tribe-rosters'); if(!box) return;
+  const studs=studentsForWeek(SCORE_WK);
+  const g={helios:[],poseidon:[],none:[]};
+  studs.forEach(s=>{ g[(s.tribe==='helios'||s.tribe==='poseidon')?s.tribe:'none'].push(s); });
+  const byLast=(a,b)=>(a.last||'').localeCompare(b.last||'');
+  const names=arr=>arr.slice().sort(byLast).map(s=>esc(studentFullName(s))).join('<br>')||'<span style="color:var(--muted)">—</span>';
+  box.innerHTML=`<div class="tr-grid">
+    <div class="tr-col helios"><div class="tr-head"><span>☀️ Helios</span><span>${g.helios.length}</span></div><div class="tr-names">${names(g.helios)}</div></div>
+    <div class="tr-col poseidon"><div class="tr-head"><span>🔱 Poseidon</span><span>${g.poseidon.length}</span></div><div class="tr-names">${names(g.poseidon)}</div></div>
+  </div>${g.none.length?`<p class="lc-desc" style="margin-top:8px"><b style="color:var(--coral)">${g.none.length} not assigned:</b> ${g.none.slice().sort(byLast).map(s=>esc(studentFullName(s))).join(', ')}</p>`:''}`;
+}
+function renderTribeAssign(){
+  const box=document.getElementById('tribe-assign'); if(!box) return;
+  const studs=studentsForWeek(SCORE_WK).slice().sort((a,b)=>(a.last||'').localeCompare(b.last||''));
+  box.innerHTML=`<table class="dqn-table"><thead><tr><th>Student</th><th>Grade</th><th>Tribe</th></tr></thead><tbody>${
+    studs.map(s=>`<tr data-id="${escAttr(s.id)}">
+      <td class="role-cell" style="white-space:nowrap">${esc(studentFullName(s))}</td><td>${esc(s.grade||'')}</td>
+      <td style="white-space:nowrap">
+        <button class="tr-btn ${s.tribe==='helios'?'on-h':''}" data-tr="helios">☀️ Helios</button>
+        <button class="tr-btn ${s.tribe==='poseidon'?'on-p':''}" data-tr="poseidon">🔱 Poseidon</button>
+        <button class="tr-btn ${!s.tribe?'on-x':''}" data-tr="">—</button>
+      </td></tr>`).join('')}</tbody></table>`;
+  box.querySelectorAll('[data-tr]').forEach(b=>b.addEventListener('click',async()=>{
+    const id=b.closest('tr').dataset.id;
+    await dbUpdateStudent(id,{tribe: b.dataset.tr||null});
+    renderTribeAssign(); renderTribeRosters();
+  }));
+}
+async function refreshScore(){ await scoreFetch(); renderScore(); renderTribeRosters(); scoreSubscribe(); }
 function scoreInit(){
   // Inline reason capture (no browser prompt — works in every browser/webview).
   let pending=null;
@@ -2760,9 +2811,12 @@ function scoreInit(){
     g.querySelectorAll('.award-btn').forEach(b=>b.addEventListener('click',()=>openPending(tribe, b.dataset.pts))); });
   document.getElementById('award-pending-go').addEventListener('click', commitPending);
   document.getElementById('award-pending-cancel').addEventListener('click', closePending);
+  pbar.addEventListener('click', e=>{ if(e.target===pbar) closePending(); });
   [preason, ppts].forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter') commitPending(); if(e.key==='Escape') closePending(); }));
+  const tm=document.getElementById('tr-manage');
+  if(tm) tm.addEventListener('click',()=>{ const a=document.getElementById('tribe-assign'); const open=a.style.display!=='none'; a.style.display=open?'none':'block'; tm.textContent=open?'Assign students':'Done'; if(!open) renderTribeAssign(); });
   scoreClockTick(); setInterval(scoreClockTick, 1000);
-  renderScore();
+  renderScore(); renderTribeRosters();
 }
 function scoreClockTick(){
   const el=document.getElementById('score-clock'); if(!el) return;

@@ -450,6 +450,8 @@
   .tr-names{font-size:14px;line-height:1.85}
   .tr-btn{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 9px;cursor:pointer;margin-right:5px}
   .tr-btn.on-h{border-color:#E8B84B;color:#E8B84B;font-weight:700} .tr-btn.on-p{border-color:#5AA0F0;color:#5AA0F0;font-weight:700} .tr-btn.on-x{color:var(--oyster)}
+  tr.ros-withdrawn{opacity:.5} tr.ros-withdrawn .cell-input{text-decoration:line-through;color:var(--muted)}
+  .wd-chip{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);border:1px solid var(--line);border-radius:8px;padding:1px 6px;margin-top:4px;white-space:nowrap;text-decoration:none}
   @media (max-width:560px){ .tr-grid{grid-template-columns:1fr} }
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
   .dq-tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:10px;padding:1px 6px;white-space:nowrap}
@@ -1513,8 +1515,9 @@ function bdayKey(s){
   if((m=s.match(/(\d{1,2})\D+(\d{1,2})/))) return (+m[1])*100+(+m[2]);
   return 99999999;
 }
-function studentsForWeek(w){
-  const arr=(ROSTER_DATA[+w]||[]).slice();
+function studentsForWeek(w, incWithdrawn){
+  let arr=(ROSTER_DATA[+w]||[]).slice();
+  if(!incWithdrawn) arr=arr.filter(s=>!s.withdrawn);   // withdrawn kids drop out of attendance/tribes/counts
   const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
   const lvlIdx=x=>{ const i=LEVELS.findIndex(l=>l.key===levelOf(x.grade)); return i<0?99:i; };
   const cmp={
@@ -1525,9 +1528,9 @@ function studentsForWeek(w){
     birthday:(a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b),
     shirt:(a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b),
   }[STUDENT_SORT];
-  if(!cmp) return arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  arr.sort(cmp);
-  if(STUDENT_DIR==='desc') arr.reverse();
+  if(cmp){ arr.sort(cmp); if(STUDENT_DIR==='desc') arr.reverse(); }
+  else arr.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  if(incWithdrawn) arr=arr.filter(s=>!s.withdrawn).concat(arr.filter(s=>s.withdrawn)); // withdrawn last
   return arr;
 }
 function rosterLocalKey(){ return 'roster_local_v1'; }
@@ -1539,7 +1542,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,tribe,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,tribe,withdrawn,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -2936,15 +2939,17 @@ async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(
 function renderRosterTab(){
   if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="11">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
   const ed = isAdmin();
-  const studs = studentsForWeek(rosWeek()).filter(rosConsentMatch);
+  const studs = studentsForWeek(rosWeek(), true).filter(rosConsentMatch);
   const tbl = document.getElementById('ros-table');
   const sortArrow=k=>STUDENT_SORT===k?` <span class="th-arrow">${STUDENT_DIR==='desc'?'▼':'▲'}</span>`:'';
   const head = `<thead><tr><th>#</th><th><button class="th-sort" data-sort="first">First${sortArrow('first')}</button></th><th><button class="th-sort" data-sort="last">Last${sortArrow('last')}</button></th><th><button class="th-sort" data-sort="grade">Grade${sortArrow('grade')}</button></th><th>Level</th><th><button class="th-sort" data-sort="birthday">Birthday${sortArrow('birthday')}</button></th><th><button class="th-sort" data-sort="shirt">Shirt${sortArrow('shirt')}</button></th><th>Health</th><th>Media consent</th><th>Laptop assigned</th>${ed?'<th></th>':''}</tr></thead>`;
   const cols = ed?11:10;
-  const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell">${i+1}</td>
+  let n=0;
+  const body = studs.length ? studs.map((s,i)=>`<tr data-id="${escAttr(s.id)}" class="${s.withdrawn?'ros-withdrawn':''}">
+      <td class="role-cell">${s.withdrawn?'—':++n}</td>
       <td><input class="cell-input" data-f="first" value="${escAttr(s.first)}" ${ed?'':'disabled'}>
-        ${(ed||s.preferred)?`<input class="cell-input goesby-in" data-f="preferred" value="${escAttr(s.preferred)}" placeholder="goes by…" ${ed?'':'disabled'}>`:''}</td>
+        ${(ed||s.preferred)?`<input class="cell-input goesby-in" data-f="preferred" value="${escAttr(s.preferred)}" placeholder="goes by…" ${ed?'':'disabled'}>`:''}
+        ${s.withdrawn?'<span class="wd-chip">No longer continuing</span>':''}</td>
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
@@ -2956,7 +2961,7 @@ function renderRosterTab(){
         <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>
         <option value="no" ${s.media_consent==='no'?'selected':''}>✗ No consent</option></select></td>
       <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
-      ${ed?`<td><button class="del" data-act="del" title="Remove">×</button></td>`:''}
+      ${ed?`<td style="white-space:nowrap"><button class="lk" data-act="${s.withdrawn?'reactivate':'leave'}" title="${s.withdrawn?'Bring back onto the roster':'Mark no longer continuing'}">${s.withdrawn?'Reactivate':'Left'}</button> <button class="del" data-act="del" title="Remove">×</button></td>`:''}
     </tr>`).join('') : `<tr><td colspan="${cols}" class="note-row">${ROS_FILTER==='all'?`No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}`:'No students match this consent filter.'}</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('.th-sort').forEach(b=>b.addEventListener('click',()=>{
@@ -2986,6 +2991,11 @@ function renderRosterTab(){
   tbl.querySelectorAll('[data-act=del]').forEach(b=>b.addEventListener('click',async ()=>{
     const tr=b.closest('tr'); const id=tr.dataset.id;
     await dbDeleteStudent(id); flash('ros-saved'); renderRosterTab();   // no per-row prompt — delete is immediate
+  }));
+  tbl.querySelectorAll('[data-act=leave],[data-act=reactivate]').forEach(b=>b.addEventListener('click',async ()=>{
+    const id=b.closest('tr').dataset.id;
+    await dbUpdateStudent(id, {withdrawn: b.dataset.act==='leave'});
+    flash('ros-saved'); renderRosterTab(); if(typeof renderAtt==='function') renderAtt();
   }));
   renderRosStats();
 }

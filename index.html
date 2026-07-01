@@ -452,6 +452,11 @@
   .tr-btn.on-h{border-color:#E8B84B;color:#E8B84B;font-weight:700} .tr-btn.on-p{border-color:#5AA0F0;color:#5AA0F0;font-weight:700} .tr-btn.on-x{color:var(--oyster)}
   tr.ros-withdrawn{opacity:.5} tr.ros-withdrawn .cell-input{text-decoration:line-through;color:var(--muted)}
   .wd-chip{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);border:1px solid var(--line);border-radius:8px;padding:1px 6px;margin-top:4px;white-space:nowrap;text-decoration:none}
+  .att-logrow{display:flex;gap:14px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+  .alr-t{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:78px}
+  .alr-n{flex:1;color:var(--oyster)}
+  .alr-s{font-family:var(--mono);font-size:11px;letter-spacing:.04em}
+  .alr-s.s-p{color:var(--ok)} .alr-s.s-l{color:var(--brass-bright)} .alr-s.s-a{color:var(--coral)}
   @media (max-width:560px){ .tr-grid{grid-template-columns:1fr} }
   .dq-pick.selfdis{border-color:var(--teal);color:var(--teal-bright)}
   .dq-tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:10px;padding:1px 6px;white-space:nowrap}
@@ -688,8 +693,9 @@
       <button class="nav-item cat-people contacts-only" data-tab="emergency">Family Contacts</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
-      <button class="nav-item cat-logistics" data-tab="supplies">Supplies &amp; Packing</button>
       <button class="nav-item cat-ops" data-tab="events">Events Team</button>
+      <div class="nav-label">Guides</div>
+      <a class="nav-item cat-curriculum" href="https://alpha-guide-platform.vercel.app/auth/guide/eyJsaW5rX2lkIjoiZDJjYjk4MzUtMWI3OS00MmQ4LWIzNzgtYzdlYzkwNGViMzBjIiwiY2FtcHVzX2lkIjoiY2QyOWU1MDQtNmU2MS00YmU2LWE2MTAtYjFkMGU2NmYzZGJlIiwic2Vzc2lvbl9pZCI6ImI5Mzc0NTk3LTE5MGMtNDc3NS1hYjYwLWRhMDBlMTNhOGZiMiIsImV4cCI6MTc4MzMxNzYwMCwiaWF0IjoxNzgyNzAzNDg0fQ.BRltgXsE0oP4sZ5isqFh3cwUk-eA7NiAvlFdgIVq1GA" target="_blank" rel="noopener">Accountability Hub<span class="ext">↗</span></a>
       <button class="nav-item cat-curriculum" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
       <button class="nav-item cat-curriculum" data-tab="resources">Resources<span class="ext">live ↗</span></button>
       <button class="nav-item cat-logistics" data-tab="signage">Signage Wish List<span class="ext">live ↗</span></button>
@@ -862,6 +868,7 @@
           <button class="btn ghost" id="att-export">Export CSV</button>
           <span class="saved-note" id="att-saved"></span>
         </div>
+        <div id="att-log" style="margin-top:18px"></div>
         <div class="callout" style="margin-top:18px"><b>⚠ Health:</b> tap <b>＋ health</b> on any student to record allergies &amp; medications — they roll up in the summary above and flag red on the roll. Levels: Wonderlab (PK) · LL (K–1) · L1 (2–3) · L2 (4–5) · MS (6–8) · HS (9–12). Students come from the shared <a data-jump="roster" style="color:var(--brass-bright);cursor:pointer">Students roster</a>. For pickup, use the <a data-jump="dismissal" style="color:var(--brass-bright);cursor:pointer">Dismissal</a> tab.</div>
       </div>
     </section>
@@ -1939,7 +1946,6 @@ const CONTENT_DEFAULTS = {
     {tag:"Curriculum", title:"Accountability Reports", desc:"Guide Platform — sign in on your phone (no password), capture notes / shout-outs / behavior all week, and build the Friday parent report. New sign-in link each Monday.", to:"https://alpha-guide-platform.vercel.app/auth/guide/eyJsaW5rX2lkIjoiZDJjYjk4MzUtMWI3OS00MmQ4LWIzNzgtYzdlYzkwNGViMzBjIiwiY2FtcHVzX2lkIjoiY2QyOWU1MDQtNmU2MS00YmU2LWE2MTAtYjFkMGU2NmYzZGJlIiwic2Vzc2lvbl9pZCI6ImI5Mzc0NTk3LTE5MGMtNDc3NS1hYjYwLWRhMDBlMTNhOGZiMiIsImV4cCI6MTc4MzMxNzYwMCwiaWF0IjoxNzgyNzAzNDg0fQ.BRltgXsE0oP4sZ5isqFh3cwUk-eA7NiAvlFdgIVq1GA"},
     {tag:"Curriculum", title:"Guide Platform — 2-min guide", desc:"Quick how-to for signing in and using the Guide Platform.", to:"https://alpha-guide-platform.vercel.app/onboarding/guide.html"},
     {tag:"Logistics", title:"Tech Onboarding", desc:"Laptop & iPad assignments by student — asset tags, setup status.", to:"tech"},
-    {tag:"Logistics", title:"Supplies & Packing", desc:"Per-week supply tracker (Ordered → Packed → Arrived), with the ordering site & Guide Hub referenced.", to:"supplies"},
     {tag:"Ops", title:"DoP/DoA Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
     {tag:"Parents", title:"Parent FAQ", desc:"The family-facing FAQ — everything parents need to know about the summer.", to:"https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit"},
   ],
@@ -2311,6 +2317,9 @@ let ATT_FILTER='all', ATT_SORT='last';
 function attKey(){ return `att:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
 function loadAtt(){ return stateGet(attKey()) || {}; }
 function saveAtt(data){ stateSet(attKey(), data); flashSaved(); }
+// Attendance values may be a legacy status string ('p') or {s:status, t:time}.
+function attStat(v){ return typeof v==='string' ? v : ((v&&v.s)||''); }
+function attTime(v){ return (v && typeof v==='object' && v.t) || ''; }
 function flashSaved(){
   const el=document.getElementById('att-saved');
   el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
@@ -2331,13 +2340,13 @@ function renderAtt(){
     : ((a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'')));
   if(ATT_FILTER==='unmarked') studs=studs.filter(s=>!data[s.id]);
   else if(ATT_FILTER==='bus') studs=studs.filter(s=>s.bus_rider);
-  else if(ATT_FILTER==='p'||ATT_FILTER==='l'||ATT_FILTER==='a') studs=studs.filter(s=>data[s.id]===ATT_FILTER);
+  else if(ATT_FILTER==='p'||ATT_FILTER==='l'||ATT_FILTER==='a') studs=studs.filter(s=>attStat(data[s.id])===ATT_FILTER);
   if(!studs.length){
     list.innerHTML = `<div class="callout">${ATT_FILTER==='unmarked'?'Everyone is marked for today ✓':(ATT_FILTER==='bus'?'No bus riders on this roster yet — mark them in Dismissal → Manage notes.':'No students match this filter.')}</div>`;
     renderAttStats(); renderLevels(); renderHealthSummary(); return;
   }
   list.innerHTML = studs.map(s=>{
-    const st = data[s.id]||'';
+    const st = attStat(data[s.id]);
     const init = ((s.first[0]||'?')+(s.last[0]||'')).toUpperCase();
     const hasAllergy = !!cleanAllergy(s.allergies);
     const hasMed = !!(s.meds && s.meds.trim());
@@ -2369,7 +2378,7 @@ function renderAtt(){
     btn.addEventListener('click',()=>{
       const id=btn.closest('.student-block').dataset.id, s=btn.dataset.s;
       const d=loadAtt();
-      if(d[id]===s){ delete d[id]; } else { d[id]=s; }
+      if(attStat(d[id])===s){ delete d[id]; } else { d[id]={s, t:nowTime()}; }
       saveAtt(d); renderAtt();
     });
   });
@@ -2394,7 +2403,19 @@ function renderAtt(){
       flashSaved(); renderHealthSummary();
     });
   });
-  renderAttStats(); renderLevels(); renderHealthSummary();
+  renderAttStats(); renderLevels(); renderHealthSummary(); renderAttLog();
+}
+// Text-only check-in log at the bottom: who was marked and at what time.
+function renderAttLog(){
+  const el=document.getElementById('att-log'); if(!el) return;
+  const d=loadAtt(); const LB={p:'Present',l:'Late',a:'Absent'};
+  const rows=studentsForWeek(curWeek()).map(s=>({s, st:attStat(d[s.id]), t:attTime(d[s.id])})).filter(r=>r.st);
+  if(!rows.length){ el.innerHTML=''; return; }
+  // sort by check-in time (blank times last), then name
+  const key=t=>{ const m=String(t||'').match(/(\d+):(\d+)\s*(AM|PM)?/i); if(!m) return 1e9; let h=+m[1]%12; if(/pm/i.test(m[3]||'')) h+=12; return h*60+ +m[2]; };
+  rows.sort((a,b)=>key(a.t)-key(b.t) || (a.s.last||'').localeCompare(b.s.last||''));
+  el.innerHTML=`<div class="eyebrow" style="margin-bottom:8px">Check-in log</div>`+rows.map(r=>
+    `<div class="att-logrow"><span class="alr-t">${esc(r.t||'—')}</span><span class="alr-n">${esc(studentFullName(r.s))}</span><span class="alr-s s-${r.st}">${esc(LB[r.st]||'')}</span></div>`).join('');
 }
 function renderHealthSummary(){
   const el=document.getElementById('att-health'); if(!el) return;
@@ -2420,7 +2441,7 @@ function renderHealthSummary(){
 }
 function renderAttStats(){
   const d=loadAtt(); const studs=studentsForWeek(curWeek()); let p=0,l=0,a=0,bus=0;
-  studs.forEach(s=>{ const v=d[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; if(s.bus_rider)bus++; });
+  studs.forEach(s=>{ const v=attStat(d[s.id]); if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; if(s.bus_rider)bus++; });
   const unmarked=studs.length-p-l-a;
   document.getElementById('att-stats').innerHTML = `
     <div class="ministat p"><div class="n">${p}</div><div class="l">Present</div></div>
@@ -2432,7 +2453,7 @@ function renderAttStats(){
 function renderLevels(){
   const data=loadAtt();
   const counts={}; LEVELS.forEach(l=>counts[l.key]={enr:0,pres:0});
-  studentsForWeek(curWeek()).forEach(s=>{ const lv=levelOf(s.grade); counts[lv].enr++; if(data[s.id]==='p'||data[s.id]==='l') counts[lv].pres++; });
+  studentsForWeek(curWeek()).forEach(s=>{ const lv=levelOf(s.grade); counts[lv].enr++; const v=attStat(data[s.id]); if(v==='p'||v==='l') counts[lv].pres++; });
   let totE=0,totP=0;
   const cards=LEVELS.map(l=>{ const c=counts[l.key]; totE+=c.enr; totP+=c.pres;
     return `<div class="lvl"><div class="ln">${c.enr}</div><div class="ll">${l.label}</div><div class="lr">Gr ${l.range}</div><div class="lp">${c.pres} in</div></div>`;
@@ -2442,9 +2463,9 @@ function renderLevels(){
 }
 function attExport(){
   const d=loadAtt(); const labels={p:'Present',l:'Late',a:'Absent'};
-  const rows=[["First","Last","Grade","Level","Email","Status","Bus rider","Allergies","Medications","Date"]];
+  const rows=[["First","Last","Grade","Level","Email","Status","Checked in","Bus rider","Allergies","Medications","Date"]];
   studentsForWeek(curWeek()).forEach(s=>{
-    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[d[s.id]]||"Unmarked",s.bus_rider?'Yes':'No',s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
+    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[attStat(d[s.id])]||"Unmarked",attTime(d[s.id]),s.bus_rider?'Yes':'No',s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
   });
   csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
 }
@@ -2462,7 +2483,7 @@ function attInit(){
   dateEl.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(attKey()); renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
-    const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]='p'); saveAtt(d); renderAtt();
+    const t=nowTime(); const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]={s:'p', t}); saveAtt(d); renderAtt();
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
@@ -3690,6 +3711,7 @@ async function fhDelShout(id){
 const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','signage','slack','famguide','access'];
 const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',signage:'Signage Wish List',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
+  if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
   if(t==='emergency' && !document.body.classList.contains('can-contacts')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });

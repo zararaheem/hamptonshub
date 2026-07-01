@@ -7,93 +7,88 @@
 <style>
   :root{ --gold:#E8B84B; --gold-2:#F6D479; --blue:#2E9BFF; --blue-2:#68B8FF; --ink:#0b1622; }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{background:radial-gradient(120% 120% at 50% 0%,#12233a 0%,var(--ink) 62%);
+  body{background:radial-gradient(120% 90% at 50% 0%,#12233a 0%,var(--ink) 60%);min-height:100vh;
     color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    overflow:hidden;height:100vh;display:flex;flex-direction:column}
-  header{text-align:center;padding:1.6vh 2vw .6vh}
-  .clock{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(11px,1.4vw,17px);
-    letter-spacing:.12em;color:#9fb4c9;margin-bottom:.5vh}
-  h1{font-size:clamp(18px,2.8vw,34px);font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-  .sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(9px,1.05vw,13px);
-    letter-spacing:.22em;text-transform:uppercase;color:#7c93aa;margin-top:.4vh}
+    display:flex;justify-content:center;align-items:flex-start;padding:26px 20px 40px}
+  .wrap{width:100%;max-width:860px}
+  header{text-align:center;margin-bottom:16px}
+  .clock{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;letter-spacing:.12em;color:#9fb4c9;margin-bottom:6px}
+  h1{font-size:clamp(20px,3.6vw,30px);font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+  .sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7c93aa;margin-top:5px}
 
-  /* scoreboard — smaller panels */
-  .board{display:grid;grid-template-columns:1fr 1fr;gap:1.6vw;padding:1vh 2.4vw .6vh;flex:0 0 auto}
-  .panel{position:relative;border-radius:22px;border:2.5px solid;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;padding:1.6vh 1vw;overflow:hidden;transition:box-shadow .5s}
-  .panel.helios{border-color:var(--gold);background:linear-gradient(170deg,rgba(232,184,75,.18),rgba(232,184,75,.03))}
-  .panel.poseidon{border-color:var(--blue);background:linear-gradient(170deg,rgba(46,155,255,.2),rgba(46,155,255,.03))}
-  .panel.lead.helios{box-shadow:0 0 26px rgba(232,184,75,.42)}
-  .panel.lead.poseidon{box-shadow:0 0 26px rgba(46,155,255,.45)}
-  .logo{height:clamp(44px,7vw,96px);width:auto;max-width:20vw;object-fit:contain;filter:drop-shadow(0 4px 14px rgba(0,0,0,.45))}
-  .efallback{font-size:clamp(40px,6vw,90px);line-height:1}
-  .tname{font-size:clamp(18px,3vw,40px);font-weight:900;letter-spacing:.06em;text-transform:uppercase;margin-top:.4vh}
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .panel{position:relative;border-radius:20px;border:2.5px solid;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:22px 14px 18px;overflow:hidden;transition:box-shadow .5s}
+  .panel.helios{border-color:var(--gold);background:linear-gradient(170deg,rgba(232,184,75,.16),rgba(232,184,75,.02))}
+  .panel.poseidon{border-color:var(--blue);background:linear-gradient(170deg,rgba(46,155,255,.18),rgba(46,155,255,.02))}
+  .panel.lead.helios{box-shadow:0 0 22px rgba(232,184,75,.4)}
+  .panel.lead.poseidon{box-shadow:0 0 22px rgba(46,155,255,.42)}
+  .logo{height:64px;width:auto;object-fit:contain;filter:drop-shadow(0 3px 12px rgba(0,0,0,.45))}
+  .efallback{font-size:56px;line-height:1}
+  .tname{font-size:clamp(20px,3.4vw,30px);font-weight:900;letter-spacing:.06em;text-transform:uppercase;margin-top:8px}
   .helios .tname{color:var(--gold-2)} .poseidon .tname{color:var(--blue-2)}
-  .score{font-size:clamp(60px,12vw,168px);font-weight:900;line-height:.92;margin:.2vh 0}
+  .score{font-size:clamp(64px,11vw,104px);font-weight:900;line-height:.95;margin:2px 0}
   .helios .score{color:var(--gold)} .poseidon .score{color:var(--blue-2)}
-  .plabel{font-family:ui-monospace,monospace;font-size:clamp(10px,1.2vw,14px);letter-spacing:.28em;
-    text-transform:uppercase;color:#8ea4ba}
-  /* leader badge (replaces the crown) */
-  .lead-badge{position:absolute;top:1.4vh;right:1.4vh;display:none;align-items:center;gap:6px;
-    font-family:ui-monospace,monospace;font-size:clamp(9px,1.1vw,13px);font-weight:700;letter-spacing:.14em;
-    text-transform:uppercase;color:#0b1622;padding:4px 11px;border-radius:20px}
+  .plabel{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8ea4ba}
+  .lead-badge{position:absolute;top:12px;right:12px;display:none;align-items:center;gap:5px;
+    font-family:ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:#0b1622;padding:3px 10px;border-radius:20px}
   .panel.lead .lead-badge{display:inline-flex;animation:pop .5s ease}
-  .helios .lead-badge{background:linear-gradient(120deg,#F6D479,#E8B84B);box-shadow:0 3px 14px rgba(232,184,75,.5)}
-  .poseidon .lead-badge{background:linear-gradient(120deg,#68B8FF,#2E9BFF);box-shadow:0 3px 14px rgba(46,155,255,.5)}
+  .helios .lead-badge{background:linear-gradient(120deg,#F6D479,#E8B84B);box-shadow:0 3px 12px rgba(232,184,75,.5)}
+  .poseidon .lead-badge{background:linear-gradient(120deg,#68B8FF,#2E9BFF);box-shadow:0 3px 12px rgba(46,155,255,.5)}
   @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
   .bump{animation:bump .55s ease}
-  @keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(1)}}
+  @keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.13)}100%{transform:scale(1)}}
 
-  /* score details — multiple rows */
-  .details{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:.4vh 2.4vw 1.4vh}
-  .details h2{font-family:ui-monospace,monospace;font-size:clamp(10px,1.2vw,14px);letter-spacing:.2em;
-    text-transform:uppercase;color:#8ea4ba;margin:.4vh 0 .8vh}
-  .drows{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:.55vh}
-  .drow{display:grid;grid-template-columns:minmax(120px,180px) 64px 1fr auto auto;align-items:center;gap:14px;
+  .details{margin-top:20px}
+  .details h2{font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#8ea4ba;margin-bottom:10px}
+  .drows{display:flex;flex-direction:column;gap:7px}
+  .drow{display:grid;grid-template-columns:minmax(110px,150px) 52px 1fr auto auto;align-items:center;gap:12px;
     background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-left-width:4px;
-    border-radius:12px;padding:.9vh 16px;font-size:clamp(13px,1.5vw,20px)}
+    border-radius:11px;padding:9px 14px;font-size:15px}
   .drow.helios{border-left-color:var(--gold)} .drow.poseidon{border-left-color:var(--blue)}
   .dtag{font-weight:800;white-space:nowrap}
   .drow.helios .dtag{color:var(--gold-2)} .drow.poseidon .dtag{color:var(--blue-2)}
   .dpts{font-family:ui-monospace,monospace;font-weight:800;text-align:right}
   .dpts.pos{color:#69d58a} .dpts.neg{color:#ff8f6b}
   .dreason{color:#dbe6f1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .dwho,.dtime{font-family:ui-monospace,monospace;font-size:clamp(10px,1.15vw,14px);color:#7f96ac;white-space:nowrap}
-  .empty{color:#6b8298;text-align:center;padding:4vh 0}
-  .foot{position:fixed;bottom:7px;right:13px;font-family:ui-monospace,monospace;font-size:11px;color:#43596f}
-  @media (max-width:640px){ .drow{grid-template-columns:1fr auto;gap:6px} .dwho,.dtime{display:none} }
+  .dwho,.dtime{font-family:ui-monospace,monospace;font-size:12px;color:#7f96ac;white-space:nowrap}
+  .empty{color:#6b8298;padding:16px 0}
+  .foot{text-align:center;margin-top:18px;font-family:ui-monospace,monospace;font-size:11px;color:#43596f}
+  @media (max-width:560px){ .drow{grid-template-columns:1fr auto;gap:5px} .dwho,.dtime{display:none} }
 </style>
 </head>
 <body>
-  <header>
-    <div class="clock" id="clock">—</div>
-    <h1>Alpha Survivor · Week 1</h1>
-    <div class="sub"><span style="color:var(--gold-2)">Helios</span> &nbsp;vs&nbsp; <span style="color:var(--blue-2)">Poseidon</span> · Live Tribe Scoreboard</div>
-  </header>
+  <div class="wrap">
+    <header>
+      <div class="clock" id="clock">—</div>
+      <h1>Alpha Survivor · Week 1</h1>
+      <div class="sub"><span style="color:var(--gold-2)">Helios</span> &nbsp;vs&nbsp; <span style="color:var(--blue-2)">Poseidon</span> · Live Tribe Scoreboard</div>
+    </header>
 
-  <div class="board">
-    <div class="panel helios" id="p-helios">
-      <span class="lead-badge">★ Leading</span>
-      <img class="logo" src="assets/helios.svg" alt="Helios" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="efallback" style="display:none">☀️</span>
-      <div class="tname">Helios</div>
-      <div class="score" id="s-helios">0</div>
-      <div class="plabel">points</div>
+    <div class="board">
+      <div class="panel helios" id="p-helios">
+        <span class="lead-badge">★ Leading</span>
+        <img class="logo" src="assets/helios.svg" alt="Helios" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="efallback" style="display:none">☀️</span>
+        <div class="tname">Helios</div>
+        <div class="score" id="s-helios">0</div>
+        <div class="plabel">points</div>
+      </div>
+      <div class="panel poseidon" id="p-poseidon">
+        <span class="lead-badge">★ Leading</span>
+        <img class="logo" src="assets/poseidon.svg" alt="Poseidon" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="efallback" style="display:none">🔱</span>
+        <div class="tname">Poseidon</div>
+        <div class="score" id="s-poseidon">0</div>
+        <div class="plabel">points</div>
+      </div>
     </div>
-    <div class="panel poseidon" id="p-poseidon">
-      <span class="lead-badge">★ Leading</span>
-      <img class="logo" src="assets/poseidon.svg" alt="Poseidon" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="efallback" style="display:none">🔱</span>
-      <div class="tname">Poseidon</div>
-      <div class="score" id="s-poseidon">0</div>
-      <div class="plabel">points</div>
-    </div>
-  </div>
 
-  <div class="details">
-    <h2>Score details — latest points earned</h2>
-    <div class="drows" id="drows"><div class="empty">Waiting for the games to begin…</div></div>
+    <div class="details">
+      <h2>Score details — latest points earned</h2>
+      <div class="drows" id="drows"><div class="empty">Waiting for the games to begin…</div></div>
+    </div>
+    <div class="foot" id="foot">connecting…</div>
   </div>
-  <div class="foot" id="foot">connecting…</div>
 
   <script>
     const FN='https://qwmetffzspobjamwwhca.supabase.co/functions/v1/tribe-board';

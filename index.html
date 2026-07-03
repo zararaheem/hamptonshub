@@ -454,6 +454,9 @@
   .tr-btn.on-h{border-color:#E8B84B;color:#E8B84B;font-weight:700} .tr-btn.on-p{border-color:#5AA0F0;color:#5AA0F0;font-weight:700} .tr-btn.on-x{color:var(--oyster)}
   tr.ros-withdrawn{opacity:.5} tr.ros-withdrawn .cell-input{text-decoration:line-through;color:var(--muted)}
   .wd-chip{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);border:1px solid var(--line);border-radius:8px;padding:1px 6px;margin-top:4px;white-space:nowrap;text-decoration:none}
+  .permit-box{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:5px 9px;cursor:pointer;user-select:none;white-space:nowrap}
+  .permit-box input{accent-color:var(--teal-bright,#2f9c8f);width:15px;height:15px;cursor:pointer;margin:0}
+  .permit-box.on{color:var(--teal,#1f6b62);border-color:var(--teal-bright,#2f9c8f);background:rgba(47,156,143,.1);font-weight:600}
   .att-logrow{display:flex;gap:14px;align-items:baseline;padding:5px 2px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
   .alr-t{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:78px}
   .alr-n{flex:1;color:var(--oyster)}
@@ -2343,6 +2346,10 @@ let ATT_FILTER='all', ATT_SORT='last';
 function attKey(){ return `att:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
 function loadAtt(){ return stateGet(attKey()) || {}; }
 function saveAtt(data){ stateSet(attKey(), data); flashSaved(); }
+// Per-day "permit collected" checkboxes, keyed by the same week+date as attendance.
+function permitKey(){ return `permit:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
+function loadPermit(){ return stateGet(permitKey()) || {}; }
+function savePermit(data){ stateSet(permitKey(), data); flashSaved(); }
 // Attendance values may be a legacy status string ('p') or {s:status, t:time}.
 function attStat(v){ return typeof v==='string' ? v : ((v&&v.s)||''); }
 function attTime(v){ return (v && typeof v==='object' && v.t) || ''; }
@@ -2351,10 +2358,11 @@ function flashSaved(){
   el.textContent="✓ saved "+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
 function curWeek(){ return document.getElementById('att-week').value; }
-async function refreshAtt(){ if(SUPA){ await hydrateRoster(); await refreshStateKey(attKey()); } renderAtt(); }
+async function refreshAtt(){ if(SUPA){ await hydrateRoster(); await refreshStateKey(attKey()); await refreshStateKey(permitKey()); } renderAtt(); }
 function renderAtt(){
   if(guardStudentTab('att-list', curWeek())){ ['att-stats','att-levels','att-health'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
   const data = loadAtt();
+  const permit = loadPermit();
   const list = document.getElementById('att-list');
   const all = studentsForWeek(curWeek());
   if(!all.length){
@@ -2384,6 +2392,7 @@ function renderAtt(){
         <div class="avatar">${esc(init)}</div>
         <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
+        <label class="permit-box ${permit[s.id]?'on':''}" title="Permit slip collected"><input type="checkbox" data-act="permit" ${permit[s.id]?'checked':''}><span>Permit</span></label>
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
           <button data-s="l" class="${st==='l'?'sel-l':''}">Late</button>
@@ -2410,6 +2419,15 @@ function renderAtt(){
   });
   list.querySelectorAll('[data-act=htoggle]').forEach(btn=>{
     btn.addEventListener('click',()=>{ btn.closest('.student-block').querySelector('.health-panel').classList.toggle('open'); });
+  });
+  list.querySelectorAll('[data-act=permit]').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      const id=cb.closest('.student-block').dataset.id;
+      const p=loadPermit();
+      if(cb.checked){ p[id]=true; } else { delete p[id]; }
+      savePermit(p);
+      cb.closest('.permit-box').classList.toggle('on', cb.checked);
+    });
   });
   list.querySelectorAll('[data-h]').forEach(inp=>{
     inp.addEventListener('change',async ()=>{
@@ -2488,10 +2506,10 @@ function renderLevels(){
   document.getElementById('att-levels').innerHTML=cards+total;
 }
 function attExport(){
-  const d=loadAtt(); const labels={p:'Present',l:'Late',a:'Absent'};
-  const rows=[["First","Last","Grade","Level","Email","Status","Checked in","Bus rider","Allergies","Medications","Date"]];
+  const d=loadAtt(); const p=loadPermit(); const labels={p:'Present',l:'Late',a:'Absent'};
+  const rows=[["First","Last","Grade","Level","Email","Status","Checked in","Permit collected","Bus rider","Allergies","Medications","Date"]];
   studentsForWeek(curWeek()).forEach(s=>{
-    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[attStat(d[s.id])]||"Unmarked",attTime(d[s.id]),s.bus_rider?'Yes':'No',s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
+    rows.push([s.first,s.last,s.grade,levelOf(s.grade),studentEmail(s),labels[attStat(d[s.id])]||"Unmarked",attTime(d[s.id]),p[s.id]?'Yes':'No',s.bus_rider?'Yes':'No',s.allergies||'',s.meds||'',document.getElementById('att-date').value]);
   });
   csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
 }
@@ -2506,7 +2524,7 @@ function attInit(){
   // default to today when we're inside the active week; otherwise that week's Monday
   const t=todayISO();
   dateEl.value = (t>=WEEKS[NOW].start && t<=WEEKS[NOW].end) ? t : WEEKS[NOW].start;
-  dateEl.addEventListener('change',async ()=>{ if(SUPA) await refreshStateKey(attKey()); renderAtt(); });
+  dateEl.addEventListener('change',async ()=>{ if(SUPA){ await refreshStateKey(attKey()); await refreshStateKey(permitKey()); } renderAtt(); });
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
     const t=nowTime(); const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]={s:'p', t}); saveAtt(d); renderAtt();
@@ -3753,7 +3771,7 @@ function showTab(t){
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
-  if(t==='attendance' && SUPA){ refreshStateKey(attKey()).then(renderAtt); }
+  if(t==='attendance' && SUPA){ Promise.all([refreshStateKey(attKey()), refreshStateKey(permitKey())]).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
   try{ history.replaceState(null,'', t==='dashboard' ? (location.pathname+location.search) : ('#'+(t==='guide'?'weeklybrief':t))); }catch(e){}
   closeRail();

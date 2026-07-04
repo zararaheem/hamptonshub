@@ -1299,7 +1299,7 @@ const ROSTER = [
   {role:"Lead Guide", cells:["Jenna K","Jesse","Jenna K","Jenna K","Parthvi","","Jenna K","Jenna K","Jenna K"]},
   {role:"Guide 1", cells:["Sam","Sam","Sam","Sam","","Sam","Sam","Sam","Sam"]},
   {role:"Guide 2", cells:["Liam","Kris Ponder","Darby Knox","Darby Knox","Varenya Hariharan","Varenya Hariharan","","","Parthvi"]},
-  {role:"Guide 3", cells:["Jesse","","Jesse","Jesse","","","Varenya Hariharan","Emily","Kayla"]},
+  {role:"Guide 3", cells:["Jesse","Jackson Newton","Jesse","Jesse","","","Varenya Hariharan","Emily","Kayla"]},
   {role:"Guide 4", cells:["Varenya Hariharan","Gaby","Jackson","Varenya Hariharan","","","","Varenya Hariharan",""]},
   {role:"Guide 5", cells:["","Varenya Hariharan","Varenya Hariharan","Mia","","","","","Varenya Hariharan"]},
   {role:"Nurse", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
@@ -1655,10 +1655,13 @@ function planImport(week, arr){
     if(m){ used.add(m.id); toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), s}); }
     else toAdd.push({name:nm||'(unnamed)', s});
   });
-  return {toUpdate, toAdd, skippedTest};
+  // Anyone already on this week's roster who wasn't matched by the file is no
+  // longer enrolled — offer to remove them so counts reflect the new list.
+  const toRemove=existing.filter(e=>!used.has(e.id)).map(e=>({id:e.id, name:`${e.first||''} ${e.last||''}`.trim()||'(unnamed)'}));
+  return {toUpdate, toAdd, toRemove, skippedTest};
 }
 async function applyImport(week, plan){
-  week=+week; let updated=0, added=0, emerg=0;
+  week=+week; let updated=0, added=0, emerg=0, removed=0;
   const writeEmerg=async(id,s)=>{ if(SESSION&&(SESSION.owner||SESSION.contacts)){ const ep={}; EMERG_FIELDS.forEach(f=>{ if(f in s && (s[f]||'')!=='') ep[f]=s[f]; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) emerg++; } } };
   const patchOf=(s,skipGrade)=>{ const p={}; STUDENT_FIELDS.forEach(f=>{ if(skipGrade&&f==='grade') return; if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready') p[f]=!!s[f]; else if((s[f]||'')!=='') p[f]=s[f]; } }); return p; };
   for(const u of plan.toUpdate){
@@ -1672,7 +1675,9 @@ async function applyImport(week, plan){
     if(row){ const extra=patchOf(s,true); if(Object.keys(extra).length) await dbUpdateStudent(row.id, extra); await writeEmerg(row.id, s); }
     added++;
   }
-  return {updated, added, emerg};
+  // Remove students who dropped off this week's roster (e.g. moved to another week).
+  for(const r of (plan.toRemove||[])){ const err=await dbDeleteStudent(r.id); if(err) return {err}; removed++; }
+  return {updated, added, emerg, removed};
 }
 async function dbUpdateStudent(id, patch){
   const s=findStudent(id); if(s) Object.assign(s, patch);
@@ -3026,7 +3031,7 @@ function renderRosterTab(){
         <option value="yes" ${s.media_consent==='yes'?'selected':''}>✓ Consent</option>
         <option value="no" ${s.media_consent==='no'?'selected':''}>✗ No consent</option></select></td>
       <td style="text-align:center"><input type="checkbox" class="big-check" data-flag="laptop_assigned" ${s.laptop_assigned?'checked':''}></td>
-      ${ed?`<td style="white-space:nowrap"><button class="lk" data-act="${s.withdrawn?'reactivate':'leave'}" title="${s.withdrawn?'Bring back onto the roster':'Mark no longer continuing'}">${s.withdrawn?'Reactivate':'Left'}</button> <button class="del" data-act="del" title="Remove">×</button></td>`:''}
+      ${ed?`<td style="white-space:nowrap"><button class="lk" data-act="${s.withdrawn?'reactivate':'leave'}" title="${s.withdrawn?'Bring back onto the roster':'Mark no longer continuing'}">${s.withdrawn?'Reactivate':'Student withdrawn'}</button> <button class="del" data-act="del" title="Remove">×</button></td>`:''}
     </tr>`).join('') : `<tr><td colspan="${cols}" class="note-row">${ROS_FILTER==='all'?`No students for Week ${esc(rosWeek())} yet. ${ed?'Add one below or import a CSV.':'Ask an admin to add or import students.'}`:'No students match this consent filter.'}</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('.th-sort').forEach(b=>b.addEventListener('click',()=>{
@@ -3116,16 +3121,22 @@ function showImportReview(week, plan){
     <h3 style="margin:0 0 10px">Review import — Week ${esc(week)} <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by first name)</span></h3>
     <p class="lc-desc" style="margin:0 0 8px"><b style="color:var(--teal-bright)">${plan.toUpdate.length} will be updated</b>${plan.toUpdate.length?' — '+names(plan.toUpdate):''}</p>
     <p class="lc-desc" style="margin:0 0 14px"><b style="color:var(--brass-bright)">${plan.toAdd.length} will be added as new</b>${plan.toAdd.length?' — '+names(plan.toAdd):''}${plan.skippedTest&&plan.skippedTest.length?`<br><span style="color:var(--muted)">${plan.skippedTest.length} test entr${plan.skippedTest.length===1?'y':'ies'} skipped</span>`:''}</p>
+    ${plan.toRemove&&plan.toRemove.length?`<label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 14px;padding:10px 12px;border:1px solid #d9534f;border-radius:9px;background:rgba(217,83,79,.07);cursor:pointer">
+      <input type="checkbox" id="ros-review-remove" checked style="margin-top:3px;width:15px;height:15px;flex:none">
+      <span class="lc-desc" style="margin:0"><b style="color:#d9534f">Remove ${plan.toRemove.length} student${plan.toRemove.length===1?'':'s'} no longer on this Week ${esc(week)} list</b> — ${names(plan.toRemove)}<br><span style="color:var(--muted)">Deletes them from Week ${esc(week)} only. Their spots on other weeks are untouched. Uncheck to keep them.</span></span>
+    </label>`:''}
     <button class="btn" id="ros-review-go">Confirm import</button>
     <button class="btn ghost" id="ros-review-cancel">Cancel</button>
   </div>`;
   document.getElementById('ros-review-cancel').addEventListener('click',()=>{ box.innerHTML=''; });
   document.getElementById('ros-review-go').addEventListener('click',async()=>{
+    const rmEl=document.getElementById('ros-review-remove');
+    if(rmEl && !rmEl.checked) plan.toRemove=[];
     const m=document.getElementById('ros-io-msg'); m.className='gate-msg'; m.textContent='Importing…';
     const res=await applyImport(week, plan);
     box.innerHTML='';
     if(res.err){ m.className='gate-msg err'; m.textContent=res.err.message||'Import failed.'; return; }
-    m.className='gate-msg ok'; m.textContent=`Updated ${res.updated}, added ${res.added}${res.emerg?`, ${res.emerg} contact record${res.emerg>1?'s':''}`:''} ✓`;
+    m.className='gate-msg ok'; m.textContent=`Updated ${res.updated}, added ${res.added}${res.removed?`, removed ${res.removed}`:''}${res.emerg?`, ${res.emerg} contact record${res.emerg>1?'s':''}`:''} ✓`;
     renderRosterTab(); if(typeof renderEmergency==='function') renderEmergency();
   });
 }

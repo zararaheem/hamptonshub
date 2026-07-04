@@ -101,6 +101,26 @@
   .hr-toggle.in{border-color:var(--teal);color:var(--teal-bright)}
   .hr-toggle:disabled{cursor:default;opacity:.8}
   .hr-toggle:not(:disabled):hover{border-color:var(--brass);color:var(--oyster)}
+  .hr-sel{flex-shrink:0;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:8px;padding:6px 8px;font-size:12px;font-family:var(--mono);cursor:pointer;max-width:190px}
+  .hr-sel.in{border-color:var(--teal);color:var(--teal-bright)}
+  .hr-sel:disabled{cursor:default;opacity:.8}
+  .house-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+  .house-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .house-card.pend{border-style:dashed;border-color:var(--brass)}
+  .house-card.off{border-color:var(--line-soft)}
+  .house-card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .house-card-name{font-weight:600;font-size:13.5px;color:var(--oyster)}
+  .house-card-n{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:1px 8px}
+  .house-card-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .house-card-list li{font-size:13.5px;color:var(--oyster)}
+  .house-card-list .hc-role{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:4px}
+  .house-card-empty{font-size:12.5px;color:var(--muted);font-style:italic}
+  .hm-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .hm-chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:9px;padding:3px 4px 3px 8px;background:var(--panel)}
+  .hm-name{border:none;background:none;color:var(--oyster);font-size:12.5px;font-family:var(--mono);width:120px;padding:2px}
+  .hm-name:focus{outline:1px solid var(--brass);border-radius:5px}
+  .hm-del{border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+  .hm-del:hover{color:var(--coral)}
   .rail-foot{padding:14px 18px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--muted-2);
     font-family:var(--mono);letter-spacing:.04em}
   .rail-link{display:block;margin-bottom:11px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;
@@ -574,6 +594,12 @@
   .lvl .ll{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass-bright);margin-top:6px}
   .lvl .lr{font-family:var(--mono);font-size:9.5px;color:var(--muted-2);margin-top:2px}
   .lvl .lp{font-family:var(--mono);font-size:10px;color:var(--ok);margin-top:5px}
+  .lvl.clk{cursor:pointer;transition:border-color .12s,transform .05s}
+  .lvl.clk:hover{border-color:var(--brass)}
+  .lvl.clk:active{transform:translateY(1px)}
+  .lvl.clk.sel{border-color:var(--brass-bright);box-shadow:inset 0 0 0 1px var(--brass-bright)}
+  .lvl-list-box{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--panel)}
+  .ll-badge{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--brass-bright);border:1px solid var(--line);border-radius:7px;padding:0 5px;margin-left:6px}
 
   /* level badge + health */
   .lvlbadge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;border:1px solid var(--line);
@@ -800,8 +826,13 @@
       </div>
 
       <div class="subpanel" id="sub-housing">
-        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Who stays in housing</div>
-        <p class="lc-desc" style="margin:0 0 12px">The full crew — tap a person to toggle whether they stay in the Water Mill house.</p>
+        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Guide houses</div>
+        <p class="lc-desc" style="margin:0 0 12px">Who's in each house. Admins can add houses and assign each crew member below.</p>
+        <div id="house-groups" class="house-groups"></div>
+        <div id="house-manage" style="margin:6px 0 20px"></div>
+
+        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Assign crew to a house</div>
+        <p class="lc-desc" style="margin:0 0 12px">The full crew — pick a house for each person (or “Not in housing”).</p>
         <div id="housing-roster" class="housing-roster"></div>
         <div class="meta-line" style="margin:12px 0 22px"><span id="housing-count">—</span></div>
         <div class="eyebrow" style="margin-bottom:8px">House details</div>
@@ -851,8 +882,9 @@
       <div id="asub-roll">
         <div class="att-stats" id="att-stats" style="margin-bottom:16px"></div>
 
-        <div class="eyebrow" style="margin-bottom:8px">Count by level</div>
+        <div class="eyebrow" style="margin-bottom:8px">Count by level <span style="text-transform:none;letter-spacing:0;color:var(--muted-2);font-weight:400">— tap a level to see its list</span></div>
         <div class="levels" id="att-levels"></div>
+        <div id="att-level-list"></div>
 
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:18px">
           <div class="seg-filter" id="att-filter">
@@ -1522,7 +1554,7 @@ function studentsForWeek(w, incWithdrawn){
   const cmp={
     first:(a,b)=>(a.first||'').localeCompare(b.first||'')||(a.last||'').localeCompare(b.last||''),
     last:byName,
-    level:(a,b)=>lvlIdx(a)-lvlIdx(b)||byName(a,b),
+    level:(a,b)=>lvlIdx(a)-lvlIdx(b)||gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b),
     grade:(a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||byName(a,b),
     birthday:(a,b)=>bdayKey(a.birthday)-bdayKey(b.birthday)||byName(a,b),
     shirt:(a,b)=>shirtRank(a.shirt_size)-shirtRank(b.shirt_size)||(a.shirt_size||'').localeCompare(b.shirt_size||'')||byName(a,b),
@@ -1968,6 +2000,7 @@ const CONTENT_DEFAULTS = {
     {k:"Stays in house", v:"Coordinator, Lead Guide, Manuel, extra guides"},
     {k:"Separate / off-site", v:"Gaby Guajardo"},
   ],
+  houses: ["Guide House 1","Guide House 2"],
   staff: STAFF,
 };
 let CONTENT = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
@@ -2032,7 +2065,7 @@ function buildAllEditors(){
   const staffNames=[...new Set((CONTENT.staff||[]).map(r=>r[0]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const staffRoles=[...new Set((CONTENT.staff||[]).map(r=>r[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const STATUS_OPTS=['Confirmed','Pending','Tentative','Declined'];
-  const HOUSING_OPTS=['Yes','No','Off-site'];
+  const HOUSING_OPTS=['No','Off-site',...(CONTENT.houses||[])];
   const wcols=[0,1,2,3,4,5,6,7,8].map(n=>({key:'c'+n,label:'W'+(n+1),w:88,list:'staff'}));
   mk('tiles-editor',
     [{key:'k',label:'Label',w:150},{key:'v',label:'Value',w:120},{key:'d',label:'Detail',w:200},{key:'c',label:'Accent (t-teal / t-coral)',w:130}],
@@ -2240,21 +2273,86 @@ function renderStaff(){
   </tr>`).join('');
   document.getElementById('staff-table').innerHTML = head+`<tbody>${body}</tbody>`;
 }
+// ---- Housing helpers ----
+function houseList(){ return (CONTENT.houses||[]).slice(); }
+// A staff row's housing value (r[3]) may be a house name, legacy 'Yes'
+// (in housing, no house yet), 'Off-site', or 'No'/'' (not in housing).
+function houseOf(r){ const v=String(r[3]||'').trim(); return houseList().includes(v)?v:''; }
+function inHousing(r){ const v=String(r[3]||'').trim().toLowerCase(); return v==='yes' || houseList().some(h=>h.toLowerCase()===v); }
+function isOffsite(r){ return String(r[3]||'').trim().toLowerCase()==='off-site'; }
 function renderHousingRoster(){
-  const wrap=document.getElementById('housing-roster'); if(!wrap) return;
+  const wrap=document.getElementById('housing-roster'); if(!wrap){ renderHouseGroups(); renderHouseManage(); return; }
   const admin=document.body.classList.contains('is-admin');
-  const stays = r => String(r[3]||'').trim().toLowerCase()==='yes';
-  wrap.innerHTML = CONTENT.staff.map((r,i)=>`<div class="hr-row ${stays(r)?'in':''}">
-    <div class="hr-who"><span class="hr-name">${r[0]==='TBD'?'<span class="tbd">TBD</span>':esc(r[0]||'—')}</span><span class="hr-role">${esc(r[1]||'')}</span></div>
-    <button class="hr-toggle ${stays(r)?'in':'out'}" data-i="${i}" ${admin?'':'disabled'} title="${admin?'Toggle housing':'Sign in as admin to change'}">${stays(r)?'🏠 Stays in housing':'Not in housing'}</button>
-  </div>`).join('');
-  const n=CONTENT.staff.filter(stays).length, total=CONTENT.staff.length;
-  const c=document.getElementById('housing-count'); if(c) c.innerHTML=`<b>${n}</b> staying in housing · <b>${total-n}</b> not`;
-  if(admin) wrap.querySelectorAll('.hr-toggle').forEach(b=>b.addEventListener('click',async()=>{
-    const i=+b.dataset.i;
-    CONTENT.staff[i][3] = stays(CONTENT.staff[i]) ? 'No' : 'Yes';
+  const houses=houseList();
+  const opt=(val,label,sel)=>`<option value="${escAttr(val)}" ${sel?'selected':''}>${esc(label)}</option>`;
+  wrap.innerHTML = CONTENT.staff.map((r,i)=>{
+    const cur=String(r[3]||'').trim();
+    const sel = cur.toLowerCase()==='yes' ? '__yes' : (houses.includes(cur)?cur:(isOffsite(r)?'Off-site':'No'));
+    const opts = opt('No','— Not in housing', sel==='No')
+      + opt('Off-site','Off-site', sel==='Off-site')
+      + (cur.toLowerCase()==='yes'?opt('__yes','In housing — pick a house', true):'')
+      + houses.map(h=>opt(h,h, sel===h)).join('');
+    return `<div class="hr-row ${inHousing(r)?'in':''}">
+      <div class="hr-who"><span class="hr-name">${r[0]==='TBD'?'<span class="tbd">TBD</span>':esc(r[0]||'—')}</span><span class="hr-role">${esc(r[1]||'')}</span></div>
+      <select class="hr-sel ${inHousing(r)?'in':''}" data-i="${i}" ${admin?'':'disabled'} title="${admin?'Assign a house':'Sign in as admin to change'}">${opts}</select>
+    </div>`;
+  }).join('');
+  const n=CONTENT.staff.filter(inHousing).length, total=CONTENT.staff.length;
+  const c=document.getElementById('housing-count'); if(c) c.innerHTML=`<b>${n}</b> in a house · <b>${total-n}</b> not`;
+  if(admin) wrap.querySelectorAll('.hr-sel').forEach(sel=>sel.addEventListener('change',async()=>{
+    const i=+sel.dataset.i; let v=sel.value; if(v==='__yes') v='Yes';
+    CONTENT.staff[i][3] = v;
     const e=await saveContent('staff'); if(e){ alert('Could not save housing change.'); }
     renderHousingRoster(); renderStaff();
+  }));
+  renderHouseGroups(); renderHouseManage();
+}
+// Grouped "who is in each house" cards.
+function renderHouseGroups(){
+  const el=document.getElementById('house-groups'); if(!el) return;
+  const houses=houseList();
+  const nameOf=r=>r[0]==='TBD'?'TBD':(r[0]||'—');
+  const cards=houses.map(h=>{
+    const people=CONTENT.staff.filter(r=>houseOf(r)===h);
+    return `<div class="house-card"><div class="house-card-h"><span class="house-card-name">🏠 ${esc(h)}</span><span class="house-card-n">${people.length}</span></div>
+      ${people.length?`<ul class="house-card-list">${people.map(r=>`<li><b>${esc(nameOf(r))}</b> <span class="hc-role">${esc(r[1]||'')}</span></li>`).join('')}</ul>`:'<div class="house-card-empty">No one assigned yet</div>'}</div>`;
+  });
+  const unassigned=CONTENT.staff.filter(r=>String(r[3]||'').trim().toLowerCase()==='yes');
+  if(unassigned.length) cards.push(`<div class="house-card pend"><div class="house-card-h"><span class="house-card-name">⏳ In housing — no house yet</span><span class="house-card-n">${unassigned.length}</span></div>
+    <ul class="house-card-list">${unassigned.map(r=>`<li><b>${esc(nameOf(r))}</b> <span class="hc-role">${esc(r[1]||'')}</span></li>`).join('')}</ul></div>`);
+  const offsite=CONTENT.staff.filter(isOffsite);
+  if(offsite.length) cards.push(`<div class="house-card off"><div class="house-card-h"><span class="house-card-name">📍 Off-site</span><span class="house-card-n">${offsite.length}</span></div>
+    <ul class="house-card-list">${offsite.map(r=>`<li><b>${esc(nameOf(r))}</b> <span class="hc-role">${esc(r[1]||'')}</span></li>`).join('')}</ul></div>`);
+  el.innerHTML=cards.join('');
+}
+// Admin control: add / rename / remove houses.
+function renderHouseManage(){
+  const el=document.getElementById('house-manage'); if(!el) return;
+  if(!document.body.classList.contains('is-admin')){ el.innerHTML=''; return; }
+  const houses=houseList();
+  el.innerHTML=`<div class="hm-row">${houses.map((h,i)=>`<span class="hm-chip"><input class="hm-name" data-i="${i}" value="${escAttr(h)}"><button class="hm-del" data-i="${i}" title="Remove house">×</button></span>`).join('')}
+    <button class="btn ghost hm-add">＋ Add house</button></div>`;
+  el.querySelector('.hm-add').addEventListener('click',async()=>{
+    const hs=houseList(); hs.push(`Guide House ${hs.length+1}`); CONTENT.houses=hs;
+    const e=await saveContent('houses'); if(e) alert('Could not add house.');
+    buildAllEditors(); renderHousingRoster();
+  });
+  el.querySelectorAll('.hm-name').forEach(inp=>inp.addEventListener('change',async()=>{
+    const i=+inp.dataset.i; const hs=houseList(); const old=hs[i]; const nu=inp.value.trim()||old;
+    if(nu===old) return;
+    // Reassign anyone currently in the renamed house.
+    CONTENT.staff.forEach(r=>{ if(String(r[3]||'').trim()===old) r[3]=nu; });
+    hs[i]=nu; CONTENT.houses=hs;
+    const e=await saveContent('houses'); await saveContent('staff'); if(e) alert('Could not rename house.');
+    buildAllEditors(); renderHousingRoster(); renderStaff();
+  }));
+  el.querySelectorAll('.hm-del').forEach(b=>b.addEventListener('click',async()=>{
+    const i=+b.dataset.i; const hs=houseList(); const gone=hs[i];
+    if(!confirm(`Remove "${gone}"? People assigned to it will move to "In housing — no house yet".`)) return;
+    CONTENT.staff.forEach(r=>{ if(String(r[3]||'').trim()===gone) r[3]='Yes'; });
+    hs.splice(i,1); CONTENT.houses=hs;
+    await saveContent('houses'); await saveContent('staff');
+    buildAllEditors(); renderHousingRoster(); renderStaff();
   }));
 }
 function renderOps(){
@@ -2347,7 +2445,7 @@ function renderGuideWeeks(){
 
 /* =================== ATTENDANCE =================== */
 const ATT_STATES = {p:'sel-p', l:'sel-l', a:'sel-a'};
-let ATT_FILTER='all', ATT_SORT='last';
+let ATT_FILTER='all', ATT_SORT='last', ATT_LEVEL='';
 function attKey(){ return `att:w${document.getElementById('att-week').value}:${document.getElementById('att-date').value}`; }
 function loadAtt(){ return stateGet(attKey()) || {}; }
 function saveAtt(data){ stateSet(attKey(), data); flashSaved(); }
@@ -2505,10 +2603,30 @@ function renderLevels(){
   studentsForWeek(curWeek()).forEach(s=>{ const lv=levelOf(s.grade); counts[lv].enr++; const v=attStat(data[s.id]); if(v==='p'||v==='l') counts[lv].pres++; });
   let totE=0,totP=0;
   const cards=LEVELS.map(l=>{ const c=counts[l.key]; totE+=c.enr; totP+=c.pres;
-    return `<div class="lvl"><div class="ln">${c.enr}</div><div class="ll">${l.label}</div><div class="lr">Gr ${l.range}</div><div class="lp">${c.pres} in</div></div>`;
+    return `<div class="lvl clk ${ATT_LEVEL===l.key?'sel':''}" data-lvl="${escAttr(l.key)}"><div class="ln">${c.enr}</div><div class="ll">${l.label}</div><div class="lr">Gr ${l.range}</div><div class="lp">${c.pres} in</div></div>`;
   }).join('');
-  const total=`<div class="lvl total"><div class="ln">${totE}</div><div class="ll">Total</div><div class="lr">all levels</div><div class="lp">${totP} in</div></div>`;
-  document.getElementById('att-levels').innerHTML=cards+total;
+  const total=`<div class="lvl total clk ${ATT_LEVEL==='__all'?'sel':''}" data-lvl="__all"><div class="ln">${totE}</div><div class="ll">Total</div><div class="lr">all levels</div><div class="lp">${totP} in</div></div>`;
+  const el=document.getElementById('att-levels'); el.innerHTML=cards+total;
+  el.querySelectorAll('.lvl.clk').forEach(c=>c.addEventListener('click',()=>{
+    const k=c.dataset.lvl; ATT_LEVEL = (ATT_LEVEL===k)?'' : k;   // toggle
+    renderLevels(); renderLevelList();
+  }));
+  renderLevelList();
+}
+// Quick roster for the tapped level, with each student's status for the day.
+function renderLevelList(){
+  const el=document.getElementById('att-level-list'); if(!el) return;
+  if(!ATT_LEVEL){ el.innerHTML=''; return; }
+  const data=loadAtt(); const LB={p:'Present',l:'Late',a:'Absent'};
+  const lbl = ATT_LEVEL==='__all' ? 'All levels' : ((LEVELS.find(l=>l.key===ATT_LEVEL)||{}).label || ATT_LEVEL);
+  let studs=studentsForWeek(curWeek());
+  if(ATT_LEVEL!=='__all') studs=studs.filter(s=>levelOf(s.grade)===ATT_LEVEL);
+  studs=studs.slice().sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  if(!studs.length){ el.innerHTML=`<div class="callout" style="margin-top:12px">No students in ${esc(lbl)} on this roster.</div>`; return; }
+  const rows=studs.map(s=>{ const st=attStat(data[s.id]);
+    return `<div class="att-logrow"><span class="alr-n">${esc(studentFullName(s))}${ATT_LEVEL==='__all'?` <span class="ll-badge">${esc(levelOf(s.grade))}</span>`:''}</span><span class="alr-s ${st?'s-'+st:''}">${st?esc(LB[st]):'—'}</span></div>`;
+  }).join('');
+  el.innerHTML=`<div class="lvl-list-box"><div class="eyebrow" style="margin-bottom:8px">${esc(lbl)} · ${studs.length} student${studs.length===1?'':'s'}</div>${rows}</div>`;
 }
 function attExport(){
   const d=loadAtt(); const p=loadPermit(); const labels={p:'Present',l:'Late',a:'Absent'};

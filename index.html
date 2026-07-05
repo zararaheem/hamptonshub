@@ -2269,12 +2269,26 @@ function weekHeaders(){
   return WEEKS.map((w,i)=>`<th class="${i===NOW?'col-now':''}">W${w.n}<br><span style="color:var(--muted-2);font-weight:400">${w.range}</span></th>`).join('');
 }
 function renderRoster(){
+  const el=document.getElementById('roster-table'); if(!el) return;
+  const ed = (typeof isAdmin==='function') && isAdmin();
+  const names=[...new Set([...(CONTENT.staff||[]).map(r=>r[0]).filter(Boolean), ...(ALLOW_NAMES||[])])].sort((a,b)=>a.localeCompare(b));
+  const dl = ed ? `<datalist id="ed-rostercell">${names.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>` : '';
+  const editCell=(c,ri,ci)=>`<td class="${ci===NOW?'col-now':''}"><input class="cell-input rc-in" list="ed-rostercell" autocomplete="off" data-r="${ri}" data-c="${ci}" value="${escAttr(c||'')}" placeholder="—"></td>`;
   const head = `<thead><tr><th class="role-cell">Role</th>${weekHeaders()}</tr></thead>`;
-  const body = CONTENT.roster.map(r=>`<tr><td class="role-cell">${esc(r.role)}</td>${
-    (r.cells||[]).map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
+  const body = CONTENT.roster.map((r,ri)=>`<tr><td class="role-cell">${esc(r.role)}</td>${
+    (r.cells||[]).map((c,ci)=> ed ? editCell(c,ri,ci) : `<td class="${ci===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
   }</tr>`).join('') +
     `<tr><td class="role-cell">Standby</td><td colspan="9" class="note-row">${STANDBY.join(' · ')}</td></tr>`;
-  document.getElementById('roster-table').innerHTML = head+`<tbody>${body}</tbody>`;
+  el.innerHTML = dl+head+`<tbody>${body}</tbody>`;
+  if(ed) el.querySelectorAll('.rc-in').forEach(inp=>inp.addEventListener('change',async()=>{
+    const ri=+inp.dataset.r, ci=+inp.dataset.c;
+    if(!CONTENT.roster[ri]) return;
+    CONTENT.roster[ri].cells[ci] = inp.value.trim();
+    const e=await saveContent('roster'); if(e){ inp.style.borderColor='var(--coral)'; return; }
+    inp.style.borderColor='var(--ok)'; setTimeout(()=>{ inp.style.borderColor=''; },900);
+    if(typeof renderCountdown==='function') renderCountdown();
+    if(typeof renderWeekSummary==='function') renderWeekSummary();
+  }));
 }
 function renderHousing(){
   const head = `<thead><tr><th class="role-cell">Bed</th>${weekHeaders()}<th>Tier</th></tr></thead>`;
@@ -4165,6 +4179,7 @@ function enterHub(sess){
   // record the signed-in person's Google display name (own row only, if not set yet)
   if(SUPA){ SB.auth.getUser().then(({data})=>{ const u=data&&data.user, md=u&&u.user_metadata||{}; const nm=md.full_name||md.name; if(nm) SB.rpc('claim_my_profile',{p_name:nm}).then(()=>renderAccess()).catch(()=>{}); }).catch(()=>{}); }
   renderAccess();
+  if(typeof renderRoster==='function') renderRoster();   // re-render editable now admin state is known
   if(typeof renderHousingRoster==='function') renderHousingRoster();
   Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState(), ((sess.contacts||sess.owner)?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
@@ -4505,7 +4520,7 @@ loadContent().then(()=>{
   renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster();
   renderWorkstreams('All'); renderEvents(); buildAllEditors();
   // Load sign-in account names so the roster type-ahead aligns with logins.
-  if(typeof dbGetAllow==='function') dbGetAllow().then(()=>buildAllEditors()).catch(()=>{});
+  if(typeof dbGetAllow==='function') dbGetAllow().then(()=>{ buildAllEditors(); if(typeof renderRoster==='function') renderRoster(); }).catch(()=>{});
 });
 Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ renderAtt(); renderTech(); renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
 </script>

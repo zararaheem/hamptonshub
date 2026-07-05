@@ -1889,11 +1889,11 @@ function parseRegistration(text){
       notes:noteParts.join(' • '), media_consent,
       shirt_size:g(c,I.shirt), birthday:g(c,I.dob), bus_rider:/^(1|y|yes|true|x)/i.test(g(c,I.bus)),
       contact:{
-        guardian:g(c,I.pName), guardian_email:g(c,I.pEmail), guardian_phone:g(c,I.pPhone),
-        secondary_parent:g(c,I.sName), secondary_email:g(c,I.sEmail), secondary_phone:g(c,I.sPhone),
-        other_guardian:softNone(g(c,I.pu1Name)), other_phone:g(c,I.pu1Phone), authorized_pickups:morePickups,
-        emergency_contact:g(c,I.ecName), emergency_phone:g(c,I.ecPhone),
-        relationship:g(c,I.sRel), dob:g(c,I.dob), address:addr,
+        guardian:softNone(g(c,I.pName)), guardian_email:softNone(g(c,I.pEmail)), guardian_phone:softNone(g(c,I.pPhone)),
+        secondary_parent:softNone(g(c,I.sName)), secondary_email:softNone(g(c,I.sEmail)), secondary_phone:softNone(g(c,I.sPhone)),
+        other_guardian:softNone(g(c,I.pu1Name)), other_phone:softNone(g(c,I.pu1Phone)), authorized_pickups:morePickups,
+        emergency_contact:softNone(g(c,I.ecName)), emergency_phone:softNone(g(c,I.ecPhone)),
+        relationship:softNone(g(c,I.sRel)), dob:g(c,I.dob), address:addr,
       }
     });
   }

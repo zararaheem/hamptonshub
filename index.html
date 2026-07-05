@@ -1695,7 +1695,10 @@ function planImport(week, arr){
 async function applyImport(week, plan){
   week=+week; let updated=0, added=0, emerg=0, removed=0;
   const writeEmerg=async(id,s)=>{ if(SESSION&&(SESSION.owner||SESSION.contacts)){ const ep={}; EMERG_FIELDS.forEach(f=>{ if(f in s && (s[f]||'')!=='') ep[f]=s[f]; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) emerg++; } } };
-  const patchOf=(s,skipGrade)=>{ const p={}; STUDENT_FIELDS.forEach(f=>{ if(skipGrade&&f==='grade') return; if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready') p[f]=!!s[f]; else if((s[f]||'')!=='') p[f]=s[f]; } }); return p; };
+  // Imports may turn a laptop flag ON, but must NEVER clear an existing one to
+  // false (a CSV rarely carries real laptop status; an empty column shouldn't
+  // wipe onboarding work done in the Tech tab).
+  const patchOf=(s,skipGrade)=>{ const p={}; STUDENT_FIELDS.forEach(f=>{ if(skipGrade&&f==='grade') return; if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready'){ if(s[f]===true) p[f]=true; } else if((s[f]||'')!=='') p[f]=s[f]; } }); return p; };
   for(const u of plan.toUpdate){
     const patch=patchOf(u.s,false);
     if(Object.keys(patch).length){ const err=await dbUpdateStudent(u.id, patch); if(err) return {err}; }
@@ -1756,7 +1759,7 @@ function parseRosterCSV(text){
     const iFirst=find(/first/), iLast=find(/last|surname/),
           iFull=find(/^(student )?(full )?name$|^name$|^student$/),
           iGrade=find(/grade|year/), iAllerg=find(/allerg/), iMeds=find(/medic|meds|health|medical/),
-          iConsent=find(/consent|photo|media/), iLapA=find(/laptop.*assign|^assigned/), iLapR=find(/laptop.*ready|^ready/),
+          iConsent=find(/consent|photo|media/), iLapA=find(/laptop.*assign|device.*assign|^laptop( assigned)?$/), iLapR=find(/laptop.*ready|device.*ready/),
           iGuardian=find(/primary parent|parent ?1|guardian ?1|parent\/guardian|^guardian$|^parent$|parent\s*name|caregiver|mother/),
           iGPhone=find(/(primary parent|parent ?1|guardian ?1|guardian|parent).*?(phone|mobile|cell|number)|^phone|primary phone|contact number/),
           iGEmail=find(/(primary parent|parent ?1|guardian ?1|guardian|parent).*email|parent email|^email/),

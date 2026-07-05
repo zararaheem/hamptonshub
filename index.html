@@ -818,7 +818,8 @@
 
       <div class="subpanel" id="sub-weekaccess">
         <p class="page-lead">Assign which guides can see each week's <b>student data</b> (Student Roster, Attendance, Dismissal, Tech). Leadership and admins always see every week. Everyone else sees counts but not names.</p>
-        <div class="att-bar"><div class="field" style="max-width:240px"><label for="wg-week">Week</label><select id="wg-week"></select></div></div>
+        <div class="att-bar"><div class="field" style="max-width:240px"><label for="wg-week">Week</label><select id="wg-week"></select></div>
+          <button class="btn ghost" id="wg-pull" style="align-self:flex-end" title="Tick this week's guides from the Weekly Roster (Lead Guide + Guides), matched to their sign-in accounts">↳ Fill from Weekly Roster</button></div>
         <div id="wg-list"></div>
         <div style="margin-top:12px"><button class="btn" id="wg-save">Save week access</button> <span class="gate-msg" id="wg-msg" style="margin-left:8px"></span></div>
       </div>
@@ -2080,7 +2081,9 @@ function buildEditor(mount, schema, rows, onSave, lists){
 function buildAllEditors(){
   const mk=(id,schema,rows,save,lists)=>{ const m=document.getElementById(id); if(m) buildEditor(m,schema,rows,save,lists); };
   // Known staff names + roles, used to power the type-ahead dropdowns.
-  const staffNames=[...new Set((CONTENT.staff||[]).map(r=>r[0]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  // Type-ahead for roster/staff cells: known crew names PLUS the full names of
+  // people with sign-in accounts, so roster names line up with who logs in.
+  const staffNames=[...new Set([...(CONTENT.staff||[]).map(r=>r[0]).filter(Boolean), ...(ALLOW_NAMES||[])])].sort((a,b)=>a.localeCompare(b));
   const staffRoles=[...new Set((CONTENT.staff||[]).map(r=>r[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const STATUS_OPTS=['Confirmed','Pending','Tentative','Declined'];
   const HOUSING_OPTS=['No','Off-site',...(CONTENT.houses||[])];
@@ -3699,7 +3702,8 @@ const FG_SECTIONS=[
 ];
 // Pull coordinator + head-guide for a week straight from the Staff Roster.
 function rosterCell(roleName, n){
-  const row=ROSTER.find(r=>r.role===roleName); if(!row) return '';
+  const rows=(typeof CONTENT!=='undefined' && CONTENT.roster) ? CONTENT.roster : ROSTER;
+  const row=rows.find(r=>r.role===roleName); if(!row) return '';
   return String(row.cells[n-1]||'').trim();
 }
 function resolveStaffName(token, staff){
@@ -4011,14 +4015,18 @@ let SESSION = null; // {email, admin, owner}
 /* ---- unified allow-list data layer (Supabase or local) ---- */
 const STAFF_DOMAINS=['alpha.school','trilogy.com','2hourlearning.com'];
 function categoryFor(email){ return STAFF_DOMAINS.includes((email.split('@')[1]||'').toLowerCase()) ? 'staff' : 'external'; }
+let ALLOW_NAMES=[];  // cached full names of sign-in accounts, for roster type-ahead
+function cacheAllowNames(list){ ALLOW_NAMES=[...new Set((list||[]).map(u=>(u.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)); }
 async function dbGetAllow(){
   if(SUPA){
     const { data, error } = await SB.from('allowed_emails')
       .select('email,is_admin,is_owner,is_leadership,can_see_contacts,full_name,category').order('is_owner',{ascending:false}).order('email');
     if(error){ console.warn('load allow-list failed:', error); return []; }
-    return (data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner, leadership:!!(r.is_leadership||r.is_owner), contacts:!!(r.can_see_contacts||r.is_owner), name:r.full_name||'', category:r.category||'staff'}));
+    const list=(data||[]).map(r=>({email:r.email, admin:r.is_admin, owner:r.is_owner, leadership:!!(r.is_leadership||r.is_owner), contacts:!!(r.can_see_contacts||r.is_owner), name:r.full_name||'', category:r.category||'staff'}));
+    cacheAllowNames(list); return list;
   }
-  return getAllowLocal().map(u=>({email:u.email, admin:u.admin, owner:u.owner, leadership:!!(u.leadership||u.owner), contacts:!!(u.contacts||u.owner), name:u.name||'', category:u.category||categoryFor(u.email)}));
+  const local=getAllowLocal().map(u=>({email:u.email, admin:u.admin, owner:u.owner, leadership:!!(u.leadership||u.owner), contacts:!!(u.contacts||u.owner), name:u.name||'', category:u.category||categoryFor(u.email)}));
+  cacheAllowNames(local); return local;
 }
 async function dbAddAllow(email){
   const category=categoryFor(email);
@@ -4101,12 +4109,31 @@ async function renderWeekGuides(){
     wsel.value=String(WEEKS[NOW].n);
     wsel.addEventListener('change',renderWeekGuides);
     document.getElementById('wg-save').addEventListener('click',wgSave);
+    const pb=document.getElementById('wg-pull'); if(pb) pb.addEventListener('click',wgPullRoster);
   }
   await loadWeekStaff();
   const week=+wsel.value;
   const assigned=new Set(WEEK_STAFF[week]||[]);
   const all=(await dbGetAllow()).slice().sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
   document.getElementById('wg-list').innerHTML='<div class="wg-grid">'+all.map(u=>`<label><input type="checkbox" value="${escAttr(u.email)}" ${assigned.has(u.email.toLowerCase())?'checked':''}> ${esc(u.name||u.email)}${u.name?` <span style="color:var(--muted);font-size:12px">${esc(u.email)}</span>`:''}</label>`).join('')+'</div>';
+}
+// Tick this week's guides straight from the Weekly Roster, matched to their
+// sign-in accounts. Surfaces any roster name with no matching account so the
+// names can be aligned. Adds to the current selection; you still click Save.
+async function wgPullRoster(){
+  const week=+document.getElementById('wg-week').value;
+  const staff=await dbGetAllow();
+  const roles=(CONTENT.roster||[]).map(r=>r.role).filter(r=>/^(lead guide|guide\s*\d|campus coordinator)/i.test(r));
+  const tokens=[];
+  roles.forEach(role=>rosterCell(role, week).split(/\s+(?:and|&)\s+|\s*,\s*|\s*\/\s*/i).forEach(t=>{ t=t.trim(); if(t && !/^tbd$/i.test(t)) tokens.push(t); }));
+  const seen=new Set(), matched=[], unmatched=[];
+  tokens.forEach(t=>{ const p=resolveStaffName(t, staff); if(p&&p.email){ const k=p.email.toLowerCase(); if(!seen.has(k)){ seen.add(k); matched.push(p); } } else unmatched.push(t); });
+  const boxes=[...document.querySelectorAll('#wg-list input[type=checkbox]')];
+  matched.forEach(p=>{ const cb=boxes.find(b=>b.value.toLowerCase()===p.email.toLowerCase()); if(cb) cb.checked=true; });
+  const m=document.getElementById('wg-msg');
+  m.className = unmatched.length ? 'gate-msg' : 'gate-msg ok';
+  m.innerHTML = `Ticked <b>${matched.length}</b> guide${matched.length===1?'':'s'} from the Week ${week} roster — review and <b>Save</b>.`
+    + (unmatched.length ? `<br>No sign-in account matched: <b>${esc([...new Set(unmatched)].join(', '))}</b> — add them on the Access tab (with their full name) or fix the name in the Weekly Roster, then pull again.` : '');
 }
 async function wgSave(){
   const week=+document.getElementById('wg-week').value;
@@ -4477,6 +4504,8 @@ loadContent().then(()=>{
   renderTiles(); renderJumpCards(); renderRhythm();
   renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster();
   renderWorkstreams('All'); renderEvents(); buildAllEditors();
+  // Load sign-in account names so the roster type-ahead aligns with logins.
+  if(typeof dbGetAllow==='function') dbGetAllow().then(()=>buildAllEditors()).catch(()=>{});
 });
 Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ renderAtt(); renderTech(); renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
 </script>

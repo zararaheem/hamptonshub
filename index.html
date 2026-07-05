@@ -836,8 +836,8 @@
       </div>
 
       <div class="subpanel" id="sub-housing">
-        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Guide houses</div>
-        <p class="lc-desc" style="margin:0 0 12px">Add people to each house — type any name, or pick from your staffing lists (Weekly Roster + Staff Roster). Admins can add, rename, or remove houses.</p>
+        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Staff houses</div>
+        <p class="lc-desc" style="margin:0 0 12px">Add people to each house and move them between houses — type any name, or pick from your staffing lists (Weekly Roster + Staff Roster). Admins can add, rename, or remove houses.</p>
         <div id="house-groups" class="house-groups"></div>
         <div class="meta-line" style="margin:10px 0 6px"><span id="housing-count">—</span></div>
         <div id="house-manage" style="margin:6px 0 22px"></div>
@@ -846,9 +846,6 @@
         <div class="eyebrow" style="margin-bottom:8px">House details</div>
         <div class="hd editable-disp" id="house-info"></div>
         <div class="editor-wrap" id="house-editor"></div>
-        <div class="callout" style="margin:14px 0 16px"><b>Separate / off-site housing:</b> Gaby Guajardo. Does <b>not</b> stay in housing: Nurse, Lifeguards.</div>
-        <div class="tablewrap editable-disp"><table id="housing-table"></table></div>
-        <div class="editor-wrap" id="housing-editor"></div>
       </div>
 
       <div class="subpanel" id="sub-staff">
@@ -2019,7 +2016,7 @@ const CONTENT_DEFAULTS = {
     {k:"Stays in house", v:"Coordinator, Lead Guide, Manuel, extra guides"},
     {k:"Separate / off-site", v:"Gaby Guajardo"},
   ],
-  houses: ["Guide House 1","Guide House 2"],
+  houses: ["Staff House 1","Staff House 2"],
   houseMembers: {},   // { [houseName]: [name, ...] } — free-form, type-ahead from staffing lists
   staff: STAFF,
 };
@@ -2276,7 +2273,8 @@ function renderRoster(){
   const dl = ed ? `<datalist id="ed-rostercell">${names.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>` : '';
   const editCell=(c,ri,ci)=>`<td class="${ci===NOW?'col-now':''}"><input class="cell-input rc-in" list="ed-rostercell" autocomplete="off" data-r="${ri}" data-c="${ci}" value="${escAttr(c||'')}" placeholder="—"></td>`;
   const head = `<thead><tr><th class="role-cell">Role</th>${weekHeaders()}</tr></thead>`;
-  const body = CONTENT.roster.map((r,ri)=>`<tr><td class="role-cell">${esc(r.role)}</td>${
+  const roleLabel=role=>String(role||'').replace(/^guide\s*\d+$/i,'Guide');
+  const body = CONTENT.roster.map((r,ri)=>`<tr><td class="role-cell">${esc(roleLabel(r.role))}</td>${
     (r.cells||[]).map((c,ci)=> ed ? editCell(c,ri,ci) : `<td class="${ci===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
   }</tr>`).join('') +
     `<tr><td class="role-cell">Standby</td><td colspan="9" class="note-row">${STANDBY.join(' · ')}</td></tr>`;
@@ -2292,11 +2290,12 @@ function renderRoster(){
   }));
 }
 function renderHousing(){
+  const t=document.getElementById('housing-table'); if(!t) return;  // bed table removed
   const head = `<thead><tr><th class="role-cell">Bed</th>${weekHeaders()}<th>Tier</th></tr></thead>`;
   const body = CONTENT.housing.map(r=>`<tr><td class="role-cell">${esc(r.bed)}</td>${
     (r.cells||[]).map((c,i)=>`<td class="${i===NOW?'col-now':''}">${cellHTML(c)}</td>`).join('')
   }<td><span class="pill ${r.tier==='BASELINE'?'ok':''}">${esc(r.tier)}</span></td></tr>`).join('');
-  document.getElementById('housing-table').innerHTML = head+`<tbody>${body}</tbody>`;
+  t.innerHTML = head+`<tbody>${body}</tbody>`;
 }
 function renderStaff(){
   const cols = ["Name","Role","Status","Housing","Pre-camp (06/22)","Constraint","Notes"];
@@ -2379,7 +2378,7 @@ function renderHouseManage(){
   el.innerHTML=`<div class="hm-row"><span class="hm-lbl">Houses:</span>${houses.map((h,i)=>`<span class="hm-chip"><input class="hm-name" data-i="${i}" value="${escAttr(h)}"><button class="hm-del" data-i="${i}" title="Remove house">×</button></span>`).join('')}
     <button class="btn ghost hm-add">＋ Add house</button></div>`;
   el.querySelector('.hm-add').addEventListener('click',async()=>{
-    const hs=houseList(); hs.push(`Guide House ${hs.length+1}`); CONTENT.houses=hs;
+    const hs=houseList(); hs.push(`Staff House ${hs.length+1}`); CONTENT.houses=hs;
     const e=await saveContent('houses'); if(e) alert('Could not add house.');
     buildAllEditors(); renderHousingRoster();
   });

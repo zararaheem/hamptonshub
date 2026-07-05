@@ -1694,20 +1694,27 @@ function planImport(week, arr){
 }
 async function applyImport(week, plan){
   week=+week; let updated=0, added=0, emerg=0, removed=0;
-  const writeEmerg=async(id,s)=>{ if(SESSION&&(SESSION.owner||SESSION.contacts)){ const ep={}; EMERG_FIELDS.forEach(f=>{ if(f in s && (s[f]||'')!=='') ep[f]=s[f]; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) emerg++; } } };
-  // Imports may turn a laptop flag ON, but must NEVER clear an existing one to
-  // false (a CSV rarely carries real laptop status; an empty column shouldn't
-  // wipe onboarding work done in the Tech tab).
+  // Emergency writer. When fillOnly (existing students), never overwrite a
+  // value they already have — only fill blanks.
+  const writeEmerg=async(id,s,fillOnly)=>{ if(SESSION&&(SESSION.owner||SESSION.contacts)){ const e0=EMERGENCY[id]||{}; const ep={}; EMERG_FIELDS.forEach(f=>{ if(!(f in s) || (s[f]||'')==='') return; if(fillOnly && (e0[f]||'')!=='') return; ep[f]=s[f]; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) emerg++; } } };
+  // New students: take everything the file provides.
   const patchOf=(s,skipGrade)=>{ const p={}; STUDENT_FIELDS.forEach(f=>{ if(skipGrade&&f==='grade') return; if(f in s){ if(f==='laptop_assigned'||f==='laptop_ready'){ if(s[f]===true) p[f]=true; } else if((s[f]||'')!=='') p[f]=s[f]; } }); return p; };
+  // Existing students: FILL-ONLY merge. Never overwrite a value they already
+  // have, never clear anything — only fill blanks and add newly-provided info.
+  // (This is what makes a reimport safe: nothing already recorded is lost.)
+  const fillPatch=(s,cur)=>{ const p={}; STUDENT_FIELDS.forEach(f=>{ if(!(f in s)) return;
+    if(f==='laptop_assigned'||f==='laptop_ready'){ if(s[f]===true && !cur[f]) p[f]=true; return; }
+    if((s[f]||'')==='' || (cur[f]||'')!=='') return; p[f]=s[f]; }); return p; };
   for(const u of plan.toUpdate){
-    const patch=patchOf(u.s,false);
+    const cur=findStudent(u.id)||{};
+    const patch=fillPatch(u.s, cur);
     if(Object.keys(patch).length){ const err=await dbUpdateStudent(u.id, patch); if(err) return {err}; }
-    await writeEmerg(u.id, u.s); updated++;
+    await writeEmerg(u.id, u.s, true); updated++;
   }
   for(const a of plan.toAdd){
     const s=a.s; const err=await dbAddStudent(week, s.first, s.last, s.grade||''); if(err) return {err};
     const row=(ROSTER_DATA[week]||[]).slice(-1)[0];
-    if(row){ const extra=patchOf(s,true); if(Object.keys(extra).length) await dbUpdateStudent(row.id, extra); await writeEmerg(row.id, s); }
+    if(row){ const extra=patchOf(s,true); if(Object.keys(extra).length) await dbUpdateStudent(row.id, extra); await writeEmerg(row.id, s, false); }
     added++;
   }
   // Remove students who dropped off this week's roster (e.g. moved to another week).
@@ -3240,7 +3247,7 @@ function showImportReview(week, plan){
   const names=arr=>arr.slice(0,40).map(x=>esc(x.name)).join(', ')+(arr.length>40?` …+${arr.length-40} more`:'');
   box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
     <h3 style="margin:0 0 10px">Review import — Week ${esc(week)} <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by first name)</span></h3>
-    <p class="lc-desc" style="margin:0 0 8px"><b style="color:var(--teal-bright)">${plan.toUpdate.length} will be updated</b>${plan.toUpdate.length?' — '+names(plan.toUpdate):''}</p>
+    <p class="lc-desc" style="margin:0 0 8px"><b style="color:var(--teal-bright)">${plan.toUpdate.length} already here — kept safe</b>${plan.toUpdate.length?' — '+names(plan.toUpdate):''}<br><span style="color:var(--muted)">Existing details (laptops, notes, contacts…) are preserved; only blank fields get filled in.</span></p>
     <p class="lc-desc" style="margin:0 0 14px"><b style="color:var(--brass-bright)">${plan.toAdd.length} will be added as new</b>${plan.toAdd.length?' — '+names(plan.toAdd):''}${plan.skippedTest&&plan.skippedTest.length?`<br><span style="color:var(--muted)">${plan.skippedTest.length} test entr${plan.skippedTest.length===1?'y':'ies'} skipped</span>`:''}</p>
     ${plan.toRemove&&plan.toRemove.length?`<label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 14px;padding:10px 12px;border:1px solid #d9534f;border-radius:9px;background:rgba(217,83,79,.07);cursor:pointer">
       <input type="checkbox" id="ros-review-remove" checked style="margin-top:3px;width:15px;height:15px;flex:none">

@@ -187,6 +187,12 @@
       }).join('');
       const SEC = (key, def) => (w.sections && w.sections[key] && String(w.sections[key]).trim()) ? fmt(w.sections[key]) : def;
 
+      // Coffee & Conversations day can be overridden per week (e.g. a weather move).
+      const DAY_OFF={monday:0,tuesday:1,wednesday:2,thursday:3,friday:4};
+      const mOff=DAY_OFF[String(w.monday_event_day||'monday').toLowerCase()]||0;
+      let mEventDate=w.start_date;
+      if(mOff && w.start_date){ const _d=new Date(String(w.start_date).slice(0,10)+'T00:00:00'); _d.setDate(_d.getDate()+mOff); mEventDate=_d.toISOString().slice(0,10); }
+
       let h='';
       if((w.custom_note||'').trim()){ h+=`<div class="note">${esc(w.custom_note)}</div>`; }
 
@@ -253,7 +259,7 @@
       </div>`;
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
-        <div class="qa"><h3>Monday · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come. Parking will be available on-site for families that may require it.</p>${calLinks('Alpha Summer — Coffee & Conversations', w.start_date, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
+        <div class="qa"><h3>${esc(w.monday_event_day||'Monday')} · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come. Parking will be available on-site for families that may require it.</p>${(w.monday_event_note||'').trim()?`<div class="alert-soft">${esc(w.monday_event_note)}</div>`:''}${calLinks('Alpha Summer — Coffee & Conversations', mEventDate, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
         <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>${locSet ? `Please arrive at ${showLoc}, where your child shares what they've worked on all week.` : `Your child shares what they've worked on all week.`}</p>${locSet ? '' : `<div class="alert-soft">We're finalizing a location and will share details closer to the date.</div>`}${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
       </div>`;
 

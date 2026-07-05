@@ -870,7 +870,7 @@
       <div class="att-bar">
         <div class="field">
           <label for="att-week">Roster</label>
-          <select id="att-week"><option value="1">Week 1 · Survivor</option></select>
+          <select id="att-week"></select>
         </div>
         <div class="field">
           <label for="att-date">Date</label>
@@ -1041,7 +1041,7 @@
 
       <div class="att-bar">
         <div class="field"><label for="tech-week">Roster</label>
-          <select id="tech-week"><option value="1">Week 1 · Survivor</option></select></div>
+          <select id="tech-week"></select></div>
         <div class="att-stats" id="tech-stats"></div>
       </div>
 
@@ -2647,9 +2647,13 @@ function attExport(){
   csvDownload(`attendance-w${document.getElementById('att-week').value}-${document.getElementById('att-date').value}.csv`, rows);
 }
 function fillWeekSelect(sel){
-  if(!sel) return; const cur=sel.value;
+  if(!sel) return;
+  // Preserve a real prior choice, but treat the hardcoded "Week 1" placeholder
+  // option as "unset" so tabs land on the current week (NOW) by default.
+  const cur = (sel.dataset.userSet==='1') ? sel.value : '';
   sel.innerHTML = WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
   sel.value = cur || WEEKS[NOW].n;
+  if(!sel.dataset.bound){ sel.dataset.bound='1'; sel.addEventListener('change',()=>{ sel.dataset.userSet='1'; }); }
 }
 function attInit(){
   fillWeekSelect(document.getElementById('att-week'));

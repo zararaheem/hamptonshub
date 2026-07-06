@@ -811,6 +811,7 @@
         <button class="subtab active" data-sub="roster">Weekly Roster</button>
         <button class="subtab" data-sub="housing">Housing</button>
         <button class="subtab" data-sub="staff">Staff Roster</button>
+        <button class="subtab" data-sub="levels">Level Guides</button>
         <button class="subtab" data-sub="ops">Ops Coverage</button>
         <button class="subtab" data-sub="summary">Summary</button>
         <button class="subtab admin-only" data-sub="weekaccess">Week Access</button>
@@ -846,6 +847,14 @@
         <div class="eyebrow" style="margin-bottom:8px">House details</div>
         <div class="hd editable-disp" id="house-info"></div>
         <div class="editor-wrap" id="house-editor"></div>
+      </div>
+
+      <div class="subpanel" id="sub-levels">
+        <div class="section-title" style="margin-top:4px"><span class="num">↳</span>Guides by level</div>
+        <p class="lc-desc" style="margin:0 0 12px">Assign which guides cover each level this week (LL → HS). Type any name or pick from your staffing lists; changes are per week.</p>
+        <div class="att-bar"><div class="field" style="max-width:240px"><label for="lg-week">Week</label><select id="lg-week"></select></div></div>
+        <div id="lg-groups" class="house-groups"></div>
+        <datalist id="lg-names-dl"></datalist>
       </div>
 
       <div class="subpanel" id="sub-staff">
@@ -2018,6 +2027,7 @@ const CONTENT_DEFAULTS = {
   ],
   houses: ["Staff House 1","Staff House 2"],
   houseMembers: {},   // { [houseName]: [name, ...] } — free-form, type-ahead from staffing lists
+  levelGuides: {},    // { [week]: { LL:[names], L1:[], L2:[], MS:[], HS:[] } } — guides covering each level
   staff: STAFF,
 };
 let CONTENT = JSON.parse(JSON.stringify(CONTENT_DEFAULTS));
@@ -2399,6 +2409,47 @@ function renderHouseManage(){
     await saveContent('houses'); await saveContent('houseMembers');
     buildAllEditors(); renderHousingRoster();
   }));
+}
+/* =================== GUIDES BY LEVEL (per week) =================== */
+function levelGuidesMap(){ if(!CONTENT.levelGuides || typeof CONTENT.levelGuides!=='object') CONTENT.levelGuides={}; return CONTENT.levelGuides; }
+function levelGuidesFor(week){ const w=levelGuidesMap()[week]; return (w && typeof w==='object') ? w : {}; }
+async function lgAdd(week, level, name){
+  name=String(name||'').trim(); if(!name) return;
+  const m=levelGuidesMap(); const w=m[week]=m[week]||{}; const arr=w[level]=w[level]||[];
+  if(!arr.some(x=>x.toLowerCase()===name.toLowerCase())) arr.push(name);
+  const e=await saveContent('levelGuides'); if(e) alert('Could not save.');
+  renderLevelGuides();
+}
+async function lgRemove(week, level, idx){
+  const m=levelGuidesMap(); if(m[week] && Array.isArray(m[week][level])){ m[week][level].splice(idx,1);
+    const e=await saveContent('levelGuides'); if(e) alert('Could not save.'); }
+  renderLevelGuides();
+}
+function renderLevelGuides(){
+  const wsel=document.getElementById('lg-week'); if(!wsel) return;
+  if(!wsel.options.length){
+    wsel.innerHTML=WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${w.theme}</option>`).join('');
+    wsel.value=String(WEEKS[NOW].n);
+    wsel.addEventListener('change',renderLevelGuides);
+  }
+  const dl=document.getElementById('lg-names-dl'); if(dl) dl.innerHTML=knownStaffNames().map(n=>`<option value="${escAttr(n)}"></option>`).join('');
+  const week=+wsel.value; const admin=document.body.classList.contains('is-admin');
+  const w=levelGuidesFor(week);
+  const el=document.getElementById('lg-groups'); if(!el) return;
+  el.innerHTML=LEVELS.map(l=>{
+    const people=Array.isArray(w[l.key])?w[l.key]:[];
+    const chips=people.length
+      ? people.map((n,idx)=>`<span class="hp-chip">${esc(n)}${admin?`<button class="hp-del" data-lvl="${escAttr(l.key)}" data-idx="${idx}" title="Remove">×</button>`:''}</span>`).join('')
+      : '<span class="house-card-empty">No one assigned</span>';
+    return `<div class="house-card"><div class="house-card-h"><span class="house-card-name">${esc(l.label)} <span style="color:var(--muted);font-size:11px;font-weight:400">Gr ${esc(l.range)}</span></span><span class="house-card-n">${people.length}</span></div>
+      <div class="hp-wrap">${chips}</div>
+      ${admin?`<div class="hp-add"><input class="hp-in lg-in" list="lg-names-dl" autocomplete="off" data-lvl="${escAttr(l.key)}" placeholder="Add a guide…"><button class="btn ghost lg-addbtn" data-lvl="${escAttr(l.key)}">Add</button></div>`:''}</div>`;
+  }).join('');
+  if(!admin) return;
+  el.querySelectorAll('.hp-del').forEach(b=>b.addEventListener('click',()=>lgRemove(week, b.dataset.lvl, +b.dataset.idx)));
+  const addFrom=btn=>{ const inp=btn.closest('.house-card').querySelector('.lg-in'); lgAdd(week, btn.dataset.lvl, inp.value); };
+  el.querySelectorAll('.lg-addbtn').forEach(b=>b.addEventListener('click',()=>addFrom(b)));
+  el.querySelectorAll('.lg-in').forEach(inp=>inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addFrom(inp.closest('.house-card').querySelector('.lg-addbtn')); } }));
 }
 function renderOps(){
   const head = `<thead><tr><th>Person</th><th>Coverage role</th><th>Notes</th></tr></thead>`;
@@ -3992,10 +4043,11 @@ document.getElementById('staff-subtabs').addEventListener('click',e=>{
   const b=e.target.closest('.subtab'); if(!b) return;
   document.querySelectorAll('#staff-subtabs .subtab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  ['roster','housing','staff','ops','summary','weekaccess'].forEach(s=>{
+  ['roster','housing','staff','levels','ops','summary','weekaccess'].forEach(s=>{
     const el=document.getElementById('sub-'+s); if(el) el.classList.toggle('active', s===b.dataset.sub);
   });
   if(b.dataset.sub==='weekaccess') renderWeekGuides();
+  if(b.dataset.sub==='levels') renderLevelGuides();
 });
 
 /* mobile rail */

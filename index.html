@@ -2305,15 +2305,44 @@ function renderHousing(){
   t.innerHTML = head+`<tbody>${body}</tbody>`;
 }
 function renderStaff(){
+  const el=document.getElementById('staff-table'); if(!el) return;
+  const ed=(typeof isAdmin==='function') && isAdmin();
   const cols = ["Name","Role","Status","Housing","Pre-camp (06/22)","Constraint","Notes"];
-  const head = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
-  const body = CONTENT.staff.map(r=>`<tr>
-    <td class="role-cell">${r[0]==='TBD'?'<span class="tbd">TBD</span>':esc(r[0])}</td>
-    <td>${esc(r[1])}</td>
-    <td>${r[2]==='Confirmed'?'<span class="pill ok">Confirmed</span>':r[2]==='Open'?'<span class="pill open">Open</span>':'<span class="blank">—</span>'}</td>
-    <td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="note-row">${r[6]}</td>
+  if(!ed){
+    const head = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>`;
+    const body = CONTENT.staff.map(r=>`<tr>
+      <td class="role-cell">${r[0]==='TBD'?'<span class="tbd">TBD</span>':esc(r[0])}</td>
+      <td>${esc(r[1])}</td>
+      <td>${r[2]==='Confirmed'?'<span class="pill ok">Confirmed</span>':r[2]==='Open'?'<span class="pill open">Open</span>':'<span class="blank">—</span>'}</td>
+      <td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="note-row">${r[6]}</td>
+    </tr>`).join('');
+    el.innerHTML = head+`<tbody>${body}</tbody>`;
+    return;
+  }
+  // Admin: inline-editable table (type directly, add/remove rows).
+  const names=[...new Set([...(CONTENT.staff||[]).map(r=>r[0]).filter(Boolean), ...(ALLOW_NAMES||[])])].sort((a,b)=>a.localeCompare(b));
+  const roles=[...new Set((CONTENT.staff||[]).map(r=>r[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const dl=`<datalist id="ed-staffname">${names.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>`
+    +`<datalist id="ed-staffrole">${roles.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>`
+    +`<datalist id="ed-staffstatus"><option>Confirmed</option><option>Open</option><option>Pending</option><option>—</option></datalist>`;
+  const cell=(v,ri,ci,list)=>`<td><input class="cell-input sf-in" data-r="${ri}" data-c="${ci}" ${list?`list="${list}" autocomplete="off"`:''} value="${escAttr(v==null?'':v)}"></td>`;
+  const head = `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}<th></th></tr></thead>`;
+  const body = CONTENT.staff.map((r,ri)=>`<tr>
+    ${cell(r[0],ri,0,'ed-staffname')}${cell(r[1],ri,1,'ed-staffrole')}${cell(r[2],ri,2,'ed-staffstatus')}${cell(r[3],ri,3)}${cell(r[4],ri,4)}${cell(r[5],ri,5)}${cell(r[6],ri,6)}
+    <td><button class="del" data-act="del" data-r="${ri}" title="Remove">×</button></td>
   </tr>`).join('');
-  document.getElementById('staff-table').innerHTML = head+`<tbody>${body}</tbody>`;
+  el.innerHTML = dl+head+`<tbody>${body}</tbody><tfoot><tr><td colspan="8"><button class="btn ghost" data-act="add">+ Add person</button></td></tr></tfoot>`;
+  const save=async(inp)=>{ const e=await saveContent('staff'); if(inp){ inp.style.borderColor=e?'var(--coral)':'var(--ok)'; if(!e) setTimeout(()=>{ inp.style.borderColor=''; },900); } };
+  el.querySelectorAll('.sf-in').forEach(inp=>inp.addEventListener('change',()=>{
+    const ri=+inp.dataset.r, ci=+inp.dataset.c; if(!CONTENT.staff[ri]) return;
+    CONTENT.staff[ri][ci]=inp.value; save(inp);
+  }));
+  el.querySelectorAll('[data-act=del]').forEach(b=>b.addEventListener('click',async()=>{
+    CONTENT.staff.splice(+b.dataset.r,1); await saveContent('staff'); renderStaff(); renderHousingRoster();
+  }));
+  el.querySelector('[data-act=add]').addEventListener('click',async()=>{
+    CONTENT.staff.push(['','', '', 'No','','','']); await saveContent('staff'); renderStaff();
+  });
 }
 // ---- Housing helpers ----
 function houseList(){ return (CONTENT.houses||[]).slice(); }
@@ -4230,6 +4259,7 @@ function enterHub(sess){
   if(SUPA){ SB.auth.getUser().then(({data})=>{ const u=data&&data.user, md=u&&u.user_metadata||{}; const nm=md.full_name||md.name; if(nm) SB.rpc('claim_my_profile',{p_name:nm}).then(()=>renderAccess()).catch(()=>{}); }).catch(()=>{}); }
   renderAccess();
   if(typeof renderRoster==='function') renderRoster();   // re-render editable now admin state is known
+  if(typeof renderStaff==='function') renderStaff();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
   Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState(), ((sess.contacts||sess.owner)?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
@@ -4570,7 +4600,7 @@ loadContent().then(()=>{
   renderRoster(); renderHousing(); renderHouseInfo(); renderStaff(); renderHousingRoster();
   renderWorkstreams('All'); renderEvents(); buildAllEditors();
   // Load sign-in account names so the roster type-ahead aligns with logins.
-  if(typeof dbGetAllow==='function') dbGetAllow().then(()=>{ buildAllEditors(); if(typeof renderRoster==='function') renderRoster(); }).catch(()=>{});
+  if(typeof dbGetAllow==='function') dbGetAllow().then(()=>{ buildAllEditors(); if(typeof renderRoster==='function') renderRoster(); if(typeof renderStaff==='function') renderStaff(); }).catch(()=>{});
 });
 Promise.all([hydrateRoster(), hydrateState()]).then(()=>{ renderAtt(); renderTech(); renderRosterTab(); if(typeof renderSup==='function') renderSup(); });
 </script>

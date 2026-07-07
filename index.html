@@ -581,6 +581,7 @@
   .nav-item.contacts-only{display:none!important}
   body.can-contacts .nav-item.contacts-only{display:flex!important}
   body.is-admin .edit-toggle.admin-only{display:inline-flex!important}
+  .adm-inline{display:none} body.is-admin .adm-inline{display:inline}
   /* admin edit mode */
   .edit-toggle{align-items:center;gap:6px;background:var(--navy-2);border:1px solid var(--brass);color:var(--brass-bright);
     border-radius:8px;padding:6px 14px;font-family:var(--mono);font-size:12px;letter-spacing:.05em;cursor:pointer}
@@ -823,7 +824,7 @@
       </div>
 
       <div class="subpanel active" id="sub-roster">
-        <div class="meta-line"><span>Highlighted column = <b>next/active week</b></span><span>Cal B guides may support weeks 6–7</span></div>
+        <div class="meta-line"><span>Highlighted column = <b>next/active week</b></span><span>Names suggest people on the Access list</span><span class="adm-inline"><button class="lk" data-jump="access">＋ Add a new person to Access →</button></span></div>
         <div class="tablewrap editable-disp"><table id="roster-table"></table></div>
         <div class="editor-wrap" id="roster-editor"></div>
         <div class="legend">
@@ -1161,6 +1162,7 @@
             <textarea class="cell-input" id="add-email" rows="2" placeholder="name@alpha.school — paste several, separated by commas, spaces, or new lines" style="flex:1;min-width:180px;resize:vertical"></textarea>
             <button class="btn" id="add-email-btn">Add</button>
           </div>
+          <div style="margin-top:9px"><button class="btn ghost" id="add-from-roster" title="Suggest accounts for everyone on the Weekly/Staff rosters who isn't in the access list yet">↳ Suggest from rosters</button></div>
           <p class="gate-msg" id="add-msg" style="margin-top:9px"></p>
         </div>
       </div>
@@ -1347,9 +1349,7 @@ const ROSTER = [
   {role:"Guide 5", cells:["","Varenya Hariharan","Varenya Hariharan","Mia","","","","","Varenya Hariharan"]},
   {role:"Guide 6", cells:["Celine","Celine","Celine","Celine","Celine","Celine","Celine","Celine","Celine"]},
   {role:"Nurse", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
-  {role:"Lifeguard 1", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
-  {role:"Lifeguard 2", cells:["TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD","TBD"]},
-  {role:"Workshops (Manuel)", cells:["Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel"]},
+  {role:"Fluo Workshops", cells:["Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel","Manuel"]},
   {role:"Content", cells:["Gaby Guajardo","","","","Gaby Guajardo","","","","Gaby Guajardo"]},
 ];
 const STANDBY = ["Mia","Gaby"];
@@ -2276,7 +2276,7 @@ function weekHeaders(){
 function renderRoster(){
   const el=document.getElementById('roster-table'); if(!el) return;
   const ed = (typeof isAdmin==='function') && isAdmin();
-  const names=[...new Set([...(CONTENT.staff||[]).map(r=>r[0]).filter(Boolean), ...(ALLOW_NAMES||[])])].sort((a,b)=>a.localeCompare(b));
+  const names=(ALLOW_NAMES||[]).slice();   // suggest only people on the Access list
   const dl = ed ? `<datalist id="ed-rostercell">${names.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>` : '';
   const editCell=(c,ri,ci)=>`<td class="${ci===NOW?'col-now':''}"><input class="cell-input rc-in" list="ed-rostercell" autocomplete="off" data-r="${ri}" data-c="${ci}" value="${escAttr(c||'')}" placeholder="—"></td>`;
   const head = `<thead><tr><th class="role-cell">Role</th>${weekHeaders()}</tr></thead>`;
@@ -2320,7 +2320,7 @@ function renderStaff(){
     return;
   }
   // Admin: inline-editable table (type directly, add/remove rows).
-  const names=[...new Set([...(CONTENT.staff||[]).map(r=>r[0]).filter(Boolean), ...(ALLOW_NAMES||[])])].sort((a,b)=>a.localeCompare(b));
+  const names=(ALLOW_NAMES||[]).slice();   // suggest only people on the Access list
   const roles=[...new Set((CONTENT.staff||[]).map(r=>r[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const dl=`<datalist id="ed-staffname">${names.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>`
     +`<datalist id="ed-staffrole">${roles.map(n=>`<option value="${escAttr(n)}"></option>`).join('')}</datalist>`
@@ -2348,15 +2348,9 @@ function renderStaff(){
 function houseList(){ return (CONTENT.houses||[]).slice(); }
 function houseMembersMap(){ if(!CONTENT.houseMembers || typeof CONTENT.houseMembers!=='object') CONTENT.houseMembers={}; return CONTENT.houseMembers; }
 function houseMembersOf(h){ const m=houseMembersMap()[h]; return Array.isArray(m)?m:[]; }
-// Every name that appears in a staffing list — the Weekly Roster grid (split on
-// AND / & / , / /) plus the Staff Roster — used to power the type-ahead.
-function knownStaffNames(){
-  const set=new Map();
-  const add=n=>{ n=String(n||'').trim(); if(!n||/^tbd$/i.test(n)||n==='—') return; const k=n.toLowerCase(); if(!set.has(k)) set.set(k,n); };
-  (CONTENT.roster||[]).forEach(r=>(r.cells||[]).forEach(c=>String(c||'').split(/\s+AND\s+|\s*&\s*|\s*,\s*|\s*\/\s*/i).forEach(add)));
-  (CONTENT.staff||[]).forEach(r=>add(r[0]));
-  return [...set.values()].sort((a,b)=>a.localeCompare(b));
-}
+// Type-ahead source = people on the Access list (the canonical roster of who
+// can sign in). Add new people on the Access tab and they appear everywhere.
+function knownStaffNames(){ return (ALLOW_NAMES||[]).slice(); }
 // One-time seed: if nobody's been placed yet but the old staff-based housing
 // column has assignments, carry them into the new per-house member lists.
 function migrateHouseMembers(){
@@ -4429,6 +4423,33 @@ async function addEmailHandler(){
   if(added){ document.getElementById('add-email').value=''; }
   renderAccess();
 }
+// Suggest access accounts for everyone on the Weekly + Staff rosters who isn't
+// already listed. Generates first.last@alpha.school and drops them in the box
+// for review; flags first-name-only entries that need a full name first.
+async function accPullRoster(){
+  const staff=await dbGetAllow();
+  const tokens=[];
+  (CONTENT.staff||[]).forEach(r=>{ if(r[0]) tokens.push(r[0]); });
+  (CONTENT.roster||[]).forEach(r=>{ if(/^(lead guide|guide\s*\d|campus coordinator)/i.test(r.role)) (r.cells||[]).forEach(c=>String(c||'').split(/\s+(?:and|&)\s+|\s*,\s*|\s*\/\s*/i).forEach(t=>tokens.push(t))); });
+  const seen=new Set(), suggest=[], needName=[];
+  tokens.map(t=>String(t||'').trim()).filter(t=>t && !/^tbd$/i.test(t)).forEach(t=>{
+    const key=t.toLowerCase(); if(seen.has(key)) return; seen.add(key);
+    if(resolveStaffName(t, staff)) return;   // already has an account
+    const parts=t.split(/\s+/);
+    if(parts.length>=2){
+      const email=(parts[0]+'.'+parts.slice(1).join('-')).toLowerCase().replace(/[^a-z0-9.\-]/g,'')+'@alpha.school';
+      suggest.push(email);
+    } else needName.push(t);
+  });
+  const ta=document.getElementById('add-email'); const m=document.getElementById('add-msg');
+  const uniq=[...new Set(suggest)];
+  ta.value=uniq.join('\n');
+  m.className='gate-msg';
+  m.innerHTML = uniq.length
+    ? `Suggested <b>${uniq.length}</b> account${uniq.length===1?'':'s'} — check the emails are right, then click <b>Add</b>.`
+      + (needName.length?`<br>First-name only (need a full name in the roster first): <b>${esc([...new Set(needName)].join(', '))}</b>.`:'')
+    : (needName.length?`Everyone with a full name is already listed. Still first-name only: <b>${esc([...new Set(needName)].join(', '))}</b> — add last names in the roster to pull them.`:'Everyone on the rosters is already in the access list ✓');
+}
 async function googleSignIn(){
   const msg=document.getElementById('gate-msg');
   if(msg){ msg.className='gate-msg'; msg.textContent='Opening Google sign-in…'; }
@@ -4450,6 +4471,7 @@ async function authInit(){
   document.querySelectorAll('#mode-seg button').forEach(b=>b.addEventListener('click',()=>{ if(SUPA) return; setMode(b.dataset.mode); refreshAdminState(); renderAccess(); }));
   document.getElementById('add-email-btn').addEventListener('click',addEmailHandler);
   document.getElementById('add-email').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); addEmailHandler(); } });
+  { const rb=document.getElementById('add-from-roster'); if(rb) rb.addEventListener('click',accPullRoster); }
 
   if(GOOGLE_GATE){
     const g=document.getElementById('gate-google'); const ord=document.getElementById('gate-or');

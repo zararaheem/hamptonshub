@@ -1680,8 +1680,10 @@ async function loadEmergency(){
 // owner-only student_emergency table (written only if you're the owner).
 // Match an imported row to an existing student by FIRST name (disambiguate by
 // last name only if two kids share a first name); avoids reusing a match twice.
+// Fold a name for matching: trim, lowercase, strip accents (Zoë → zoe).
+function foldName(v){ return String(v||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function matchStudent(s, existing, used){
-  const norm=v=>(v||'').trim().toLowerCase();
+  const norm=foldName;
   const fn=norm(s.first); if(!fn) return null;
   const same=existing.filter(e=>norm(e.first)===fn && !used.has(e.id));
   if(same.length===1) return same[0];
@@ -1693,11 +1695,12 @@ function planImport(week, arr){
   const toUpdate=[], toAdd=[];
   const skippedTest=arr.filter(s=>isTestName(s.first,s.last)).map(s=>`${s.first||''} ${s.last||''}`.trim());
   arr=arr.filter(s=>!isTestName(s.first,s.last));
+  const addedKeys=new Set();   // collapse the same child appearing twice in one file
   arr.forEach(s=>{
     const m=matchStudent(s, existing, used);
     const nm=`${(s.first||'').trim()} ${(s.last||'').trim()}`.trim();
     if(m){ used.add(m.id); toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), s}); }
-    else toAdd.push({name:nm||'(unnamed)', s});
+    else { const k=foldName(s.first)+'|'+foldName(s.last); if(addedKeys.has(k)) return; addedKeys.add(k); toAdd.push({name:nm||'(unnamed)', s}); }
   });
   // Anyone already on this week's roster who wasn't matched by the file is no
   // longer enrolled — offer to remove them so counts reflect the new list.
@@ -1929,10 +1932,10 @@ function planRegistration(children){
     const name=`${ch.first} ${ch.last}`.trim();
     childRows.push({name, weeks:ch.weeks.slice()});
     ch.weeks.forEach(w=>{
-      const pw=perWeek[w]=perWeek[w]||{toUpdate:[],toAdd:[],used:new Set()};
+      const pw=perWeek[w]=perWeek[w]||{toUpdate:[],toAdd:[],used:new Set(),added:new Set()};
       const m=matchStudent({first:ch.first,last:ch.last}, (ROSTER_DATA[w]||[]), pw.used);
       if(m){ pw.used.add(m.id); pw.toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), ch}); }
-      else pw.toAdd.push({name, ch});
+      else { const k=foldName(ch.first)+'|'+foldName(ch.last); if(pw.added.has(k)) return; pw.added.add(k); pw.toAdd.push({name, ch}); }
     });
   });
   return {perWeek, childRows, children, skippedTest};

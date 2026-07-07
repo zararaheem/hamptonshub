@@ -770,12 +770,9 @@
           <div class="eyebrow">Where we are</div>
           <div class="tline" id="countdown">—</div>
         </div>
-        <div class="tiles editable-disp" id="tiles"></div>
+        <div class="eyebrow" style="margin:16px 0 10px" id="week-summary-head">This week at a glance</div>
+        <div class="att-stats" id="week-summary"></div>
       </div>
-      <div class="editor-wrap" id="tiles-editor"></div>
-
-      <div class="eyebrow" style="margin:2px 0 8px" id="week-summary-head">This week at a glance</div>
-      <div class="att-stats" id="week-summary" style="margin-bottom:20px"></div>
 
       <div class="grid g3 editable-disp" id="jump-grid"></div>
       <div class="editor-wrap" id="jump-editor"></div>
@@ -2000,7 +1997,6 @@ const CONTENT_DEFAULTS = {
     {tag:"Curriculum", title:"Accountability Reports", desc:"Guide Platform — sign in on your phone (no password), capture notes / shout-outs / behavior all week, and build the Friday parent report. New sign-in link each Monday.", to:"https://alpha-guide-platform.vercel.app/auth/guide/eyJsaW5rX2lkIjoiZDJjYjk4MzUtMWI3OS00MmQ4LWIzNzgtYzdlYzkwNGViMzBjIiwiY2FtcHVzX2lkIjoiY2QyOWU1MDQtNmU2MS00YmU2LWE2MTAtYjFkMGU2NmYzZGJlIiwic2Vzc2lvbl9pZCI6ImI5Mzc0NTk3LTE5MGMtNDc3NS1hYjYwLWRhMDBlMTNhOGZiMiIsImV4cCI6MTc4MzMxNzYwMCwiaWF0IjoxNzgyNzAzNDg0fQ.BRltgXsE0oP4sZ5isqFh3cwUk-eA7NiAvlFdgIVq1GA"},
     {tag:"Curriculum", title:"Guide Platform — 2-min guide", desc:"Quick how-to for signing in and using the Guide Platform.", to:"https://alpha-guide-platform.vercel.app/onboarding/guide.html"},
     {tag:"Logistics", title:"Tech Onboarding", desc:"Laptop & iPad assignments by student — asset tags, setup status.", to:"tech"},
-    {tag:"Ops", title:"DoP/DoA Task List", desc:"The weekly cycle checklist — before each week, Sunday sync, Mon–Fri, Friday showcase.", to:"https://docs.google.com/spreadsheets/d/17fvSjsmMCcOfUlgp9F4K6wM1i6-Zp3Tkxc7_fMv5KNw/edit?gid=774082814"},
     {tag:"Parents", title:"Parent FAQ", desc:"The family-facing FAQ — everything parents need to know about the summer.", to:"https://docs.google.com/document/d/1_LxlwpJ714-ErW5uu3LVkDMJgq2vv4oQ72HvUk_ztxE/edit"},
   ],
   rhythm: [
@@ -2242,7 +2238,8 @@ function renderCountdown(){
   el.innerHTML += `<div class="tsub">${weekStaffLine(NOW)}</div>`;
 }
 function renderTiles(){
-  document.getElementById('tiles').innerHTML = (CONTENT.tiles||[]).map(t=>`
+  const el=document.getElementById('tiles'); if(!el) return;  // summary tiles replaced by the week-at-a-glance
+  el.innerHTML = (CONTENT.tiles||[]).map(t=>`
     <div class="tile ${esc(t.c||'')}"><div class="k">${esc(t.k)}</div><div class="v">${esc(t.v)}</div><div class="d">${esc(t.d)}</div></div>`).join('');
 }
 // Live "This week at a glance" bar on the dashboard for the current week.
@@ -2562,6 +2559,7 @@ function renderAtt(){
   if(guardStudentTab('att-list', curWeek())){ ['att-stats','att-levels','att-health'].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML='';}); return; }
   const data = loadAtt();
   const permit = loadPermit();
+  const showPermit = +curWeek()===1;  // permit slips only apply to Week 1
   const list = document.getElementById('att-list');
   const all = studentsForWeek(curWeek());
   if(!all.length){
@@ -2591,7 +2589,7 @@ function renderAtt(){
         <div class="avatar">${esc(init)}</div>
         <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
-        <label class="permit-box ${permit[s.id]?'on':''}" title="Permit slip collected"><input type="checkbox" data-act="permit" ${permit[s.id]?'checked':''}><span>Permit</span></label>
+        ${showPermit?`<label class="permit-box ${permit[s.id]?'on':''}" title="Permit slip collected"><input type="checkbox" data-act="permit" ${permit[s.id]?'checked':''}><span>Permit</span></label>`:''}
         <div class="seg">
           <button data-s="p" class="${st==='p'?'sel-p':''}">Present</button>
           <button data-s="l" class="${st==='l'?'sel-l':''}">Late</button>

@@ -963,6 +963,7 @@
           <input id="ros-file" type="file" accept=".csv,text/csv" style="display:none">
           <button class="btn ghost" id="ros-template">Download template</button>
           <button class="btn ghost" id="ros-purge-test" title="Delete any student whose name looks like a test entry">Remove test entries</button>
+          <button class="btn ghost" id="ros-find-dupes" title="Find students entered twice in the same week (incl. accent/spelling variants) and merge them">Find duplicates</button>
         </div>
         <span class="saved-note" id="ros-saved"></span>
         <span class="gate-msg" id="ros-io-msg"></span>
@@ -3402,6 +3403,7 @@ function rosterInit(){
   });
   document.getElementById('ros-file').addEventListener('change',e=>{ if(e.target.files[0]) rosImport(e.target.files[0]); e.target.value=''; });
   { const pb=document.getElementById('ros-purge-test'); if(pb) pb.addEventListener('click',rosPurgeTest); }
+  { const db=document.getElementById('ros-find-dupes'); if(db) db.addEventListener('click',rosFindDupes); }
   renderRosterTab();
 }
 // Delete every student (across all weeks) whose name reads as a test/placeholder.
@@ -3415,6 +3417,66 @@ async function rosPurgeTest(){
   let n=0; for(const id of ids){ const err=await dbDeleteStudent(id); if(!err) n++; }
   if(msg){ msg.className='gate-msg ok'; msg.textContent=`Removed ${n} test entr${n===1?'y':'ies'} ✓`; }
   renderRosterTab(); if(typeof renderAtt==='function') renderAtt(); if(typeof renderEmergency==='function') renderEmergency();
+}
+// ---- Duplicate finder (confirm-and-merge) ----
+// A student's field-richness score, used to pick which copy to keep.
+function rosRowScore(s){
+  let n=0; ['grade','preferred','allergies','meds','notes','media_consent','shirt_size','birthday','tribe','dismissal'].forEach(f=>{ if((s[f]||'')!=='') n++; });
+  if(s.laptop_assigned) n++; if(s.bus_rider) n++;
+  if(typeof EMERGENCY!=='undefined' && EMERGENCY[s.id]) n+=5;
+  return n;
+}
+// Groups of students entered more than once in the same week (accent/case folded).
+function rosDupeGroups(){
+  const groups=[];
+  Object.keys(ROSTER_DATA||{}).forEach(w=>{
+    const map={};
+    (ROSTER_DATA[w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); if(k==='|') return; (map[k]=map[k]||[]).push(s); });
+    Object.values(map).forEach(arr=>{ if(arr.length>1) groups.push({week:+w, rows:arr}); });
+  });
+  return groups.sort((a,b)=>a.week-b.week);
+}
+async function mergeDupeGroup(rows){
+  const primary=rows.slice().sort((a,b)=>rosRowScore(b)-rosRowScore(a))[0];
+  const others=rows.filter(s=>s.id!==primary.id);
+  const patch={};
+  STUDENT_FIELDS.forEach(f=>{
+    if(f==='laptop_assigned'||f==='laptop_ready'){ if(!primary[f] && others.some(o=>o[f])) patch[f]=true; return; }
+    if((primary[f]||'')!=='') return;
+    for(const o of others){ if((o[f]||'')!==''){ patch[f]=o[f]; break; } }
+  });
+  if(Object.keys(patch).length) await dbUpdateStudent(primary.id, patch);
+  // carry contacts onto the kept row if it has none
+  if(typeof EMERGENCY!=='undefined' && !EMERGENCY[primary.id]){
+    const src=others.find(o=>EMERGENCY[o.id]);
+    if(src && typeof dbSetEmergency==='function'){ const ep={}; (EMERG_FIELDS||[]).forEach(f=>{ const v=(EMERGENCY[src.id]||{})[f]; if(v!=null && v!=='') ep[f]=v; }); if(Object.keys(ep).length) await dbSetEmergency(primary.id, ep); }
+  }
+  for(const o of others){ await dbDeleteStudent(o.id); }
+  if(typeof renderRosterTab==='function') renderRosterTab();
+  if(typeof renderAtt==='function') renderAtt();
+}
+function rosFindDupes(){
+  const box=document.getElementById('ros-review'); if(!box) return;
+  const groups=rosDupeGroups();
+  if(!groups.length){ box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--ok)"><b style="color:var(--ok)">No duplicates found ✓</b><div class="lc-desc" style="margin:4px 0 0">Every student appears once per week (accent and spelling variants checked).</div></div>`; return; }
+  const hasEm=s=>(typeof EMERGENCY!=='undefined' && EMERGENCY[s.id]);
+  box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
+    <h3 style="margin:0 0 4px">Possible duplicates <span style="font-weight:400;color:var(--muted);font-size:13px">(${groups.length} group${groups.length===1?'':'s'})</span></h3>
+    <p class="lc-desc" style="margin:0 0 6px">Same child entered more than once in a week. Merging keeps the most complete row (fills any gaps + contacts from the others) and removes the extras.</p>
+    ${groups.map((g,gi)=>{ const primary=g.rows.slice().sort((a,b)=>rosRowScore(b)-rosRowScore(a))[0];
+      return `<div style="border-top:1px solid var(--line-soft);padding:10px 0">
+        <div class="lc-desc" style="margin:0 0 4px"><b>Week ${g.week}</b></div>
+        <ul style="margin:0 0 8px;padding-left:18px">${g.rows.map(s=>`<li>${s.id===primary.id?'<b style="color:var(--ok)">Keep</b>':'<b style="color:var(--coral)">Remove</b>'}: ${esc(s.first)} ${esc(s.last)} <span style="color:var(--muted);font-size:12px">Gr ${esc(s.grade||'—')}${hasEm(s)?' · contacts':''}</span></li>`).join('')}</ul>
+        <button class="btn" data-merge="${gi}">Merge these</button>
+      </div>`; }).join('')}
+    <div style="margin-top:12px"><button class="btn ghost" id="ros-dupe-close">Close</button></div>
+  </div>`;
+  document.getElementById('ros-dupe-close').addEventListener('click',()=>{ box.innerHTML=''; });
+  box.querySelectorAll('[data-merge]').forEach(b=>b.addEventListener('click',async()=>{
+    b.disabled=true; b.textContent='Merging…';
+    await mergeDupeGroup(groups[+b.dataset.merge].rows);
+    rosFindDupes();
+  }));
 }
 
 /* =================== EMERGENCY INFO (owner-only) =================== */

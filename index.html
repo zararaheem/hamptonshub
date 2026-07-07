@@ -2872,8 +2872,8 @@ function renderDismissal(){
   const waiting=DQ_ROWS.filter(r=>r.status==='waiting');
   const dismissed=DQ_ROWS.filter(r=>r.status==='dismissed');
   const studs=studentsForWeek(dqWeek());
-  const att=dqAttData();                      // {id:'p'|'l'|'a'} for this day
-  const isAbsent=s=>att[s.id]==='a';          // marked Absent in Attendance
+  const att=dqAttData();                      // per-day marks (legacy 'a' or {s:'a',t})
+  const isAbsent=s=>(typeof attStat==='function'?attStat(att[s.id]):att[s.id])==='a';   // marked Absent in Attendance
   const inLineStudents=waiting.reduce((a,r)=>a+(r.students||[]).length,0);
   const dismissedStudents=dismissed.reduce((a,r)=>a+(r.students||[]).length,0);
   // waiting-to-go = roster students not yet queued or dismissed, excluding absentees

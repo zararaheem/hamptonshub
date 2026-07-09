@@ -89,7 +89,7 @@
     const day=$('date').value||nyTodayISO();
     $('daylabel').textContent=prettyDay(day);
     let payload=null;
-    try{ const r=await sb.functions.invoke('security-view',{body:{date:day}}); payload=r&&r.data; }catch(e){}
+    try{ const r=await sb.rpc('security_view',{p_day:day}); payload=r&&r.data; }catch(e){}
     if(!payload||!payload.ok){ $('list').innerHTML='<div class="empty">Couldn’t load right now — refreshing shortly.</div>'; return; }
     $('s-parties').textContent=payload.parties||0;
     $('s-heads').textContent=payload.heads||0;

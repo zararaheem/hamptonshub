@@ -43,6 +43,10 @@
   .qa li{font-size:15.5px;color:#33414e;margin:3px 0}
   .pill{display:inline-block;background:#eef6f5;color:var(--teal);border:1px solid #cfe6e3;border-radius:8px;padding:3px 9px;font-size:14px;font-weight:600;margin:2px 4px 2px 0}
   .note{background:#fbf4e8;border:1px solid #ecd9b4;border-radius:10px;padding:11px 14px;font-size:14.5px;color:#6b5320;margin:8px 0}
+  .guide-bio{margin:0 0 15px;padding-bottom:13px;border-bottom:1px solid #eee}
+  .guide-bio:last-child{margin-bottom:0;padding-bottom:0;border-bottom:0}
+  .gb-name{font-weight:700;color:var(--teal);font-size:15.5px;margin-bottom:3px}
+  .guide-bio p{margin:0}
   .alert-soft{display:flex;gap:8px;align-items:flex-start;background:#fdeceb;border:1px solid #f3c6c2;border-radius:10px;padding:10px 13px;font-size:14px;color:#9b3a33;margin:10px 0}
   .alert-soft::before{content:"!";flex:0 0 18px;height:18px;border-radius:50%;background:#d9534f;color:#fff;font-weight:700;font-size:12px;text-align:center;line-height:18px}
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
@@ -186,6 +190,15 @@
         return '<p>'+autolink(esc(b)).replace(/\n/g,'<br>')+'</p>';
       }).join('');
       const SEC = (key, def) => (w.sections && w.sections[key] && String(w.sections[key]).trim()) ? fmt(w.sections[key]) : def;
+      // Guide team: each blank-line block is a person (first line = name, rest = bio);
+      // a block of bullet lines renders as a simple list.
+      const guideTeamHtml = raw => String(raw).trim().split(/\n{2,}/).map(b=>b.trim()).filter(Boolean).map(b=>{
+        const lines=b.split('\n').map(l=>l.trim()).filter(Boolean);
+        if(lines.length>1 && lines.every(l=>/^[-•]\s+/.test(l)))
+          return '<ul>'+lines.map(l=>'<li>'+autolink(esc(l.replace(/^[-•]\s+/,'')))+'</li>').join('')+'</ul>';
+        const name=lines[0]||''; const bio=lines.slice(1).join(' ').replace(/\s+/g,' ').trim();
+        return `<div class="guide-bio"><div class="gb-name">${autolink(esc(name))}</div>${bio?`<p>${autolink(esc(bio))}</p>`:''}</div>`;
+      }).join('');
 
       // Coffee & Conversations day can be overridden per week (e.g. a weather move).
       const DAY_OFF={monday:0,tuesday:1,wednesday:2,thursday:3,friday:4};
@@ -204,8 +217,7 @@
       if(headGuide || guideTeam){
         h+=`<div class="sec-head"><h2>Meet your guide team</h2></div><div class="card">
           <div class="qa">${SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`)}
-          ${headGuide?`<p><b>Head Guide:</b> ${esc(headGuide)}</p>`:''}
-          ${guideTeam?fmt(guideTeam):''}</div>
+          ${guideTeam ? guideTeamHtml(guideTeam) : (headGuide?`<p><b>Head Guide:</b> ${esc(headGuide)}</p>`:'')}</div>
         </div>`;
       }
 

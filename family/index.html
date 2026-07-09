@@ -201,6 +201,14 @@
         <div class="qa"><h3>Important: please review this notice from New York State</h3><p>New York State requires us to share this with every family — please take a moment to read it: <a href="https://drive.google.com/file/d/1TaiFI9JEmUVUHJzyH693OvDy8lyiwGJ0/view" target="_blank" rel="noopener">Regulated Children's Camps in New York State — What Families Need to Know</a>.</p></div>
       </div>`;
 
+      if(headGuide || guideTeam){
+        h+=`<div class="sec-head"><h2>Meet your guide team</h2></div><div class="card">
+          <div class="qa">${SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`)}
+          ${headGuide?`<p><b>Head Guide:</b> ${esc(headGuide)}</p>`:''}
+          ${guideTeam?fmt(guideTeam):''}</div>
+        </div>`;
+      }
+
       h+=`<div class="sec-head"><h2>Daily Logistics</h2></div><div class="card">
         <div class="qa"><h3>Drop-off</h3><p><span class="pill">${esc(w.dropoff_time)}</span> at <b>${esc(w.dropoff_loc)}</b>. On the first morning, plan to arrive a few minutes early so your child can settle in.</p></div>
         <div class="qa"><h3>Pickup</h3><p><span class="pill">${esc(w.pickup_time)}</span> at <b>${esc(w.pickup_loc)}</b>. Only adults listed on your forms may collect your child; to add someone, reach out to ${coord}. For early pickup, please notify us by <b>${esc(w.early_pickup_cutoff)}</b> at the latest.</p></div>
@@ -251,7 +259,7 @@
       </div>`;
 
       h+=`<div class="sec-head"><h2>Your Child's Learning Experience</h2></div><div class="card">
-        <div class="qa"><h3>How does the guide model work?</h3>${SEC('learning_model', `<p>Your child's guide is with them every day, fully focused on students — never pulled into admin or meetings. Their role is to understand how your child thinks, what motivates them, and where they're ready to be challenged.</p>`)}${guideTeam?`<p>This week's guide team: <b>${esc(guideTeam)}</b>.</p>`:''}</div>
+        <div class="qa"><h3>How does the guide model work?</h3>${SEC('learning_model', `<p>Your child's guide is with them every day, fully focused on students — never pulled into admin or meetings. Their role is to understand how your child thinks, what motivates them, and where they're ready to be challenged.</p>`)}</div>
         <div class="qa"><h3>What will I receive at the end of the week?</h3><ul>
           <li><b>MAP insights</b> — MAP (Measures of Academic Progress) is a standardized assessment that shows where your child is academically. We use it to target their learning at exactly the right level — their zone of proximal development — so our apps and guides can focus on what each child is ready for.</li>
           <li><b>An accountability report</b> — these highlight guide insights about your child, from the people who worked with them all week.</li>

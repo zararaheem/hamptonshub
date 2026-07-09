@@ -724,8 +724,8 @@
     </div>
     <nav class="nav" id="nav">
       <button class="nav-item active" data-tab="dashboard">Dashboard</button>
-      <div class="nav-label">Camp Games</div>
-      <button class="nav-item cat-games" data-tab="scoreboard">Tribe Scoreboard<span class="ext">live</span></button>
+      <div class="nav-label" id="nav-games-label">Camp Games</div>
+      <button class="nav-item cat-games" id="nav-scoreboard" data-tab="scoreboard">Tribe Scoreboard<span class="ext">live</span></button>
       <div class="nav-label">Rostering</div>
       <button class="nav-item cat-people" data-tab="staffing">Staff Roster</button>
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
@@ -4733,6 +4733,8 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
   });
 })();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); visitorsInit(); emInit(); scoreInit(); authInit();
+// Tribe scoreboard (Alpha Survivor) only applied to Week 1 — hide it from the nav afterwards.
+if(NOW!==0){ ['nav-games-label','nav-scoreboard'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; }); }
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();

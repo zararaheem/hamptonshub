@@ -214,13 +214,6 @@
         <div class="qa"><h3>Important: please review this notice from New York State</h3><p>New York State requires us to share this with every family — please take a moment to read it: <a href="https://drive.google.com/file/d/1TaiFI9JEmUVUHJzyH693OvDy8lyiwGJ0/view" target="_blank" rel="noopener">Regulated Children's Camps in New York State — What Families Need to Know</a>.</p></div>
       </div>`;
 
-      if(headGuide || guideTeam){
-        h+=`<div class="sec-head"><h2>Meet your guide team</h2></div><div class="card">
-          <div class="qa">${SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`)}
-          ${guideTeam ? guideTeamHtml(guideTeam) : (headGuide?`<p><b>Head Guide:</b> ${esc(headGuide)}</p>`:'')}</div>
-        </div>`;
-      }
-
       h+=`<div class="sec-head"><h2>Daily Logistics</h2></div><div class="card">
         <div class="qa"><h3>Drop-off</h3><p><span class="pill">${esc(w.dropoff_time)}</span> at <b>${esc(w.dropoff_loc)}</b>. On the first morning, plan to arrive a few minutes early so your child can settle in.</p></div>
         <div class="qa"><h3>Pickup</h3><p><span class="pill">${esc(w.pickup_time)}</span> at <b>${esc(w.pickup_loc)}</b>. Only adults listed on your forms may collect your child; to add someone, reach out to ${coord}. For early pickup, please notify us by <b>${esc(w.early_pickup_cutoff)}</b> at the latest.</p></div>
@@ -278,6 +271,13 @@
           <li><b>A concrete academic plan</b> — this shows not just where your child is, but how quickly they can grow from where they are.</li></ul></div>
       </div>`;
 
+      if(headGuide || guideTeam){
+        h+=`<div class="sec-head"><h2>Meet the Guide Team</h2></div><div class="card">
+          <div class="qa">${SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`)}
+          ${guideTeam ? guideTeamHtml(guideTeam) : (headGuide?`<p><b>Head Guide:</b> ${esc(headGuide)}</p>`:'')}</div>
+        </div>`;
+      }
+
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
         <div class="qa"><h3>${esc(w.monday_event_day||'Monday')} · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come. Parking will be available on-site for families that may require it.</p>${(w.monday_event_note||'').trim()?`<div class="note">⚠️ ${esc(w.monday_event_note)}</div>`:''}${calLinks('Alpha Summer — Coffee & Conversations', mEventDate, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
         <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>${locSet ? `Please arrive at ${showLoc}, where your child shares what they've worked on all week.` : `Your child shares what they've worked on all week.`}</p>${locSet ? '' : `<div class="alert-soft">We're finalizing a location and will share details closer to the date.</div>`}${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
@@ -288,7 +288,7 @@
         <div class="qa"><h3>Where is drop-off and pickup?</h3>${SEC('bus_dropoff', `<p>All drop-off and pickup takes place at <b>44 Woods Lane, East Hampton</b>. Please use this address whether you're driving in or meeting the bus route.</p>`)}</div>
       </div>`;
 
-      h+=`<div class="sec-head"><h2>Who to contact when</h2></div><div class="card contact-card">${contactHtml}</div>`;
+      h+=`<div class="sec-head"><h2>Who to Contact When</h2></div><div class="card contact-card">${contactHtml}</div>`;
 
       h+=`<div class="sec-head"><h2>Additional Resources</h2></div><div class="card">
         <div class="qa"><h3>The TimeBack Learning Model</h3>${SEC('timeback_intro', `<p>You can learn more about TimeBack — our 2 Hour Learning model — in the parent guide below.</p>`)}

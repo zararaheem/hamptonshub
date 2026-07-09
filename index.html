@@ -1033,7 +1033,7 @@
         <div class="field" style="max-width:220px"><label for="vis-date">Day</label><input type="date" id="vis-date"></div>
       </div>
       <div id="vis-list"></div>
-      <div style="margin-top:12px"><button class="btn" id="vis-add">＋ Add visitor / tour</button> <span class="saved-note" id="vis-saved"></span></div>
+      <div style="margin-top:12px"><button class="btn ghost" id="vis-add">＋ Add visitor / tour</button> <button class="btn" id="vis-save">Save</button> <span class="saved-note" id="vis-saved"></span></div>
     </section>
 
     <!-- ===== EMERGENCY INFO (owner-only) ===== -->
@@ -3018,11 +3018,19 @@ function renderVisitors(){
   el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ const a=loadVis(); a.splice(+b.dataset.del,1); saveVis(a); renderVisitors(); }));
 }
 async function refreshVis(){ if(SUPA) await refreshStateKey(visKey()); renderVisitors(); }
+// Read every input in the table and persist — captures edits not yet blurred.
+function visSaveAll(){
+  const rows={};
+  document.querySelectorAll('#vis-list .vis-in').forEach(inp=>{ const i=+inp.dataset.i; (rows[i]=rows[i]||{})[inp.dataset.f]= inp.dataset.f==='party' ? (+inp.value||0) : inp.value; });
+  const arr=Object.keys(rows).map(Number).sort((a,b)=>a-b).map(k=>rows[k]);
+  saveVis(arr);
+}
 function visitorsInit(){
   const d=document.getElementById('vis-date'); if(!d) return;
   d.value=todayISO();
   d.addEventListener('change',refreshVis);
-  document.getElementById('vis-add').addEventListener('click',()=>{ const a=loadVis(); a.push({time:'',name:'',purpose:'',party:0}); saveVis(a); renderVisitors(); });
+  document.getElementById('vis-add').addEventListener('click',()=>{ visSaveAll(); const a=loadVis(); a.push({time:'',name:'',purpose:'',party:0}); saveVis(a); renderVisitors(); });
+  { const sb=document.getElementById('vis-save'); if(sb) sb.addEventListener('click',visSaveAll); }
   refreshVis();
 }
 function dismissalInit(){

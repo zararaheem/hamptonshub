@@ -731,6 +731,7 @@
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
       <button class="nav-item cat-people" data-tab="attendance">Attendance</button>
       <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
+      <button class="nav-item cat-people" data-tab="visitors">Visitors &amp; Tours</button>
       <button class="nav-item cat-people contacts-only" data-tab="emergency">Family Contacts</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
@@ -1021,6 +1022,18 @@
       </div>
 
       <div id="dq-log"></div>
+    </section>
+
+    <!-- ===== VISITORS & TOURS ===== -->
+    <section class="view" id="view-visitors" hidden>
+      <div class="eyebrow">Front desk · Admissions</div>
+      <h1 class="page-title">Visitors &amp; Tours</h1>
+      <p class="page-lead">Log the day's scheduled visitors and tours. The security / front-desk team sees this live on their own page — with counts only, <b>no student names</b>. <a href="/security/" target="_blank" rel="noopener">Open the security view ↗</a></p>
+      <div class="att-bar">
+        <div class="field" style="max-width:220px"><label for="vis-date">Day</label><input type="date" id="vis-date"></div>
+      </div>
+      <div id="vis-list"></div>
+      <div style="margin-top:12px"><button class="btn" id="vis-add">＋ Add visitor / tour</button> <span class="saved-note" id="vis-saved"></span></div>
     </section>
 
     <!-- ===== EMERGENCY INFO (owner-only) ===== -->
@@ -2983,6 +2996,35 @@ function dqSubscribe(){
     .subscribe();
 }
 async function refreshDismissal(){ if(SUPA) await refreshStateKey(dqAttKey()); await dqFetch(); renderDismissal(); dqSubscribe(); }
+
+/* =================== VISITORS & TOURS (front-desk / security) =================== */
+function visKey(){ return `visitors:${document.getElementById('vis-date').value}`; }
+function loadVis(){ const v=stateGet(visKey()); return Array.isArray(v)?v:[]; }
+function saveVis(arr){ stateSet(visKey(), arr); flash('vis-saved'); }
+function renderVisitors(){
+  const el=document.getElementById('vis-list'); if(!el) return;
+  const arr=loadVis();
+  const body = arr.length ? arr.map((v,i)=>`<tr>
+    <td><input class="cell-input vis-in" data-i="${i}" data-f="time" value="${escAttr(v.time||'')}" placeholder="10:00 AM" style="min-width:96px"></td>
+    <td><input class="cell-input vis-in" data-i="${i}" data-f="name" value="${escAttr(v.name||'')}" placeholder="Visitor / group"></td>
+    <td><input class="cell-input vis-in" data-i="${i}" data-f="purpose" value="${escAttr(v.purpose||'')}" placeholder="Tour, meeting, delivery…"></td>
+    <td><input class="cell-input vis-in" type="number" min="0" data-i="${i}" data-f="party" value="${escAttr(v.party||'')}" placeholder="#" style="width:64px"></td>
+    <td><button class="del" data-del="${i}" title="Remove">×</button></td>
+  </tr>`).join('') : `<tr><td colspan="5" class="note-row">No visitors or tours logged for this day yet.</td></tr>`;
+  el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Time</th><th>Visitor / group</th><th>Purpose</th><th>People</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
+  el.querySelectorAll('.vis-in').forEach(inp=>inp.addEventListener('change',()=>{
+    const i=+inp.dataset.i, f=inp.dataset.f, a=loadVis(); a[i]=a[i]||{}; a[i][f]= f==='party' ? (+inp.value||0) : inp.value; saveVis(a);
+  }));
+  el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ const a=loadVis(); a.splice(+b.dataset.del,1); saveVis(a); renderVisitors(); }));
+}
+async function refreshVis(){ if(SUPA) await refreshStateKey(visKey()); renderVisitors(); }
+function visitorsInit(){
+  const d=document.getElementById('vis-date'); if(!d) return;
+  d.value=todayISO();
+  d.addEventListener('change',refreshVis);
+  document.getElementById('vis-add').addEventListener('click',()=>{ const a=loadVis(); a.push({time:'',name:'',purpose:'',party:0}); saveVis(a); renderVisitors(); });
+  refreshVis();
+}
 function dismissalInit(){
   fillWeekSelect(document.getElementById('dq-week'));
   document.getElementById('dq-date').value = todayISO();
@@ -4069,8 +4111,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','emergency','tech','supplies','events','guide','resources','slack','famguide','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','visitors','emergency','tech','supplies','events','guide','resources','slack','famguide','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
@@ -4089,6 +4131,7 @@ function showTab(t){
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
   if(t==='attendance' && SUPA){ Promise.all([refreshStateKey(attKey()), refreshStateKey(permitKey())]).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }
+  if(t==='visitors' && SUPA){ refreshStateKey(visKey()).then(renderVisitors); }
   try{ history.replaceState(null,'', t==='dashboard' ? (location.pathname+location.search) : ('#'+(t==='guide'?'weeklybrief':t))); }catch(e){}
   closeRail();
   window.scrollTo({top:0});
@@ -4680,7 +4723,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); emInit(); scoreInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); visitorsInit(); emInit(); scoreInit(); authInit();
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();

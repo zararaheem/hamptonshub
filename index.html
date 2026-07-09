@@ -3920,8 +3920,8 @@ function renderFamGuideForm(){
         ${fgField('Early-pickup cutoff','early_pickup_cutoff',w.early_pickup_cutoff)}
         ${fgField('Lunch menu label','lunch_menu_label',w.lunch_menu_label,'Week of Jun 29')}
         ${fgField('Lunch menu URL','lunch_menu_url',w.lunch_menu_url)}
-        ${fgField('Guide team (this week)','guide_team',w.guide_team,'names / short bios')}
-        ${fgField('Head guide','head_guide',w.head_guide)}
+        ${fgField('Head guide / lead','head_guide',w.head_guide)}
+        <div class="field" style="grid-column:1/-1"><label>Guide team (this week — names &amp; short bios)</label><textarea class="cell-input" data-fg="guide_team" rows="5" style="resize:vertical" placeholder="One guide per line — bullets or short paragraphs. e.g.&#10;- Kris Ponder — L1 guide; loves science &amp; hands-on projects.&#10;- Varenya Hariharan — LL guide; ...">${esc(w.guide_team||'')}</textarea></div>
         ${fgField('Monday Coffee time','monday_event_time',w.monday_event_time)}
         ${fgField('Friday Showcase time','friday_showcase_time',w.friday_showcase_time)}
         ${fgField('Friday Showcase location','friday_showcase_loc',w.friday_showcase_loc)}

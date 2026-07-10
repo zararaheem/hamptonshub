@@ -191,14 +191,30 @@
       }).join('');
       const SEC = (key, def) => (w.sections && w.sections[key] && String(w.sections[key]).trim()) ? fmt(w.sections[key]) : def;
       // Guide team: each blank-line block is a person (first line = name, rest = bio);
-      // a block of bullet lines renders as a simple list.
-      const guideTeamHtml = raw => String(raw).trim().split(/\n{2,}/).map(b=>b.trim()).filter(Boolean).map(b=>{
-        const lines=b.split('\n').map(l=>l.trim()).filter(Boolean);
-        if(lines.length>1 && lines.every(l=>/^[-•]\s+/.test(l)))
-          return '<ul>'+lines.map(l=>'<li>'+autolink(esc(l.replace(/^[-•]\s+/,'')))+'</li>').join('')+'</ul>';
-        const name=lines[0]||''; const bio=lines.slice(1).join(' ').replace(/\s+/g,' ').trim();
-        return `<div class="guide-bio"><div class="gb-name">${autolink(esc(name))}</div>${bio?`<p>${autolink(esc(bio))}</p>`:''}</div>`;
-      }).join('');
+      // a block of bullet lines renders as a simple list. The lead / head guide
+      // is shown first, everyone else alphabetical by name.
+      const guideTeamHtml = raw => {
+        const blocks=String(raw).trim().split(/\n{2,}/).map(b=>b.trim()).filter(Boolean).map(b=>{
+          const lines=b.split('\n').map(l=>l.trim()).filter(Boolean);
+          const nameLine=lines[0]||'';
+          return {
+            lines,
+            bullet: lines.length>1 && lines.every(l=>/^[-•]\s+/.test(l)),
+            isLead: /(head|lead)\s+guide/i.test(nameLine),
+            sortName: nameLine.replace(/\s*[—–-]\s*.*$/,'').trim().toLowerCase(),
+          };
+        });
+        blocks.sort((a,b)=>{
+          if(a.bullet||b.bullet) return 0;               // leave list blocks in place
+          if(a.isLead!==b.isLead) return a.isLead?-1:1;  // lead / head guide first
+          return a.sortName.localeCompare(b.sortName);   // then alphabetical
+        });
+        return blocks.map(b=>{
+          if(b.bullet) return '<ul>'+b.lines.map(l=>'<li>'+autolink(esc(l.replace(/^[-•]\s+/,'')))+'</li>').join('')+'</ul>';
+          const name=b.lines[0]||''; const bio=b.lines.slice(1).join(' ').replace(/\s+/g,' ').trim();
+          return `<div class="guide-bio"><div class="gb-name">${autolink(esc(name))}</div>${bio?`<p>${autolink(esc(bio))}</p>`:''}</div>`;
+        }).join('');
+      };
 
       // Coffee & Conversations day can be overridden per week (e.g. a weather move).
       const DAY_OFF={monday:0,tuesday:1,wednesday:2,thursday:3,friday:4};

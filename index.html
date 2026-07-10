@@ -1667,7 +1667,7 @@ async function dbBulkAddStudents(week, arr){
   return null;
 }
 const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider'];
-const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob'];
+const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob','extra_emails'];
 // "Test" rule: any student whose name is a test/placeholder entry is excluded by
 // default on import, and can be purged from the roster with one click. Matches a
 // whole "test" word (Test, test student, QA test) — not real names like "Tester".
@@ -3544,6 +3544,7 @@ function renderEmergency(){
     <th>Authorized pickup</th><th>Phone</th>
     <th title="List any additional people allowed to pick up — name + phone, separate with ;">More authorized pickups</th>
     <th>Emergency contact</th><th>Phone</th>
+    <th title="Extra emails to include in the parent mailing list — Name &lt;email&gt;, comma-separated">Other emails (mailing list)</th>
     <th>Allergies</th><th>Meds</th></tr></thead>`;
   const inp=(id,f,val)=>`<input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" value="${escAttr(val||'')}">`;
   const body=studs.length? studs.map((s,i)=>{ const e=EMERGENCY[s.id]||{}; return `<tr>
@@ -3562,9 +3563,10 @@ function renderEmergency(){
     <td style="white-space:nowrap">${inp(s.id,'authorized_pickups',e.authorized_pickups)}<button class="addpu-btn" data-addpu="${escAttr(s.id)}" title="Add another authorized pickup">+ add</button></td>
     <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
     <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
+    <td style="white-space:nowrap">${inp(s.id,'extra_emails',e.extra_emails)}</td>
     <td>${esc(cleanAllergy(s.allergies))}</td>
     <td>${esc(s.meds||'')}</td>
-  </tr>`; }).join('') : `<tr><td colspan="17" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
+  </tr>`; }).join('') : `<tr><td colspan="18" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
   tbl.querySelectorAll('[data-addpu]').forEach(b=>b.addEventListener('click',()=>emAddPickup(b.dataset.addpu)));
@@ -3581,8 +3583,8 @@ function emAddPickup(id){
 }
 function emExport(){
   const wk=emWeek(); const studs=studentsForWeek(wk);
-  const rows=[["First","Last","Grade","DOB","Primary parent","Primary phone","Primary email","Secondary parent","Secondary phone","Secondary email","Authorized pickup","Pickup phone","More authorized pickups","Emergency contact","Emergency phone","Allergies","Meds"]];
-  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.secondary_parent||'',e.secondary_phone||'',e.secondary_email||'',e.other_guardian||'',e.other_phone||'',e.authorized_pickups||'',e.emergency_contact||'',e.emergency_phone||'',cleanAllergy(s.allergies),s.meds||'']); });
+  const rows=[["First","Last","Grade","DOB","Primary parent","Primary phone","Primary email","Secondary parent","Secondary phone","Secondary email","Authorized pickup","Pickup phone","More authorized pickups","Emergency contact","Emergency phone","Other emails","Allergies","Meds"]];
+  studs.forEach(s=>{ const e=EMERGENCY[s.id]||{}; rows.push([s.first,s.last,s.grade,e.dob||'',e.guardian||'',e.guardian_phone||'',e.guardian_email||'',e.secondary_parent||'',e.secondary_phone||'',e.secondary_email||'',e.other_guardian||'',e.other_phone||'',e.authorized_pickups||'',e.emergency_contact||'',e.emergency_phone||'',e.extra_emails||'',cleanAllergy(s.allergies),s.meds||'']); });
   csvDownload(`family-contacts-w${wk}.csv`, rows);
 }
 function emInit(){
@@ -3602,8 +3604,12 @@ function emMailingList(){
   const add=(email,name,student)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase();
     let o=seen.get(k); if(!o){ o={email:e, name:(name||'').trim(), students:new Set()}; seen.set(k,o); }
     if(!o.name && name) o.name=name.trim(); if(student) o.students.add(student); };
+  // Parse an "extra emails" field — accepts "Name <email>" or bare emails, any separator.
+  const parseExtra=raw=>String(raw||'').split(/[,;\n]+/).map(t=>t.trim()).filter(Boolean).map(t=>{
+    const m=t.match(/<([^>]+)>/); const email=(m?m[1]:t).trim(); const name=(m?t.slice(0,t.indexOf('<')):'').trim(); return {email,name}; });
   studs.forEach(s=>{ const e=EMERGENCY[s.id]; if(!e) return; const sn=`${s.first||''} ${s.last||''}`.trim();
-    add(e.guardian_email, e.guardian, sn); add(e.secondary_email, e.secondary_parent, sn); });
+    add(e.guardian_email, e.guardian, sn); add(e.secondary_email, e.secondary_parent, sn);
+    parseExtra(e.extra_emails).forEach(x=>add(x.email, x.name, sn)); });
   const list=[...seen.values()].map(o=>({email:o.email, name:o.name, students:[...o.students].sort().join('; ')})).sort((a,b)=>a.email.localeCompare(b.email));
   if(!list.length){ alert(`No parent emails found for the Week ${wk} roster yet.`); return; }
   const emails=list.map(x=>x.email).join(', ');

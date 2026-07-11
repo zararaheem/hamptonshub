@@ -629,6 +629,10 @@
   .note-chip{font-family:var(--mono);font-size:10.5px;background:rgba(212,160,74,.16);color:var(--brass-bright);
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
+  .phone-cell{display:flex;align-items:center;gap:6px}
+  .phone-cell .cell-input{flex:1 1 auto;min-width:104px}
+  .callbtn{flex:0 0 auto;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--teal-bright);border:1px solid var(--teal);border-radius:8px;padding:5px 11px;text-decoration:none;white-space:nowrap}
+  .callbtn:hover{background:var(--teal);color:var(--navy)}
   .addpu-btn:hover{border-color:var(--teal)}
   .ros-health{font-size:12px;line-height:1.4;color:var(--coral);width:260px;white-space:normal;word-break:break-word;margin:1px 0}
   #ros-table td:has(.ros-health),#ros-table .hcell{min-width:272px;white-space:normal}
@@ -3547,28 +3551,32 @@ function renderEmergency(){
     <th title="Extra emails to include in the parent mailing list — Name &lt;email&gt;, comma-separated">Other emails (mailing list)</th>
     <th>Allergies</th><th>Meds</th></tr></thead>`;
   const inp=(id,f,val)=>`<input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" value="${escAttr(val||'')}">`;
+  // Editable phone + a one-tap Call link (tel:) beside it for quick dialing.
+  const phoneCell=(id,f,val)=>{ const tel=String(val||'').replace(/[^\d+]/g,'');
+    return `<div class="phone-cell"><input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" data-phone inputmode="tel" value="${escAttr(val||'')}"><a class="callbtn" href="tel:${escAttr(tel)}" title="Call"${tel?'':' style="display:none"'}>Call</a></div>`; };
   const body=studs.length? studs.map((s,i)=>{ const e=EMERGENCY[s.id]||{}; return `<tr>
     <td class="role-cell">${i+1}</td>
     <td style="white-space:nowrap">${esc(s.first||'')} ${esc(s.last||'')}</td>
     <td>${esc(s.grade||'')}</td>
     <td>${inp(s.id,'dob',e.dob)}</td>
     <td>${inp(s.id,'guardian',e.guardian)}</td>
-    <td>${inp(s.id,'guardian_phone',e.guardian_phone)}</td>
+    <td>${phoneCell(s.id,'guardian_phone',e.guardian_phone)}</td>
     <td>${inp(s.id,'guardian_email',e.guardian_email)}</td>
     <td>${inp(s.id,'secondary_parent',e.secondary_parent)}</td>
-    <td>${inp(s.id,'secondary_phone',e.secondary_phone)}</td>
+    <td>${phoneCell(s.id,'secondary_phone',e.secondary_phone)}</td>
     <td>${inp(s.id,'secondary_email',e.secondary_email)}</td>
     <td>${inp(s.id,'other_guardian',e.other_guardian)}</td>
-    <td>${inp(s.id,'other_phone',e.other_phone)}</td>
+    <td>${phoneCell(s.id,'other_phone',e.other_phone)}</td>
     <td style="white-space:nowrap">${inp(s.id,'authorized_pickups',e.authorized_pickups)}<button class="addpu-btn" data-addpu="${escAttr(s.id)}" title="Add another authorized pickup">+ add</button></td>
     <td>${inp(s.id,'emergency_contact',e.emergency_contact)}</td>
-    <td>${inp(s.id,'emergency_phone',e.emergency_phone)}</td>
+    <td>${phoneCell(s.id,'emergency_phone',e.emergency_phone)}</td>
     <td style="white-space:nowrap">${inp(s.id,'extra_emails',e.extra_emails)}</td>
     <td>${esc(cleanAllergy(s.allergies))}</td>
     <td>${esc(s.meds||'')}</td>
   </tr>`; }).join('') : `<tr><td colspan="18" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
+  tbl.querySelectorAll('[data-phone]').forEach(el=>el.addEventListener('input',()=>{ const a=el.parentNode.querySelector('.callbtn'); if(!a) return; const tel=el.value.replace(/[^\d+]/g,''); if(tel){ a.href='tel:'+tel; a.style.display=''; } else a.style.display='none'; }));
   tbl.querySelectorAll('[data-addpu]').forEach(b=>b.addEventListener('click',()=>emAddPickup(b.dataset.addpu)));
   const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone||e.secondary_phone); }).length;
   const st=document.getElementById('em-stats'); if(st) st.innerHTML=`<div class="ministat p"><div class="n">${filled}</div><div class="l">With contact</div></div><div class="ministat l-late"><div class="n">${studs.length-filled}</div><div class="l">Missing</div></div><div class="ministat"><div class="n">${studs.length}</div><div class="l">Students</div></div>`;

@@ -1703,9 +1703,15 @@ function foldName(v){ return String(v||'').trim().toLowerCase().normalize('NFD')
 function matchStudent(s, existing, used){
   const norm=foldName;
   const fn=norm(s.first); if(!fn) return null;
+  const ln=norm(s.last);
   const same=existing.filter(e=>norm(e.first)===fn && !used.has(e.id));
-  if(same.length===1) return same[0];
-  if(same.length>1) return same.find(e=>norm(e.last)===norm(s.last)) || null;
+  if(!same.length) return null;
+  const exact=same.find(e=>norm(e.last)===ln);
+  if(exact) return exact;                                      // same first + last → same child
+  // Only merge on first name alone when a last name is missing on one side
+  // (name-only roster). Two kids who share a first name but have different
+  // last names (e.g. Harry Shave vs Harry Banga) are treated as distinct.
+  if(same.length===1 && (!ln || !norm(same[0].last))) return same[0];
   return null;
 }
 function planImport(week, arr){

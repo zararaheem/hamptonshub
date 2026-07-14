@@ -629,6 +629,7 @@
   .note-chip{font-family:var(--mono);font-size:10.5px;background:rgba(212,160,74,.16);color:var(--brass-bright);
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
+  .med-flag{background:rgba(226,101,74,.12)}
   .phone-cell{display:flex;align-items:center;gap:6px}
   .phone-cell .cell-input{flex:1 1 auto;min-width:104px}
   .callbtn{flex:0 0 auto;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--teal-bright);border:1px solid var(--teal);border-radius:8px;padding:5px 11px;text-decoration:none;white-space:nowrap}
@@ -737,6 +738,7 @@
       <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
       <button class="nav-item cat-people" data-tab="visitors">Visitors &amp; Tours</button>
       <button class="nav-item cat-people contacts-only" data-tab="emergency">Family Contacts</button>
+      <button class="nav-item cat-people" data-tab="medical">Medical &amp; Immunizations</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item cat-ops" data-tab="events">Events Team</button>
@@ -1082,6 +1084,31 @@
         <span class="saved-note" id="tech-saved"></span>
       </div>
       <div class="callout" style="margin-top:18px"><b>Laptop assigned</b> and <b>Ready</b> are the same shared flags shown in the <b>Students</b> tab — tick them here or there. Device type, asset tag &amp; notes save per week on this device. Students come from the shared roster; pick the week above.</div>
+    </section>
+
+    <!-- ===== MEDICAL & IMMUNIZATIONS ===== -->
+    <section class="view" id="view-medical" hidden>
+      <div class="eyebrow">Health · Immunizations · Consent to treat</div>
+      <h1 class="page-title">Medical &amp; Immunizations</h1>
+      <p class="page-lead">Per-student health records for the week — whether <b>immunizations</b> are up to date, <b>consent to treat</b> is on file, plus doctor, hospital and medical conditions. Use it to see at a glance <b>who's still missing info</b>. Pulled from the registration import; editable here.</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="med-week">Roster</label><select id="med-week"></select></div>
+        <div class="att-stats" id="med-stats" style="margin-left:auto"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 12px">
+        <div class="seg-filter" id="med-filter">
+          <button class="fbtn active" data-mf="all">All</button>
+          <button class="fbtn" data-mf="missing">Missing info</button>
+          <button class="fbtn" data-mf="immun-no">Immun. not up to date</button>
+          <button class="fbtn" data-mf="notreat">No consent to treat</button>
+        </div>
+        <input class="cell-input" id="med-search" placeholder="Search name…" style="max-width:220px">
+        <button class="btn ghost" id="med-export" style="margin-left:auto">Export CSV</button>
+      </div>
+
+      <div class="tablewrap"><table id="med-table"></table></div>
     </section>
 
     <!-- ===== EVENTS TEAM ===== -->
@@ -1603,7 +1630,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,tribe,withdrawn,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,tribe,withdrawn,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1670,7 +1697,7 @@ async function dbBulkAddStudents(week, arr){
   }
   return null;
 }
-const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider'];
+const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider','immunizations','consent_treat','doctor_name','doctor_phone','hospital','medical_conditions'];
 const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob','extra_emails'];
 // "Test" rule: any student whose name is a test/placeholder entry is excluded by
 // default on import, and can be purged from the roster with one click. Matches a
@@ -1700,6 +1727,8 @@ async function loadEmergency(){
 // last name only if two kids share a first name); avoids reusing a match twice.
 // Fold a name for matching: trim, lowercase, strip accents (Zoë → zoe).
 function foldName(v){ return String(v||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+// Normalise a yes/no answer → 'yes' | 'no' | '' (blank/unknown/"Not submitted").
+function ynVal(v){ const t=String(v||'').trim().toLowerCase(); if(/^(y|yes|true|1|up.?to.?date|current|complete)$/.test(t)) return 'yes'; if(/^(n|no|false|0)$/.test(t)) return 'no'; return ''; }
 function matchStudent(s, existing, used){
   const norm=foldName;
   const fn=norm(s.first); if(!fn) return null;
@@ -1899,6 +1928,8 @@ function parseRegistration(text){
     allerg:find(/medical — allergies|^allergies|allergies$/),
     media:find(/media release/), dob:find(/date of birth/),
     shirt:find(/shirt|tee|t-shirt|jersey/), bus:find(/^bus|bus rider|bus service|shuttle|transport/),
+    immun:find(/immuniz|up.?to.?date.*(shot|vacc|immun)|vaccin/), consentTreat:find(/consent to treat/),
+    doctor:find(/doctor.*name|physician.*name|pediatric/), doctorPhone:find(/doctor.*phone|physician.*phone/), hospital:find(/preferred hospital|hospital/),
     address:find(/household addr/),
     pName:find(/primary .*(parent|guardian).*name/), pEmail:find(/primary .*(parent|guardian).*email/), pPhone:find(/primary .*(parent|guardian).*phone/),
     sName:find(/secondary .*(parent|guardian).*name/), sEmail:find(/secondary .*(parent|guardian).*email/), sPhone:find(/secondary .*(parent|guardian).*phone/),
@@ -1937,6 +1968,9 @@ function parseRegistration(text){
       grade:g(c,I.grade), allergies:cleanAllergy(g(c,I.allerg)),
       notes:noteParts.join(' • '), media_consent,
       shirt_size:g(c,I.shirt), birthday:g(c,I.dob), bus_rider:/^(1|y|yes|true|x)/i.test(g(c,I.bus)),
+      immunizations:ynVal(g(c,I.immun)), consent_treat:ynVal(g(c,I.consentTreat)),
+      doctor_name:softNone(g(c,I.doctor)), doctor_phone:softNone(g(c,I.doctorPhone)),
+      hospital:softNone(g(c,I.hospital)), medical_conditions:softNone(g(c,I.medcond)),
       contact:{
         guardian:softNone(g(c,I.pName)), guardian_email:softNone(g(c,I.pEmail)), guardian_phone:softNone(g(c,I.pPhone)),
         secondary_parent:softNone(g(c,I.sName)), secondary_email:softNone(g(c,I.sEmail)), secondary_phone:softNone(g(c,I.sPhone)),
@@ -1967,7 +2001,7 @@ function planRegistration(children){
 async function applyRegistration(plan){
   let updated=0, added=0, contacts=0; const weeksTouched=new Set();
   const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
-  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; return p; };
+  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; if(ch.immunizations) p.immunizations=ch.immunizations; if(ch.consent_treat) p.consent_treat=ch.consent_treat; if(ch.doctor_name) p.doctor_name=ch.doctor_name; if(ch.doctor_phone) p.doctor_phone=ch.doctor_phone; if(ch.hospital) p.hospital=ch.hospital; if(ch.medical_conditions) p.medical_conditions=ch.medical_conditions; return p; };
   const writeContact=async(id,ch)=>{ if(!canContacts) return; const ep={}; Object.entries(ch.contact).forEach(([k,v])=>{ if((v||'')!=='') ep[k]=v; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) contacts++; } };
   for(const w of Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b)){
     const pw=plan.perWeek[w]; weeksTouched.add(w);
@@ -3290,6 +3324,69 @@ function techInit(){
   renderTech();
 }
 
+/* =================== MEDICAL & IMMUNIZATIONS =================== */
+let MED_FILTER='all';
+function medWeek(){ return document.getElementById('med-week').value; }
+function medMissing(s){ return !((s.immunizations||'').trim()) || !((s.consent_treat||'').trim()); }
+function renderMedical(){
+  const tbl=document.getElementById('med-table'); if(!tbl) return;
+  if(guardStudentTab('med-table', medWeek())){ const e=document.getElementById('med-stats'); if(e) e.innerHTML=''; return; }
+  const q=((document.getElementById('med-search')||{}).value||'').trim().toLowerCase();
+  const roster=studentsForWeek(medWeek());
+  // completeness stats over the whole week roster
+  const total=roster.length;
+  const immunYes=roster.filter(s=>(s.immunizations||'')==='yes').length;
+  const treatYes=roster.filter(s=>(s.consent_treat||'')==='yes').length;
+  const missing=roster.filter(medMissing).length;
+  const st=document.getElementById('med-stats');
+  if(st) st.innerHTML=`<div class="ministat"><div class="n">${total}</div><div class="l">Students</div></div>
+    <div class="ministat p"><div class="n">${immunYes}</div><div class="l">Immun. up to date</div></div>
+    <div class="ministat p"><div class="n">${treatYes}</div><div class="l">Consent to treat</div></div>
+    <div class="ministat a"><div class="n">${missing}</div><div class="l">Missing info</div></div>`;
+  let studs=roster;
+  if(MED_FILTER==='missing') studs=studs.filter(medMissing);
+  else if(MED_FILTER==='immun-no') studs=studs.filter(s=>(s.immunizations||'')!=='yes');
+  else if(MED_FILTER==='notreat') studs=studs.filter(s=>(s.consent_treat||'')!=='yes');
+  if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
+  const ynSel=(f,val)=>`<select class="cell-select" data-medf="${f}" style="min-width:96px">
+    <option value=""${!val?' selected':''}>— missing</option>
+    <option value="yes"${val==='yes'?' selected':''}>Yes</option>
+    <option value="no"${val==='no'?' selected':''}>No</option></select>`;
+  const txt=(f,val,ph)=>`<input class="cell-input" data-medf="${f}" value="${escAttr(val||'')}" placeholder="${ph||''}">`;
+  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>Immunizations up&nbsp;to&nbsp;date</th><th>Consent to treat</th><th>Doctor</th><th>Doctor phone</th><th>Preferred hospital</th><th>Medical conditions</th></tr></thead>`;
+  const body=studs.length?studs.map((s,i)=>{ const tel=String(s.doctor_phone||'').replace(/[^\d+]/g,'');
+    return `<tr data-id="${escAttr(s.id)}">
+    <td class="role-cell">${i+1}</td>
+    <td style="white-space:nowrap">${esc(studentFullName(s))}</td>
+    <td>${esc(s.grade||'')}</td>
+    <td class="${(s.immunizations||'')==='yes'?'':'med-flag'}">${ynSel('immunizations',s.immunizations)}</td>
+    <td class="${(s.consent_treat||'')==='yes'?'':'med-flag'}">${ynSel('consent_treat',s.consent_treat)}</td>
+    <td>${txt('doctor_name',s.doctor_name,'Dr. …')}</td>
+    <td><div class="phone-cell">${txt('doctor_phone',s.doctor_phone,'phone')}<a class="callbtn" href="tel:${escAttr(tel)}"${tel?'':' style="display:none"'}>Call</a></div></td>
+    <td>${txt('hospital',s.hospital,'—')}</td>
+    <td>${txt('medical_conditions',s.medical_conditions,'—')}</td>
+  </tr>`; }).join('') : `<tr><td colspan="9" class="note-row">${total?'No students match this filter — everyone here has their info. ✓':`No students on the Week ${esc(medWeek())} roster yet.`}</td></tr>`;
+  tbl.innerHTML=head+`<tbody>${body}</tbody>`;
+  tbl.querySelectorAll('[data-medf]').forEach(el=>el.addEventListener('change',async()=>{
+    const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{[el.dataset.medf]:el.value}); renderMedical();
+  }));
+  tbl.querySelectorAll('[data-medf="doctor_phone"]').forEach(el=>el.addEventListener('input',()=>{ const a=el.parentNode.querySelector('.callbtn'); if(!a) return; const tel=el.value.replace(/[^\d+]/g,''); if(tel){ a.href='tel:'+tel; a.style.display=''; } else a.style.display='none'; }));
+}
+function medExport(){
+  const label=v=>v==='yes'?'Yes':v==='no'?'No':'Missing';
+  const rows=[["First","Last","Grade","Immunizations up to date","Consent to treat","Doctor","Doctor phone","Preferred hospital","Medical conditions","Allergies","Medications"]];
+  studentsForWeek(medWeek()).forEach(s=>rows.push([s.first,s.last,s.grade,label(s.immunizations),label(s.consent_treat),s.doctor_name||'',s.doctor_phone||'',s.hospital||'',s.medical_conditions||'',cleanAllergy(s.allergies),s.meds||'']));
+  csvDownload(`medical-w${medWeek()}.csv`, rows);
+}
+function medicalInit(){
+  fillWeekSelect(document.getElementById('med-week'));
+  document.getElementById('med-week').addEventListener('change',async()=>{ if(SUPA) await hydrateRoster(); renderMedical(); });
+  const s=document.getElementById('med-search'); if(s) s.addEventListener('input',renderMedical);
+  const f=document.getElementById('med-filter'); if(f) f.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; f.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); MED_FILTER=b.dataset.mf; renderMedical(); });
+  const x=document.getElementById('med-export'); if(x) x.addEventListener('click',medExport);
+  renderMedical();
+}
+
 /* =================== STUDENT ROSTER TAB =================== */
 function rosWeek(){ return document.getElementById('ros-week').value; }
 let ROS_FILTER='all';
@@ -4140,7 +4237,7 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','visitors','emergency','tech','supplies','events','guide','resources','slack','famguide','access'];
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','events','guide','resources','slack','famguide','access'];
 const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
@@ -4155,6 +4252,7 @@ function showTab(t){
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
+  if(t==='medical' && typeof renderMedical==='function'){ if(SUPA) hydrateRoster().then(renderMedical); else renderMedical(); }
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
@@ -4752,7 +4850,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); visitorsInit(); emInit(); scoreInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); visitorsInit(); emInit(); scoreInit(); authInit();
 // Tribe scoreboard (Alpha Survivor) only applied to Week 1 — hide it from the nav afterwards.
 if(NOW!==0){ ['nav-games-label','nav-scoreboard'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; }); }
 loadContent().then(()=>{

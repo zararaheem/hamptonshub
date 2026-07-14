@@ -630,6 +630,9 @@
     border:1px solid rgba(212,160,74,.45);border-radius:20px;padding:2px 9px;margin-left:8px;white-space:nowrap}
   .addpu-btn{margin-left:6px;font-family:var(--mono);font-size:11px;background:var(--navy-2);border:1px solid var(--line);color:var(--teal-bright);border-radius:6px;padding:4px 8px;cursor:pointer;vertical-align:middle}
   .med-flag{background:rgba(226,101,74,.12)}
+  .forms-badge{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.03em;border-radius:8px;padding:2px 7px;white-space:nowrap}
+  .forms-badge.ok{color:var(--teal-bright);border:1px solid var(--teal)}
+  .forms-badge.no{color:var(--coral);border:1px solid var(--coral)}
   .phone-cell{display:flex;align-items:center;gap:6px}
   .phone-cell .cell-input{flex:1 1 auto;min-width:104px}
   .callbtn{flex:0 0 auto;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--teal-bright);border:1px solid var(--teal);border-radius:8px;padding:5px 11px;text-decoration:none;white-space:nowrap}
@@ -1103,6 +1106,7 @@
           <button class="fbtn" data-mf="missing">Missing info</button>
           <button class="fbtn" data-mf="immun-no">Immun. not up to date</button>
           <button class="fbtn" data-mf="notreat">No consent to treat</button>
+          <button class="fbtn" data-mf="forms-no">Forms incomplete</button>
         </div>
         <input class="cell-input" id="med-search" placeholder="Search name…" style="max-width:220px">
         <button class="btn ghost" id="med-export" style="margin-left:auto">Export CSV</button>
@@ -1630,7 +1634,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,tribe,withdrawn,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,tribe,withdrawn,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1697,7 +1701,7 @@ async function dbBulkAddStudents(week, arr){
   }
   return null;
 }
-const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider','immunizations','consent_treat','doctor_name','doctor_phone','hospital','medical_conditions'];
+const STUDENT_FIELDS=['preferred','grade','allergies','meds','notes','media_consent','laptop_assigned','laptop_ready','shirt_size','birthday','bus_rider','immunizations','consent_treat','doctor_name','doctor_phone','hospital','medical_conditions','registration_url','forms_status'];
 const EMERG_FIELDS=['guardian','guardian_phone','guardian_email','secondary_parent','secondary_phone','secondary_email','other_guardian','other_phone','authorized_pickups','emergency_contact','emergency_phone','dob','extra_emails'];
 // "Test" rule: any student whose name is a test/placeholder entry is excluded by
 // default on import, and can be purged from the roster with one click. Matches a
@@ -1929,6 +1933,7 @@ function parseRegistration(text){
     media:find(/media release/), dob:find(/date of birth/),
     shirt:find(/shirt|tee|t-shirt|jersey/), bus:find(/^bus|bus rider|bus service|shuttle|transport/),
     immun:find(/immuniz|up.?to.?date.*(shot|vacc|immun)|vaccin/), consentTreat:find(/consent to treat/),
+    regUrl:find(/registration url/), formsStatus:find(/forms status/),
     doctor:find(/doctor.*name|physician.*name|pediatric/), doctorPhone:find(/doctor.*phone|physician.*phone/), hospital:find(/preferred hospital|hospital/),
     address:find(/household addr/),
     pName:find(/primary .*(parent|guardian).*name/), pEmail:find(/primary .*(parent|guardian).*email/), pPhone:find(/primary .*(parent|guardian).*phone/),
@@ -1971,6 +1976,7 @@ function parseRegistration(text){
       immunizations:ynVal(g(c,I.immun)), consent_treat:ynVal(g(c,I.consentTreat)),
       doctor_name:softNone(g(c,I.doctor)), doctor_phone:softNone(g(c,I.doctorPhone)),
       hospital:softNone(g(c,I.hospital)), medical_conditions:softNone(g(c,I.medcond)),
+      registration_url:g(c,I.regUrl), forms_status:g(c,I.formsStatus),
       contact:{
         guardian:softNone(g(c,I.pName)), guardian_email:softNone(g(c,I.pEmail)), guardian_phone:softNone(g(c,I.pPhone)),
         secondary_parent:softNone(g(c,I.sName)), secondary_email:softNone(g(c,I.sEmail)), secondary_phone:softNone(g(c,I.sPhone)),
@@ -2001,7 +2007,7 @@ function planRegistration(children){
 async function applyRegistration(plan){
   let updated=0, added=0, contacts=0; const weeksTouched=new Set();
   const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
-  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; if(ch.immunizations) p.immunizations=ch.immunizations; if(ch.consent_treat) p.consent_treat=ch.consent_treat; if(ch.doctor_name) p.doctor_name=ch.doctor_name; if(ch.doctor_phone) p.doctor_phone=ch.doctor_phone; if(ch.hospital) p.hospital=ch.hospital; if(ch.medical_conditions) p.medical_conditions=ch.medical_conditions; return p; };
+  const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; if(ch.immunizations) p.immunizations=ch.immunizations; if(ch.consent_treat) p.consent_treat=ch.consent_treat; if(ch.doctor_name) p.doctor_name=ch.doctor_name; if(ch.doctor_phone) p.doctor_phone=ch.doctor_phone; if(ch.hospital) p.hospital=ch.hospital; if(ch.medical_conditions) p.medical_conditions=ch.medical_conditions; if(ch.registration_url) p.registration_url=ch.registration_url; if(ch.forms_status) p.forms_status=ch.forms_status; return p; };
   const writeContact=async(id,ch)=>{ if(!canContacts) return; const ep={}; Object.entries(ch.contact).forEach(([k,v])=>{ if((v||'')!=='') ep[k]=v; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) contacts++; } };
   for(const w of Object.keys(plan.perWeek).map(Number).sort((a,b)=>a-b)){
     const pw=plan.perWeek[w]; weeksTouched.add(w);
@@ -3328,6 +3334,7 @@ function techInit(){
 let MED_FILTER='all';
 function medWeek(){ return document.getElementById('med-week').value; }
 function medMissing(s){ return !((s.immunizations||'').trim()) || !((s.consent_treat||'').trim()); }
+function formsComplete(s){ return (s.forms_status||'').trim().toLowerCase()==='complete'; }
 function renderMedical(){
   const tbl=document.getElementById('med-table'); if(!tbl) return;
   if(guardStudentTab('med-table', medWeek())){ const e=document.getElementById('med-stats'); if(e) e.innerHTML=''; return; }
@@ -3338,34 +3345,42 @@ function renderMedical(){
   const immunYes=roster.filter(s=>(s.immunizations||'')==='yes').length;
   const treatYes=roster.filter(s=>(s.consent_treat||'')==='yes').length;
   const missing=roster.filter(medMissing).length;
+  const formsOk=roster.filter(formsComplete).length;
   const st=document.getElementById('med-stats');
   if(st) st.innerHTML=`<div class="ministat"><div class="n">${total}</div><div class="l">Students</div></div>
     <div class="ministat p"><div class="n">${immunYes}</div><div class="l">Immun. up to date</div></div>
     <div class="ministat p"><div class="n">${treatYes}</div><div class="l">Consent to treat</div></div>
+    <div class="ministat p"><div class="n">${formsOk}</div><div class="l">Forms complete</div></div>
     <div class="ministat a"><div class="n">${missing}</div><div class="l">Missing info</div></div>`;
   let studs=roster;
   if(MED_FILTER==='missing') studs=studs.filter(medMissing);
   else if(MED_FILTER==='immun-no') studs=studs.filter(s=>(s.immunizations||'')!=='yes');
   else if(MED_FILTER==='notreat') studs=studs.filter(s=>(s.consent_treat||'')!=='yes');
+  else if(MED_FILTER==='forms-no') studs=studs.filter(s=>!formsComplete(s));
   if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
   const ynSel=(f,val)=>`<select class="cell-select" data-medf="${f}" style="min-width:96px">
     <option value=""${!val?' selected':''}>— missing</option>
     <option value="yes"${val==='yes'?' selected':''}>Yes</option>
     <option value="no"${val==='no'?' selected':''}>No</option></select>`;
   const txt=(f,val,ph)=>`<input class="cell-input" data-medf="${f}" value="${escAttr(val||'')}" placeholder="${ph||''}">`;
-  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>Immunizations up&nbsp;to&nbsp;date</th><th>Consent to treat</th><th>Doctor</th><th>Doctor phone</th><th>Preferred hospital</th><th>Medical conditions</th></tr></thead>`;
+  const formsCell=s=>{ const stt=(s.forms_status||'').trim(); const ok=formsComplete(s);
+    const badge=stt?`<span class="forms-badge ${ok?'ok':'no'}">${esc(stt)}</span>`:'<span class="blank">—</span>';
+    const link=s.registration_url?` <a class="callbtn" href="${escAttr(s.registration_url)}" target="_blank" rel="noopener" title="Open the registration record to view uploaded forms">View ↗</a>`:'';
+    return badge+link; };
+  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>Forms</th><th>Immunizations up&nbsp;to&nbsp;date</th><th>Consent to treat</th><th>Doctor</th><th>Doctor phone</th><th>Preferred hospital</th><th>Medical conditions</th></tr></thead>`;
   const body=studs.length?studs.map((s,i)=>{ const tel=String(s.doctor_phone||'').replace(/[^\d+]/g,'');
     return `<tr data-id="${escAttr(s.id)}">
     <td class="role-cell">${i+1}</td>
     <td style="white-space:nowrap">${esc(studentFullName(s))}</td>
     <td>${esc(s.grade||'')}</td>
+    <td class="${formsComplete(s)?'':'med-flag'}" style="white-space:nowrap">${formsCell(s)}</td>
     <td class="${(s.immunizations||'')==='yes'?'':'med-flag'}">${ynSel('immunizations',s.immunizations)}</td>
     <td class="${(s.consent_treat||'')==='yes'?'':'med-flag'}">${ynSel('consent_treat',s.consent_treat)}</td>
     <td>${txt('doctor_name',s.doctor_name,'Dr. …')}</td>
     <td><div class="phone-cell">${txt('doctor_phone',s.doctor_phone,'phone')}<a class="callbtn" href="tel:${escAttr(tel)}"${tel?'':' style="display:none"'}>Call</a></div></td>
     <td>${txt('hospital',s.hospital,'—')}</td>
     <td>${txt('medical_conditions',s.medical_conditions,'—')}</td>
-  </tr>`; }).join('') : `<tr><td colspan="9" class="note-row">${total?'No students match this filter — everyone here has their info. ✓':`No students on the Week ${esc(medWeek())} roster yet.`}</td></tr>`;
+  </tr>`; }).join('') : `<tr><td colspan="10" class="note-row">${total?'No students match this filter — everyone here has their info. ✓':`No students on the Week ${esc(medWeek())} roster yet.`}</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
   tbl.querySelectorAll('[data-medf]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{[el.dataset.medf]:el.value}); renderMedical();
@@ -3374,8 +3389,8 @@ function renderMedical(){
 }
 function medExport(){
   const label=v=>v==='yes'?'Yes':v==='no'?'No':'Missing';
-  const rows=[["First","Last","Grade","Immunizations up to date","Consent to treat","Doctor","Doctor phone","Preferred hospital","Medical conditions","Allergies","Medications"]];
-  studentsForWeek(medWeek()).forEach(s=>rows.push([s.first,s.last,s.grade,label(s.immunizations),label(s.consent_treat),s.doctor_name||'',s.doctor_phone||'',s.hospital||'',s.medical_conditions||'',cleanAllergy(s.allergies),s.meds||'']));
+  const rows=[["First","Last","Grade","Forms status","Registration link","Immunizations up to date","Consent to treat","Doctor","Doctor phone","Preferred hospital","Medical conditions","Allergies","Medications"]];
+  studentsForWeek(medWeek()).forEach(s=>rows.push([s.first,s.last,s.grade,s.forms_status||'',s.registration_url||'',label(s.immunizations),label(s.consent_treat),s.doctor_name||'',s.doctor_phone||'',s.hospital||'',s.medical_conditions||'',cleanAllergy(s.allergies),s.meds||'']));
   csvDownload(`medical-w${medWeek()}.csv`, rows);
 }
 function medicalInit(){

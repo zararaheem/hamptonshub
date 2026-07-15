@@ -1063,7 +1063,16 @@
           <option value="last">Sort: last name</option>
         </select>
         <button class="btn ghost" id="em-export">Export CSV</button>
-        <button class="btn ghost" id="em-maillist" title="Copy a deduplicated list of parent emails for the selected week's roster">Parent mailing list (this week)</button>
+        <select id="em-maillevel" class="cell-input" style="max-width:150px" title="Limit the mailing list to a level">
+          <option value="">All levels</option>
+          <option value="Wonderlab">Wonderlab (PK)</option>
+          <option value="LL">LL (K–1)</option>
+          <option value="L1">L1 (2–3)</option>
+          <option value="L2">L2 (4–5)</option>
+          <option value="MS">MS (6–8)</option>
+          <option value="HS">HS (9–12)</option>
+        </select>
+        <button class="btn ghost" id="em-maillist" title="Copy a deduplicated list of parent emails for the selected week — optionally filtered to a level">Parent mailing list</button>
       </div>
       <div class="tablewrap"><table id="em-table"></table></div>
     </section>
@@ -3725,7 +3734,11 @@ function emInit(){
 // Parent mailing list for the SELECTED week's roster — matches the Family
 // Contacts table (same week, withdrawn kids excluded). Deduplicated by email.
 function emMailingList(){
-  const wk=emWeek(); const studs=studentsForWeek(wk);
+  const wk=emWeek();
+  const lvl=((document.getElementById('em-maillevel')||{}).value||'').trim();
+  let studs=studentsForWeek(wk);
+  if(lvl) studs=studs.filter(s=>levelOf(s.grade)===lvl);
+  const scope=`Week ${wk}${lvl?` · ${lvl}`:''}`;
   const seen=new Map();  // lower-email -> {email, name, students:Set}
   const add=(email,name,student)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase();
     let o=seen.get(k); if(!o){ o={email:e, name:(name||'').trim(), students:new Set()}; seen.set(k,o); }
@@ -3737,12 +3750,12 @@ function emMailingList(){
     add(e.guardian_email, e.guardian, sn); add(e.secondary_email, e.secondary_parent, sn);
     parseExtra(e.extra_emails).forEach(x=>add(x.email, x.name, sn)); });
   const list=[...seen.values()].map(o=>({email:o.email, name:o.name, students:[...o.students].sort().join('; ')})).sort((a,b)=>a.email.localeCompare(b.email));
-  if(!list.length){ alert(`No parent emails found for the Week ${wk} roster yet.`); return; }
+  if(!list.length){ alert(`No parent emails found for ${scope}${lvl?' — no students at that level this week.':' yet.'}`); return; }
   const emails=list.map(x=>x.email).join(', ');
-  const finish=()=>{ csvDownload(`parent-mailing-list-w${wk}.csv`, [["Email","Parent name","Student(s)"], ...list.map(x=>[x.email,x.name,x.students])]); };
+  const finish=()=>{ csvDownload(`parent-mailing-list-w${wk}${lvl?`-${lvl}`:''}.csv`, [["Email","Parent name","Student(s)"], ...list.map(x=>[x.email,x.name,x.students])]); };
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(emails).then(()=>{ alert(`${list.length} parent emails for Week ${wk} copied to clipboard. A CSV is also downloading.`); finish(); }).catch(()=>{ finish(); alert(`${list.length} parent emails for Week ${wk} — CSV downloaded (clipboard blocked).`); });
-  } else { finish(); alert(`${list.length} parent emails for Week ${wk} — CSV downloaded.`); }
+    navigator.clipboard.writeText(emails).then(()=>{ alert(`${list.length} parent emails for ${scope} copied to clipboard. A CSV is also downloading.`); finish(); }).catch(()=>{ finish(); alert(`${list.length} parent emails for ${scope} — CSV downloaded (clipboard blocked).`); });
+  } else { finish(); alert(`${list.length} parent emails for ${scope} — CSV downloaded.`); }
 }
 
 /* =================== SUPPLIES & PACKING (sectioned, per week) =================== */

@@ -614,6 +614,24 @@
   /* level badge + health */
   .lvlbadge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;border:1px solid var(--line);
     border-radius:20px;padding:2px 7px;color:var(--muted);margin-left:8px}
+  /* event planning */
+  .pill-ok,.pill-no,.pill-pending,.pill-ret{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+    border-radius:20px;padding:2px 9px;white-space:nowrap;border:1px solid transparent}
+  .pill-ok{background:rgba(74,175,120,.14);color:var(--ok);border-color:rgba(74,175,120,.4)}
+  .pill-no{background:rgba(226,101,74,.14);color:var(--coral);border-color:rgba(226,101,74,.4)}
+  .pill-pending{background:rgba(212,160,74,.14);color:var(--brass-bright);border-color:rgba(212,160,74,.4)}
+  .pill-ret{background:rgba(74,158,175,.16);color:var(--teal-bright);border-color:rgba(74,158,175,.45);font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+  .ministat.present .n{color:var(--ok)}
+  .shirt-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .shirt-chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--oyster);
+    background:var(--navy-2);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+  .shirt-chip b{color:var(--brass-bright);font-size:12.5px}
+  .shirt-chip.muted{color:var(--muted)} .shirt-chip.muted b{color:var(--muted)}
+  .swag-th{text-align:center}
+  .swag-cell{white-space:nowrap}
+  .swag-check{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .swag-check input{width:16px;height:16px;accent-color:var(--ok);cursor:pointer}
+  .swag-check input:checked+span{color:var(--ok)}
   .health-toggle{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
     padding:8px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:auto}
   .health-toggle:hover{border-color:var(--teal);color:var(--oyster)}
@@ -745,6 +763,7 @@
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item cat-ops" data-tab="events">Events Team</button>
+      <button class="nav-item cat-ops" data-tab="planning">Event Planning</button>
       <div class="nav-label">Guides</div>
       <a class="nav-item cat-curriculum" href="https://alpha-guide-platform.vercel.app/auth/guide/eyJsaW5rX2lkIjoiZDJjYjk4MzUtMWI3OS00MmQ4LWIzNzgtYzdlYzkwNGViMzBjIiwiY2FtcHVzX2lkIjoiY2QyOWU1MDQtNmU2MS00YmU2LWE2MTAtYjFkMGU2NmYzZGJlIiwic2Vzc2lvbl9pZCI6ImI5Mzc0NTk3LTE5MGMtNDc3NS1hYjYwLWRhMDBlMTNhOGZiMiIsImV4cCI6MTc4MzMxNzYwMCwiaWF0IjoxNzgyNzAzNDg0fQ.BRltgXsE0oP4sZ5isqFh3cwUk-eA7NiAvlFdgIVq1GA" target="_blank" rel="noopener">Accountability Hub<span class="ext">↗</span></a>
       <button class="nav-item cat-curriculum" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
@@ -1121,6 +1140,34 @@
       </div>
 
       <div class="tablewrap"><table id="med-table"></table></div>
+    </section>
+
+    <!-- ===== EVENT PLANNING (limited roster) ===== -->
+    <section class="view" id="view-planning" hidden>
+      <div class="eyebrow">Events · Planning roster</div>
+      <h1 class="page-title">Event Planning</h1>
+      <p class="page-lead">A limited planning roster for the events team — first name + last initial, level, shirt size and media consent (no contact details). Handy for ordering shirts, planning photos, and spotting <b>returning campers</b> (kids enrolled more than one week).</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="plan-week">Roster</label><select id="plan-week"></select></div>
+        <div class="att-stats" id="plan-stats" style="margin-left:auto"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 12px">
+        <div class="seg-filter" id="plan-filter">
+          <button class="fbtn active" data-pf="all">All</button>
+          <button class="fbtn" data-pf="returning">Returning</button>
+          <button class="fbtn" data-pf="consent">Media consent ✓</button>
+          <button class="fbtn" data-pf="noconsent">No consent</button>
+          <button class="fbtn" data-pf="noshirt">No shirt size</button>
+          <button class="fbtn" data-pf="noswag">Swag bag pending</button>
+        </div>
+        <input class="cell-input" id="plan-search" placeholder="Search name…" style="max-width:200px">
+        <button class="btn ghost" id="plan-shirts" title="Show shirt-size totals for ordering">Shirt totals</button>
+        <button class="btn ghost" id="plan-export" style="margin-left:auto">Export CSV</button>
+      </div>
+      <div id="plan-shirtsum" style="display:none;margin-bottom:12px"></div>
+      <div class="tablewrap"><table id="plan-table"></table></div>
     </section>
 
     <!-- ===== EVENTS TEAM ===== -->
@@ -1642,7 +1689,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,tribe,withdrawn,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,tribe,withdrawn,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1817,6 +1864,15 @@ async function dbSetBusForChild(s, val){
   if(SUPA){
     const { error } = await SB.from('students').update({bus_rider:val, updated_at:new Date().toISOString()}).eq('first', f).eq('last', l);
     if(error){ console.warn('bus update failed:', error); return error; }
+  } else { persistLocalRoster(); }
+  return null;
+}
+async function dbSetSwagForChild(s, val){
+  const f=s.first, l=s.last;
+  for(const w in ROSTER_DATA){ ROSTER_DATA[w].forEach(x=>{ if(x.first===f && x.last===l) x.swag_received=val; }); }
+  if(SUPA){
+    const { error } = await SB.from('students').update({swag_received:val, updated_at:new Date().toISOString()}).eq('first', f).eq('last', l);
+    if(error){ console.warn('swag update failed:', error); return error; }
   } else { persistLocalRoster(); }
   return null;
 }
@@ -3410,6 +3466,105 @@ function medicalInit(){
   renderMedical();
 }
 
+/* =================== EVENT PLANNING (limited roster for the events team) =================== */
+let PLAN_FILTER='all';
+function planWeek(){ const s=document.getElementById('plan-week'); return s?s.value:'all'; }
+// Map each child (by folded name) → the sorted list of weeks they're enrolled in.
+function planWeeksByChild(){
+  const map={};
+  Object.keys(ROSTER_DATA).forEach(w=>{ (ROSTER_DATA[+w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); (map[k]=map[k]||new Set()).add(+w); }); });
+  return map;
+}
+function planWeeksLabel(weeks){ // e.g. [1,2,3,5] -> "1–3, 5"
+  const w=weeks.slice().sort((a,b)=>a-b); const out=[]; let i=0;
+  while(i<w.length){ let j=i; while(j+1<w.length && w[j+1]===w[j]+1) j++; out.push(i===j?`${w[i]}`:`${w[i]}–${w[j]}`); i=j+1; }
+  return out.join(', ');
+}
+function planConsentBadge(v){ return v==='yes'?'<span class="pill-ok">Yes</span>':v==='no'?'<span class="pill-no">No</span>':'<span class="pill-pending">Pending</span>'; }
+function renderPlanning(){
+  const tbl=document.getElementById('plan-table'); if(!tbl) return;
+  const wk=planWeek();
+  const byChild=planWeeksByChild();
+  const weeksOf=s=>[...(byChild[foldName(s.first)+'|'+foldName(s.last)]||[])].sort((a,b)=>a-b);
+  let roster;
+  if(wk==='all'){
+    const seen=new Set(); roster=[];
+    Object.keys(ROSTER_DATA).map(Number).sort((a,b)=>a-b).forEach(w=>{ (ROSTER_DATA[w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); if(k!=='|' && !seen.has(k)){ seen.add(k); roster.push(s); } }); });
+  } else { roster=studentsForWeek(wk).slice(); }
+  const isReturning=s=>weeksOf(s).length>1;
+  // stats over the roster
+  const total=roster.length;
+  const returning=roster.filter(isReturning).length;
+  const consentYes=roster.filter(s=>s.media_consent==='yes').length;
+  const noConsent=roster.filter(s=>s.media_consent==='no').length;
+  const swagDone=roster.filter(s=>s.swag_received).length;
+  const st=document.getElementById('plan-stats');
+  if(st) st.innerHTML=`<div class="ministat"><div class="n">${total}</div><div class="l">Students</div></div>
+    <div class="ministat l-late"><div class="n">${returning}</div><div class="l">Returning</div></div>
+    <div class="ministat p"><div class="n">${consentYes}</div><div class="l">Media consent</div></div>
+    <div class="ministat a"><div class="n">${noConsent}</div><div class="l">No consent</div></div>
+    <div class="ministat present"><div class="n">${swagDone}/${total}</div><div class="l">Swag bags</div></div>`;
+  // shirt totals (for merch)
+  renderPlanShirts(roster);
+  // filter + search
+  let studs=roster;
+  if(PLAN_FILTER==='returning') studs=studs.filter(isReturning);
+  else if(PLAN_FILTER==='consent') studs=studs.filter(s=>s.media_consent==='yes');
+  else if(PLAN_FILTER==='noconsent') studs=studs.filter(s=>s.media_consent==='no');
+  else if(PLAN_FILTER==='noshirt') studs=studs.filter(s=>!((s.shirt_size||'').trim()));
+  else if(PLAN_FILTER==='noswag') studs=studs.filter(s=>!s.swag_received);
+  const q=((document.getElementById('plan-search')||{}).value||'').trim().toLowerCase();
+  if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
+  studs=studs.slice().sort((a,b)=> (levelOf(a.grade)||'').localeCompare(levelOf(b.grade)||'') || (a.last||'').localeCompare(b.last||'') || (a.first||'').localeCompare(b.first||''));
+  const head=`<thead><tr><th>#</th><th>Name</th><th>Level</th><th>Shirt size</th><th>Media consent</th><th>Weeks</th><th class="swag-th">Swag bag</th></tr></thead>`;
+  const body=studs.length?studs.map((s,i)=>{ const wks=weeksOf(s); const ret=wks.length>1;
+    return `<tr data-id="${esc(s.id||'')}">
+    <td class="role-cell">${i+1}</td>
+    <td style="white-space:nowrap">${esc(studentLabel(s))}${ret?' <span class="pill-ret">Returning</span>':''}</td>
+    <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
+    <td>${esc(s.shirt_size||'')||'<span class="blank">—</span>'}</td>
+    <td>${planConsentBadge(s.media_consent)}</td>
+    <td style="white-space:nowrap">${wks.length?'Wk '+esc(planWeeksLabel(wks)):'<span class="blank">—</span>'}</td>
+    <td class="swag-cell"><label class="swag-check"><input type="checkbox" class="plan-swag" ${s.swag_received?'checked':''}><span>${s.swag_received?'Received':'Pending'}</span></label></td>
+  </tr>`; }).join('') : `<tr><td colspan="7" class="note-row">${total?'No students match this filter.':'No students on this roster yet.'}</td></tr>`;
+  tbl.innerHTML=head+`<tbody>${body}</tbody>`;
+}
+function renderPlanShirts(roster){
+  const box=document.getElementById('plan-shirtsum'); if(!box) return;
+  const counts={}; let unknown=0;
+  roster.forEach(s=>{ const sz=(s.shirt_size||'').trim(); if(!sz){ unknown++; return; } counts[sz]=(counts[sz]||0)+1; });
+  const order=['Youth XS','Youth S','Youth M','Youth L','Youth XL','Adult XS','Adult S','Adult M','Adult L','Adult XL','Adult XXL'];
+  const keys=Object.keys(counts).sort((a,b)=>{ const ia=order.indexOf(a), ib=order.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b); });
+  const chips=keys.map(k=>`<span class="shirt-chip"><b>${counts[k]}</b> ${esc(k)}</span>`).join('') + (unknown?`<span class="shirt-chip muted"><b>${unknown}</b> no size</span>`:'');
+  box.innerHTML=`<div class="card" style="padding:12px 14px"><div class="eyebrow" style="margin-bottom:8px">Shirt totals for merch — ${roster.length} students</div><div class="shirt-chips">${chips||'<span class="note-row">No shirt sizes recorded yet.</span>'}</div></div>`;
+}
+function planExport(){
+  const wk=planWeek(); const byChild=planWeeksByChild();
+  const weeksOf=s=>[...(byChild[foldName(s.first)+'|'+foldName(s.last)]||[])].sort((a,b)=>a-b);
+  let roster;
+  if(wk==='all'){ const seen=new Set(); roster=[]; Object.keys(ROSTER_DATA).map(Number).sort((a,b)=>a-b).forEach(w=>{ (ROSTER_DATA[w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); if(k!=='|'&&!seen.has(k)){ seen.add(k); roster.push(s);} }); }); }
+  else roster=studentsForWeek(wk);
+  const cl=v=>v==='yes'?'Yes':v==='no'?'No':'Pending';
+  const rows=[["Name","Level","Shirt size","Media consent","Weeks","Returning","Swag bag"]];
+  roster.forEach(s=>{ const wks=weeksOf(s); rows.push([studentLabel(s),levelOf(s.grade),s.shirt_size||'',cl(s.media_consent),planWeeksLabel(wks),wks.length>1?'Yes':'No',s.swag_received?'Received':'Pending']); });
+  csvDownload(`event-planning-${wk==='all'?'all-weeks':'w'+wk}.csv`, rows);
+}
+function planningInit(){
+  const sel=document.getElementById('plan-week'); if(!sel) return;
+  sel.innerHTML=`<option value="all">All weeks · unique</option>`+WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${esc(w.theme)}</option>`).join('');
+  sel.value='all';
+  sel.addEventListener('change',async()=>{ if(SUPA) await hydrateRoster(); renderPlanning(); });
+  const s=document.getElementById('plan-search'); if(s) s.addEventListener('input',renderPlanning);
+  const f=document.getElementById('plan-filter'); if(f) f.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; f.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); PLAN_FILTER=b.dataset.pf; renderPlanning(); });
+  const sh=document.getElementById('plan-shirts'); if(sh) sh.addEventListener('click',()=>{ const box=document.getElementById('plan-shirtsum'); const open=box.style.display!=='none'; box.style.display=open?'none':'block'; sh.textContent=open?'Shirt totals':'Hide totals'; });
+  const x=document.getElementById('plan-export'); if(x) x.addEventListener('click',planExport);
+  const tbl=document.getElementById('plan-table');
+  if(tbl) tbl.addEventListener('change',async e=>{ const cb=e.target.closest('.plan-swag'); if(!cb) return;
+    const id=cb.closest('tr').dataset.id; const s=id&&findStudent(id); if(!s) return;
+    cb.disabled=true; await dbSetSwagForChild(s, cb.checked); cb.disabled=false; renderPlanning(); });
+  renderPlanning();
+}
+
 /* =================== STUDENT ROSTER TAB =================== */
 function rosWeek(){ return document.getElementById('ros-week').value; }
 let ROS_FILTER='all';
@@ -4300,7 +4455,7 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','events','guide','resources','slack','famguide','access'];
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','events','guide','resources','slack','famguide','access'];
 const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
@@ -4316,6 +4471,7 @@ function showTab(t){
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
   if(t==='medical' && typeof renderMedical==='function'){ if(SUPA) hydrateRoster().then(renderMedical); else renderMedical(); }
+  if(t==='planning' && typeof renderPlanning==='function'){ if(SUPA) hydrateRoster().then(renderPlanning); else renderPlanning(); }
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
@@ -4913,7 +5069,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); visitorsInit(); emInit(); scoreInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); planningInit(); visitorsInit(); emInit(); scoreInit(); authInit();
 // Tribe scoreboard (Alpha Survivor) only applied to Week 1 — hide it from the nav afterwards.
 if(NOW!==0){ ['nav-games-label','nav-scoreboard'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; }); }
 loadContent().then(()=>{

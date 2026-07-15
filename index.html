@@ -165,6 +165,15 @@
   .voyage-head .tline b{color:var(--brass-bright)}
   .voyage-head .tsub{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--muted-2);letter-spacing:.03em;line-height:1.5}
   .voyage-head .tsub b{color:var(--muted)}
+  .wk-strip{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .wk-chip{display:inline-flex;flex-direction:column;align-items:center;gap:1px;font-family:var(--mono);
+    border:1px solid var(--line);border-radius:9px;padding:5px 9px;min-width:52px;line-height:1.2}
+  .wk-chip b{font-size:11.5px;letter-spacing:.03em;color:var(--muted)}
+  .wk-chip .wk-when{font-size:8.5px;letter-spacing:.04em;color:var(--muted-2);white-space:nowrap}
+  .wk-chip.now{border-color:var(--brass-bright);background:rgba(212,160,74,.12)}
+  .wk-chip.now b{color:var(--brass-bright)}
+  .wk-chip.past{opacity:.5}
+  .wk-chip.next b{color:var(--oyster)}
   .ports{position:relative;display:grid;grid-template-columns:repeat(9,1fr);gap:10px}
   .ports::before{content:"";position:absolute;left:0;right:0;top:54px;height:2px;
     background:linear-gradient(90deg,transparent,var(--line),var(--line),transparent)}
@@ -1164,6 +1173,7 @@
         </div>
         <input class="cell-input" id="plan-search" placeholder="Search name…" style="max-width:200px">
         <button class="btn ghost" id="plan-shirts" title="Show shirt-size totals for ordering">Shirt totals</button>
+        <button class="btn ghost" id="plan-retswag" title="Mark all returning campers on this roster as already having their swag bag">Returning → bag received</button>
         <button class="btn ghost" id="plan-export" style="margin-left:auto">Export CSV</button>
       </div>
       <div id="plan-shirtsum" style="display:none;margin-bottom:12px"></div>
@@ -2368,6 +2378,13 @@ function renderCountdown(){
   if(days>0) el.innerHTML = `T-minus <b>${days} days</b> to Week ${w.n} · ${w.theme} (${w.range})`;
   else el.innerHTML = `Now sailing · <b>Week ${w.n} · ${w.theme}</b> (${w.range})`;
   el.innerHTML += `<div class="tsub">${weekStaffLine(NOW)}</div>`;
+  // Week strip: current week + what's coming up.
+  const strip=WEEKS.map((x,i)=>{
+    const cls=i===NOW?'now':(i<NOW?'past':'next');
+    const lbl=i===NOW?'This week':(i<NOW?'Done':x.range);
+    return `<span class="wk-chip ${cls}" title="Week ${x.n} · ${esc(x.theme)} · ${esc(x.range)}"><b>Wk ${x.n}</b><span class="wk-when">${esc(lbl)}</span></span>`;
+  }).join('');
+  el.innerHTML += `<div class="wk-strip">${strip}</div>`;
 }
 function renderTiles(){
   const el=document.getElementById('tiles'); if(!el) return;  // summary tiles replaced by the week-at-a-glance
@@ -3549,15 +3566,31 @@ function planExport(){
   roster.forEach(s=>{ const wks=weeksOf(s); rows.push([studentLabel(s),levelOf(s.grade),s.shirt_size||'',cl(s.media_consent),planWeeksLabel(wks),wks.length>1?'Yes':'No',s.swag_received?'Received':'Pending']); });
   csvDownload(`event-planning-${wk==='all'?'all-weeks':'w'+wk}.csv`, rows);
 }
+// Bulk-mark every returning camper on the current roster as already having their swag bag.
+async function planMarkReturningSwag(){
+  const wk=planWeek(); const byChild=planWeeksByChild();
+  const weeksOf=s=>[...(byChild[foldName(s.first)+'|'+foldName(s.last)]||[])].sort((a,b)=>a-b);
+  let roster;
+  if(wk==='all'){ const seen=new Set(); roster=[]; Object.keys(ROSTER_DATA).map(Number).sort((a,b)=>a-b).forEach(w=>{ (ROSTER_DATA[w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); if(k!=='|'&&!seen.has(k)){ seen.add(k); roster.push(s);} }); }); }
+  else roster=studentsForWeek(wk);
+  const todo=roster.filter(s=>weeksOf(s).length>1 && !s.swag_received);
+  if(!todo.length){ alert('No returning campers on this roster still need their swag bag marked.'); return; }
+  if(!confirm(`Mark ${todo.length} returning camper${todo.length===1?'':'s'} as already having their swag bag?`)) return;
+  const btn=document.getElementById('plan-retswag'); if(btn){ btn.disabled=true; btn.textContent='Marking…'; }
+  for(const s of todo){ await dbSetSwagForChild(s, true); }
+  if(btn){ btn.disabled=false; btn.textContent='Returning → bag received'; }
+  renderPlanning();
+}
 function planningInit(){
   const sel=document.getElementById('plan-week'); if(!sel) return;
   sel.innerHTML=`<option value="all">All weeks · unique</option>`+WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${esc(w.theme)}</option>`).join('');
-  sel.value='all';
+  sel.value=String(WEEKS[NOW].n);  // default to the current week
   sel.addEventListener('change',async()=>{ if(SUPA) await hydrateRoster(); renderPlanning(); });
   const s=document.getElementById('plan-search'); if(s) s.addEventListener('input',renderPlanning);
   const f=document.getElementById('plan-filter'); if(f) f.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; f.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); PLAN_FILTER=b.dataset.pf; renderPlanning(); });
   const sh=document.getElementById('plan-shirts'); if(sh) sh.addEventListener('click',()=>{ const box=document.getElementById('plan-shirtsum'); const open=box.style.display!=='none'; box.style.display=open?'none':'block'; sh.textContent=open?'Shirt totals':'Hide totals'; });
   const x=document.getElementById('plan-export'); if(x) x.addEventListener('click',planExport);
+  const rs=document.getElementById('plan-retswag'); if(rs) rs.addEventListener('click',planMarkReturningSwag);
   const tbl=document.getElementById('plan-table');
   if(tbl) tbl.addEventListener('change',async e=>{ const cb=e.target.closest('.plan-swag'); if(!cb) return;
     const id=cb.closest('tr').dataset.id; const s=id&&findStudent(id); if(!s) return;

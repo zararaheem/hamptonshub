@@ -1063,16 +1063,15 @@
           <option value="last">Sort: last name</option>
         </select>
         <button class="btn ghost" id="em-export">Export CSV</button>
-        <select id="em-maillevel" class="cell-input" style="max-width:150px" title="Limit the mailing list to a level">
-          <option value="">All levels</option>
-          <option value="Wonderlab">Wonderlab (PK)</option>
-          <option value="LL">LL (K–1)</option>
-          <option value="L1">L1 (2–3)</option>
-          <option value="L2">L2 (4–5)</option>
-          <option value="MS">MS (6–8)</option>
-          <option value="HS">HS (9–12)</option>
-        </select>
-        <button class="btn ghost" id="em-maillist" title="Copy a deduplicated list of parent emails for the selected week — optionally filtered to a level">Parent mailing list</button>
+        <span class="seg-filter" id="em-maillevels" style="flex-wrap:wrap" title="Pick one or more levels for the mailing list — none = all levels">
+          <button type="button" class="fbtn" data-lvl="Wonderlab">Wonderlab</button>
+          <button type="button" class="fbtn" data-lvl="LL">LL</button>
+          <button type="button" class="fbtn" data-lvl="L1">L1</button>
+          <button type="button" class="fbtn" data-lvl="L2">L2</button>
+          <button type="button" class="fbtn" data-lvl="MS">MS</button>
+          <button type="button" class="fbtn" data-lvl="HS">HS</button>
+        </span>
+        <button class="btn ghost" id="em-maillist" title="Copy a deduplicated list of parent emails for the selected week — filtered to the selected level(s), or all if none picked">Parent mailing list</button>
       </div>
       <div class="tablewrap"><table id="em-table"></table></div>
     </section>
@@ -3730,15 +3729,17 @@ function emInit(){
   document.getElementById('em-export').addEventListener('click',emExport);
   { const ss=document.getElementById('em-sort'); if(ss){ ss.value=STUDENT_SORT||'roster'; ss.addEventListener('change',()=>{ STUDENT_SORT=ss.value; STUDENT_DIR='asc'; const rs=document.getElementById('ros-sort'); if(rs) rs.value=ss.value; renderEmergency(); if(typeof renderRosterTab==='function') renderRosterTab(); }); } }
   { const mb=document.getElementById('em-maillist'); if(mb) mb.addEventListener('click',emMailingList); }
+  { const ml=document.getElementById('em-maillevels'); if(ml) ml.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(b) b.classList.toggle('active'); }); }
 }
 // Parent mailing list for the SELECTED week's roster — matches the Family
 // Contacts table (same week, withdrawn kids excluded). Deduplicated by email.
 function emMailingList(){
   const wk=emWeek();
-  const lvl=((document.getElementById('em-maillevel')||{}).value||'').trim();
+  const levels=[...document.querySelectorAll('#em-maillevels .fbtn.active')].map(b=>b.dataset.lvl);
   let studs=studentsForWeek(wk);
-  if(lvl) studs=studs.filter(s=>levelOf(s.grade)===lvl);
-  const scope=`Week ${wk}${lvl?` · ${lvl}`:''}`;
+  if(levels.length) studs=studs.filter(s=>levels.includes(levelOf(s.grade)));
+  const lvl=levels.join('-');   // for the CSV filename
+  const scope=`Week ${wk}${levels.length?` · ${levels.join(' + ')}`:''}`;
   const seen=new Map();  // lower-email -> {email, name, students:Set}
   const add=(email,name,student)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase();
     let o=seen.get(k); if(!o){ o={email:e, name:(name||'').trim(), students:new Set()}; seen.set(k,o); }

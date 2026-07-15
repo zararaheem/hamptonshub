@@ -3733,16 +3733,34 @@ function emInit(){
 }
 // Parent mailing list for the SELECTED week's roster — matches the Family
 // Contacts table (same week, withdrawn kids excluded). Deduplicated by email.
-function emMailingList(){
+// Standing staff always added to the parent mailing list as BCC (plus the
+// week's head guide, resolved below).
+const MAILING_STAFF_BCC=[
+  {name:'Manuel Perez Luna', email:'manuel.perezluna@alpha.school'},
+  {name:'Nancy Torvund', email:'nancy.torvund@alpha.school'},
+  {name:'Chris Dundy', email:'christopher.dundy@alpha.school'},
+  {name:'Robbie Forrest', email:'robbie.forrest@alpha.school'},
+  {name:'Alice Lee', email:'alice.lee@alpha.school'},
+  {name:'Tasha Arnold', email:'tasha.arnold@alpha.school'},
+  {name:'Julianne Braime', email:'julianne.braime@alpha.school'},
+];
+// Head-guide name → email (used to BCC the selected week's head guide).
+const GUIDE_EMAILS={
+  'jenna klemm':'jenna.klemm@alpha.school','jesse moskowitz':'jesse.moskowitz@alpha.school',
+  'sam mcdonald':'samuel.mcdonald@alpha.school','samuel mcdonald':'samuel.mcdonald@alpha.school',
+  'darby knox':'darby.knox@alpha.school','varenya hariharan':'varenya.hariharan@alpha.school',
+  'parthvi harde':'parthvi.harde@alpha.school','celine bernhardt-lanier':'celine.bernhardt-lanier@alpha.school',
+};
+async function emMailingList(){
   const wk=emWeek();
   const levels=[...document.querySelectorAll('#em-maillevels .fbtn.active')].map(b=>b.dataset.lvl);
   let studs=studentsForWeek(wk);
   if(levels.length) studs=studs.filter(s=>levels.includes(levelOf(s.grade)));
   const lvl=levels.join('-');   // for the CSV filename
   const scope=`Week ${wk}${levels.length?` · ${levels.join(' + ')}`:''}`;
-  const seen=new Map();  // lower-email -> {email, name, students:Set}
-  const add=(email,name,student)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase();
-    let o=seen.get(k); if(!o){ o={email:e, name:(name||'').trim(), students:new Set()}; seen.set(k,o); }
+  const seen=new Map();  // lower-email -> {email, name, students:Set, staff:bool}
+  const add=(email,name,student,staff)=>{ const e=(email||'').trim(); if(!e||!/@/.test(e)) return; const k=e.toLowerCase();
+    let o=seen.get(k); if(!o){ o={email:e, name:(name||'').trim(), students:new Set(), staff:!!staff}; seen.set(k,o); }
     if(!o.name && name) o.name=name.trim(); if(student) o.students.add(student); };
   // Parse an "extra emails" field — accepts "Name <email>" or bare emails, any separator.
   const parseExtra=raw=>String(raw||'').split(/[,;\n]+/).map(t=>t.trim()).filter(Boolean).map(t=>{
@@ -3750,13 +3768,29 @@ function emMailingList(){
   studs.forEach(s=>{ const e=EMERGENCY[s.id]; if(!e) return; const sn=`${s.first||''} ${s.last||''}`.trim();
     add(e.guardian_email, e.guardian, sn); add(e.secondary_email, e.secondary_parent, sn);
     parseExtra(e.extra_emails).forEach(x=>add(x.email, x.name, sn)); });
-  const list=[...seen.values()].map(o=>({email:o.email, name:o.name, students:[...o.students].sort().join('; ')})).sort((a,b)=>a.email.localeCompare(b.email));
-  if(!list.length){ alert(`No parent emails found for ${scope}${lvl?' — no students at that level this week.':' yet.'}`); return; }
-  const emails=list.map(x=>x.email).join(', ');
-  const finish=()=>{ csvDownload(`parent-mailing-list-w${wk}${lvl?`-${lvl}`:''}.csv`, [["Email","Parent name","Student(s)"], ...list.map(x=>[x.email,x.name,x.students])]); };
+  if(!seen.size){ alert(`No parent emails found for ${scope}${lvl?' — no students at that level this week.':' yet.'}`); return; }
+  const parentCount=seen.size;
+  // Standing staff BCC + this week's head guide (BCC)
+  MAILING_STAFF_BCC.forEach(x=>add(x.email, x.name, '', true));
+  try{
+    if(SUPA && !FAM_WEEKS.length && typeof dbGetFamilyWeeks==='function') FAM_WEEKS=await dbGetFamilyWeeks();
+    const fw=(FAM_WEEKS||[]).find(w=>String(w.week)===String(wk));
+    const hg=((fw&&fw.head_guide)||'').trim();
+    const hgEmail=hg?GUIDE_EMAILS[foldName(hg)]:'';
+    if(hgEmail) add(hgEmail, hg+' — Head Guide', '', true);
+  }catch(e){ console.warn('head guide lookup failed', e); }
+  const staffCount=seen.size-parentCount;
+  // Parents first (for To/BCC), then staff BCC
+  const list=[...seen.values()].map(o=>({email:o.email, name:o.name, role:o.staff?'Staff (BCC)':(([...o.students].sort().join('; '))||'Parent'), staff:o.staff}))
+    .sort((a,b)=> (a.staff-b.staff) || a.email.localeCompare(b.email));
+  const parentEmails=list.filter(x=>!x.staff).map(x=>x.email).join(', ');
+  const staffEmails=list.filter(x=>x.staff).map(x=>x.email).join(', ');
+  const clip=`Parents:\n${parentEmails}\n\nBCC staff:\n${staffEmails}`;
+  const note=`${scope}: ${parentCount} parent email${parentCount===1?'':'s'} + ${staffCount} staff (BCC)`;
+  const finish=()=>{ csvDownload(`parent-mailing-list-w${wk}${lvl?`-${lvl}`:''}.csv`, [["Email","Name","Role / student(s)"], ...list.map(x=>[x.email,x.name,x.role])]); };
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(emails).then(()=>{ alert(`${list.length} parent emails for ${scope} copied to clipboard. A CSV is also downloading.`); finish(); }).catch(()=>{ finish(); alert(`${list.length} parent emails for ${scope} — CSV downloaded (clipboard blocked).`); });
-  } else { finish(); alert(`${list.length} parent emails for ${scope} — CSV downloaded.`); }
+    navigator.clipboard.writeText(clip).then(()=>{ alert(`${note}.\nCopied to clipboard (parents + a BCC-staff block). A CSV is also downloading.`); finish(); }).catch(()=>{ finish(); alert(`${note} — CSV downloaded (clipboard blocked).`); });
+  } else { finish(); alert(`${note} — CSV downloaded.`); }
 }
 
 /* =================== SUPPLIES & PACKING (sectioned, per week) =================== */

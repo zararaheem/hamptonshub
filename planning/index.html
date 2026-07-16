@@ -26,6 +26,13 @@
   .stat.campers .n{color:var(--teal)}
   .stat.swag .n{color:var(--ok)}
   .stat.returning .n{color:var(--brass-b)}
+  .stat.hi{border-width:2px;box-shadow:0 0 0 1px rgba(200,146,74,.25)}
+  .stat.hi .l{color:var(--brass-b)}
+  .stat.hi.pending{border-color:var(--coral);box-shadow:0 0 0 1px rgba(224,115,107,.3)}
+  .stat.hi.pending .n{color:var(--coral)}
+  .stat.hi.done{border-color:var(--ok);box-shadow:0 0 0 1px rgba(87,184,148,.35)}
+  .stat.hi.done .n{color:var(--ok)}
+  .stat.hi .sub{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--muted);margin-top:6px}
   .sec-title{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);margin:0 2px 12px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
   .size{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
@@ -49,13 +56,15 @@
   .wd-now{color:var(--ok);font-family:ui-monospace,Menlo,monospace;font-size:11px}
   .wq{font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:6px 11px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
   .wq:hover{border-color:var(--teal);color:var(--teal)}
+  .wq.on{border-color:var(--teal);background:rgba(95,179,169,.16);color:var(--teal);font-weight:700}
   .ribbon{margin:14px 0 4px;background:linear-gradient(135deg,rgba(95,179,169,.14),rgba(95,179,169,.05));border:1px solid rgba(95,179,169,.4);border-radius:14px;padding:14px 16px}
   .ribbon .rh{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin-bottom:10px}
   .ribbon .chips{display:flex;flex-wrap:wrap;gap:9px}
-  .ahead-chip{display:flex;flex-direction:column;gap:2px;background:rgba(95,179,169,.1);border:1px solid rgba(95,179,169,.35);border-radius:11px;padding:8px 12px;min-width:96px}
-  .ahead-chip .wn{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--teal);letter-spacing:.04em}
-  .ahead-chip .cc{font-size:19px;font-weight:700;color:var(--ink)}
-  .ahead-chip .th{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+  .ahead-chip{display:flex;flex-direction:column;gap:3px;background:rgba(95,179,169,.1);border:1px solid rgba(95,179,169,.35);border-radius:13px;padding:13px 16px;min-width:150px}
+  .ahead-chip .wn{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--teal);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+  .ahead-chip .cc{font-size:28px;font-weight:700;color:var(--ink);line-height:1.05}
+  .ahead-chip .th2{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted)}
+  .ahead-chip .th2 b{color:var(--brass-b);font-weight:700}
   .ahead-chip.next{border-color:var(--teal);background:rgba(95,179,169,.2)}
   .loginbar{margin:18px 0 2px}
   .loginbar a{display:inline-block;background:var(--panel);border:1px solid var(--brass);color:var(--brass-b);border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;text-decoration:none}
@@ -89,10 +98,10 @@
     <div id="weekdetail" class="weekdetail"></div>
 
     <div class="stats">
-      <div class="stat shirts"><div class="n" id="s-shirts">—</div><div class="l">Shirts to order</div></div>
-      <div class="stat campers"><div class="n" id="s-campers">—</div><div class="l" id="s-campers-l">Campers</div></div>
+      <div class="stat campers"><div class="n" id="s-campers">—</div><div class="l" id="s-campers-l">Campers this week</div></div>
       <div class="stat returning"><div class="n" id="s-returning">—</div><div class="l">Returning campers</div></div>
-      <div class="stat swag"><div class="n" id="s-swag">—</div><div class="l">Swag bags out</div></div>
+      <div class="stat shirts hi" id="tile-shirts"><div class="n" id="s-shirts">—</div><div class="l">Shirts / merch to order</div></div>
+      <div class="stat swag"><div class="n" id="s-swag">—</div><div class="l">Given out</div></div>
     </div>
 
     <div class="sec-title">Shirt sizes</div>
@@ -153,6 +162,12 @@
     $('s-campers-l').textContent = ws.length===1 ? 'Campers this week' : 'Campers attending';
     $('s-returning').textContent=d.returning||0;
     $('s-swag').textContent=`${d.swagReceived||0}/${d.total||0}`;
+    // Merch tile: red until every new camper's bag is given out, green at full.
+    const tile=$('tile-shirts'), done=(d.total>0 && (d.swagReceived||0)>=d.total);
+    tile.classList.toggle('done', done);
+    tile.classList.toggle('pending', d.total>0 && !done);
+    let sub=tile.querySelector('.sub'); if(!sub){ sub=document.createElement('div'); sub.className='sub'; tile.appendChild(sub); }
+    sub.textContent = d.total>0 ? (done?`all ${d.total} given out ✓`:`${d.swagReceived||0}/${d.total} given out`) : '';
     if(!sizes.length){ $('sizes').innerHTML='<div class="empty">No shirt sizes recorded yet.</div>'; return; }
     $('sizes').innerHTML=`<div class="grid">`+
       sizes.map(x=>`<div class="size"><div class="c">${x.count}</div><div class="s">${esc(x.size)}</div></div>`).join('')+
@@ -181,9 +196,10 @@
     const up=WEEKLY.filter(x=>x.week>from && x.newCampers>0 && !SEL.has(x.week));
     if(!up.length){ box.hidden=true; return; }
     const w0=WEEKS.find(k=>k.n===up[0].week);
+    const show=up.slice(0,4);   // next 3–4 weeks
     box.hidden=false;
-    box.innerHTML=`<div class="rh">Looking ahead: Week ${up[0].week}${w0?` · ${esc(w0.theme)}`:''} — new campers needing merch</div>`+
-      `<div class="chips">`+up.map((x,i)=>{ const w=WEEKS.find(k=>k.n===x.week); return `<div class="ahead-chip ${i===0?'next':''}"><span class="wn">Week ${x.week}</span><span class="cc">${x.newCampers}</span><span class="th">${esc(w?w.theme:'')}</span></div>`; }).join('')+`</div>`;
+    box.innerHTML=`<div class="rh">Looking ahead: Week ${up[0].week}${w0?` · ${esc(w0.theme)}`:''} — campers coming up</div>`+
+      `<div class="chips">`+show.map((x,i)=>{ const w=WEEKS.find(k=>k.n===x.week); return `<div class="ahead-chip ${i===0?'next':''}"><span class="wn">Week ${x.week}${w?` · ${esc(w.theme)}`:''}</span><span class="cc">${x.attending}</span><span class="th2"><b>${x.newCampers}</b> new · <b>${x.returning}</b> returning</span></div>`; }).join('')+`</div>`;
   }
   function setNowline(){ const cw=currentWeekN(); const w=WEEKS.find(x=>x.n===cw); const ds=new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'}); $('nowline').textContent=`${ds} · Week ${cw}${w?` · ${w.theme}`:''}`; }
 
@@ -195,13 +211,15 @@
     if(!ws.length){ box.innerHTML=''; return; }
     box.innerHTML=ws.map(n=>{ const w=WEEKS.find(x=>x.n===n); const done=n<currentWeekN()?' · <span class="wd-done">handed out</span>':(n===currentWeekN()?' · <span class="wd-now">this week</span>':''); return `<span class="wd-item"><b>Week ${n}</b> — ${esc(w?w.theme:'')}${done}</span>`; }).join('');
   }
-  function refresh(){ renderChips(); renderDetail(); renderAhead(); load(); }
+  function syncButtons(){ $('q-this').classList.toggle('on', SEL.has(currentWeekN())); const nx=currentWeekN()+1; $('q-up').classList.toggle('on', SEL.has(nx)); }
+  function refresh(){ renderChips(); renderDetail(); syncButtons(); renderAhead(); load(); }
+  function toggleWeek(n){ if(SEL.has(n)) SEL.delete(n); else SEL.add(n); refresh(); }
   SEL.add(currentWeekN());
-  $('weekchips').addEventListener('click',e=>{ const c=e.target.closest('.wchip'); if(!c) return; const n=Number(c.dataset.w); if(SEL.has(n)) SEL.delete(n); else SEL.add(n); refresh(); });
-  $('q-this').addEventListener('click',()=>{ SEL.clear(); SEL.add(currentWeekN()); refresh(); });
-  $('q-up').addEventListener('click',()=>{ SEL.clear(); const nx=currentWeekN()+1; SEL.add(WEEKS.some(w=>w.n===nx)?nx:currentWeekN()); refresh(); });
+  $('weekchips').addEventListener('click',e=>{ const c=e.target.closest('.wchip'); if(!c) return; toggleWeek(Number(c.dataset.w)); });
+  $('q-this').addEventListener('click',()=>toggleWeek(currentWeekN()));
+  $('q-up').addEventListener('click',()=>{ const nx=currentWeekN()+1; toggleWeek(WEEKS.some(w=>w.n===nx)?nx:currentWeekN()); });
   $('copy').addEventListener('click',copyOrder);
-  renderChips(); renderDetail();
+  renderChips(); renderDetail(); syncButtons();
   setNowline();
   tick(); setInterval(tick,1000);
   load(); loadAhead(); setInterval(()=>{ load(); loadAhead(); },120000);

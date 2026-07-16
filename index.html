@@ -646,6 +646,21 @@
   .swag-earlier{opacity:.6;font-family:var(--mono);font-size:10px;white-space:nowrap}
   .swag-done{color:var(--ok)} .swag-prior{color:var(--muted)}
   .plan-note{min-width:150px;font-size:12px;padding:5px 8px}
+  /* inventory */
+  #inv-table .inv-in{width:100%;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);border-radius:6px;padding:6px 8px;font-size:12.5px;font-family:inherit}
+  #inv-table .inv-in:focus{outline:1px solid var(--brass);border-color:var(--brass)}
+  #inv-table .inv-item{min-width:150px;font-weight:600}
+  #inv-table .inv-num{min-width:54px;text-align:center}
+  #inv-table .inv-date{min-width:132px}
+  #inv-table .inv-notes{min-width:180px}
+  #inv-table .inv-status{min-width:112px;cursor:pointer}
+  .inv-del{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px}
+  .inv-del:hover{border-color:var(--coral);color:var(--coral)}
+  .inv-row td:first-child{border-left:3px solid transparent}
+  .inv-ok td:first-child{border-left-color:var(--ok)}
+  .inv-bad td:first-child{border-left-color:var(--coral)}
+  .inv-info td:first-child{border-left-color:var(--teal-bright,var(--teal))}
+  .inv-pending td:first-child{border-left-color:var(--brass-bright)}
   .health-toggle{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
     padding:8px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:auto}
   .health-toggle:hover{border-color:var(--teal);color:var(--oyster)}
@@ -778,6 +793,7 @@
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
       <button class="nav-item cat-ops" data-tab="events">Events Team</button>
       <button class="nav-item cat-ops" data-tab="planning">Event Planning</button>
+      <button class="nav-item cat-ops" data-tab="inventory">Inventory</button>
       <div class="nav-label">Guides</div>
       <a class="nav-item cat-curriculum" href="https://alpha-guide-platform.vercel.app/auth/guide/eyJsaW5rX2lkIjoiZDJjYjk4MzUtMWI3OS00MmQ4LWIzNzgtYzdlYzkwNGViMzBjIiwiY2FtcHVzX2lkIjoiY2QyOWU1MDQtNmU2MS00YmU2LWE2MTAtYjFkMGU2NmYzZGJlIiwic2Vzc2lvbl9pZCI6ImI5Mzc0NTk3LTE5MGMtNDc3NS1hYjYwLWRhMDBlMTNhOGZiMiIsImV4cCI6MTc4MzMxNzYwMCwiaWF0IjoxNzgyNzAzNDg0fQ.BRltgXsE0oP4sZ5isqFh3cwUk-eA7NiAvlFdgIVq1GA" target="_blank" rel="noopener">Accountability Hub<span class="ext">↗</span></a>
       <button class="nav-item cat-curriculum" data-tab="guide">Guide Hub<span class="ext">live ↗</span></button>
@@ -1188,6 +1204,27 @@
       </div>
       <div id="plan-shirtsum" style="margin-bottom:12px"></div>
       <div class="tablewrap"><table id="plan-table"></table></div>
+    </section>
+
+    <!-- ===== INVENTORY ===== -->
+    <section class="view" id="view-inventory" hidden>
+      <div class="eyebrow">Events · Inventory</div>
+      <h1 class="page-title">Inventory</h1>
+      <p class="page-lead">A shared log of merch &amp; supplies so everyone can see what's <b>ordered</b>, what's <b>arrived</b>, and what's <b>running late or short</b>. Anyone signed in can add and update items — changes are live for the whole team. A read-only view (no login) lives on the <a href="/planning/" target="_blank" rel="noopener" style="color:var(--brass-bright)">public merch page ↗</a>.</p>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 12px">
+        <div class="seg-filter" id="inv-filter">
+          <button class="fbtn active" data-if="all">All</button>
+          <button class="fbtn" data-if="open">Still needed</button>
+          <button class="fbtn" data-if="late">Late / short</button>
+          <button class="fbtn" data-if="done">Delivered</button>
+        </div>
+        <input class="cell-input" id="inv-search" placeholder="Search item / vendor…" style="max-width:220px">
+        <button class="btn" id="inv-add" style="margin-left:auto">+ Add item</button>
+        <button class="btn ghost" id="inv-export">Export CSV</button>
+      </div>
+      <div class="att-stats" id="inv-stats" style="margin-bottom:12px"></div>
+      <div class="tablewrap"><table id="inv-table"></table></div>
     </section>
 
     <!-- ===== EVENTS TEAM ===== -->
@@ -3667,6 +3704,101 @@ function planningInit(){
   renderPlanning();
 }
 
+/* =================== INVENTORY (shared merch & supplies log) =================== */
+let INVENTORY=[];
+let INV_FILTER='all';
+const INV_STATUSES=[
+  {v:'to_order',   l:'To order',   c:'pending'},
+  {v:'ordered',    l:'Ordered',    c:'info'},
+  {v:'in_transit', l:'In transit', c:'info'},
+  {v:'delivered',  l:'Delivered',  c:'ok'},
+  {v:'delayed',    l:'Delayed',    c:'bad'},
+  {v:'short',      l:'Short',      c:'bad'},
+];
+function invStatusMeta(v){ return INV_STATUSES.find(s=>s.v===v)||INV_STATUSES[0]; }
+async function invLoad(){
+  if(SUPA){ const { data, error } = await SB.from('inventory').select('*').order('sort_order').order('created_at');
+    if(!error && data) INVENTORY=data; }
+  else { try{ INVENTORY=JSON.parse(localStorage.getItem('inventory')||'[]'); }catch(e){ INVENTORY=[]; } }
+}
+function invPersistLocal(){ try{ localStorage.setItem('inventory', JSON.stringify(INVENTORY)); }catch(e){} }
+async function invAdd(){
+  const rec={ item:'', category:'', status:'to_order', qty_needed:null, qty_ordered:null, qty_received:null, vendor:'', eta:null, notes:'', sort_order:(INVENTORY.length?Math.max(...INVENTORY.map(x=>x.sort_order||0))+1:0) };
+  if(SUPA){ const { data, error } = await SB.from('inventory').insert(rec).select().single(); if(error){ alert('Could not add item: '+error.message); return; } INVENTORY.push(data); }
+  else { rec.id='inv_'+Date.now(); INVENTORY.push(rec); invPersistLocal(); }
+  renderInventory();
+  const tb=document.getElementById('inv-table'); const inp=tb&&tb.querySelector('tr:last-child .inv-item'); if(inp) inp.focus();
+}
+async function invPatch(id, field, val){
+  const row=INVENTORY.find(x=>x.id===id); if(!row) return;
+  row[field]=val;
+  if(SUPA){ const { error } = await SB.from('inventory').update({[field]:val, updated_at:new Date().toISOString()}).eq('id', id); if(error) console.warn('inventory update failed:', error); }
+  else invPersistLocal();
+}
+async function invDelete(id){
+  const row=INVENTORY.find(x=>x.id===id);
+  if(!confirm(`Delete "${(row&&row.item)||'this item'}" from inventory?`)) return;
+  INVENTORY=INVENTORY.filter(x=>x.id!==id);
+  if(SUPA){ const { error } = await SB.from('inventory').delete().eq('id', id); if(error) console.warn('inventory delete failed:', error); }
+  else invPersistLocal();
+  renderInventory();
+}
+function invMatch(r){
+  if(INV_FILTER==='open') return r.status!=='delivered';
+  if(INV_FILTER==='late') return r.status==='delayed'||r.status==='short';
+  if(INV_FILTER==='done') return r.status==='delivered';
+  return true;
+}
+function renderInventory(){
+  const tbl=document.getElementById('inv-table'); if(!tbl) return;
+  const total=INVENTORY.length;
+  const open=INVENTORY.filter(r=>r.status!=='delivered').length;
+  const late=INVENTORY.filter(r=>r.status==='delayed'||r.status==='short').length;
+  const done=INVENTORY.filter(r=>r.status==='delivered').length;
+  const st=document.getElementById('inv-stats');
+  if(st) st.innerHTML=`<div class="ministat"><div class="n">${total}</div><div class="l">Items</div></div>
+    <div class="ministat l-late"><div class="n">${open}</div><div class="l">Still needed</div></div>
+    <div class="ministat a"><div class="n">${late}</div><div class="l">Late / short</div></div>
+    <div class="ministat present"><div class="n">${done}</div><div class="l">Delivered</div></div>`;
+  let rows=INVENTORY.filter(invMatch);
+  const q=((document.getElementById('inv-search')||{}).value||'').trim().toLowerCase();
+  if(q) rows=rows.filter(r=>((r.item||'')+' '+(r.category||'')+' '+(r.vendor||'')).toLowerCase().includes(q));
+  const statusSel=v=>`<select class="inv-in inv-status" data-field="status">`+INV_STATUSES.map(s=>`<option value="${s.v}" ${s.v===v?'selected':''}>${s.l}</option>`).join('')+`</select>`;
+  const head=`<thead><tr><th>Item</th><th>Category</th><th>Need</th><th>Ord.</th><th>Rec.</th><th>Status</th><th>Vendor</th><th>ETA</th><th>Notes</th><th></th></tr></thead>`;
+  const body=rows.length?rows.map(r=>{ const m=invStatusMeta(r.status);
+    return `<tr data-id="${esc(r.id)}" class="inv-row inv-${m.c}">
+      <td><input class="inv-in inv-item" data-field="item" value="${esc(r.item||'')}" placeholder="e.g. Youth M shirts"></td>
+      <td><input class="inv-in" data-field="category" value="${esc(r.category||'')}" placeholder="Shirts / Swag…" style="min-width:110px"></td>
+      <td><input class="inv-in inv-num" type="number" data-field="qty_needed" value="${r.qty_needed??''}"></td>
+      <td><input class="inv-in inv-num" type="number" data-field="qty_ordered" value="${r.qty_ordered??''}"></td>
+      <td><input class="inv-in inv-num" type="number" data-field="qty_received" value="${r.qty_received??''}"></td>
+      <td>${statusSel(r.status)}</td>
+      <td><input class="inv-in" data-field="vendor" value="${esc(r.vendor||'')}" placeholder="Vendor" style="min-width:110px"></td>
+      <td><input class="inv-in inv-date" type="date" data-field="eta" value="${esc(r.eta||'')}"></td>
+      <td><input class="inv-in inv-notes" data-field="notes" value="${esc(r.notes||'')}" placeholder="e.g. back-ordered, arriving Fri"></td>
+      <td><button class="inv-del" title="Delete item">✕</button></td>
+    </tr>`; }).join('') : `<tr><td colspan="10" class="note-row">${total?'No items match this filter.':'No inventory logged yet — tap “+ Add item”.'}</td></tr>`;
+  tbl.innerHTML=head+`<tbody>${body}</tbody>`;
+}
+function invExport(){
+  const cl=v=>invStatusMeta(v).l;
+  const rows=[["Item","Category","Needed","Ordered","Received","Status","Vendor","ETA","Notes"]];
+  INVENTORY.forEach(r=>rows.push([r.item||'',r.category||'',r.qty_needed??'',r.qty_ordered??'',r.qty_received??'',cl(r.status),r.vendor||'',r.eta||'',r.notes||'']));
+  csvDownload('inventory.csv', rows);
+}
+function invInit(){
+  const tbl=document.getElementById('inv-table'); if(!tbl) return;
+  const add=document.getElementById('inv-add'); if(add) add.addEventListener('click',invAdd);
+  const x=document.getElementById('inv-export'); if(x) x.addEventListener('click',invExport);
+  const s=document.getElementById('inv-search'); if(s) s.addEventListener('input',renderInventory);
+  const f=document.getElementById('inv-filter'); if(f) f.addEventListener('click',e=>{ const b=e.target.closest('.fbtn'); if(!b) return; f.querySelectorAll('.fbtn').forEach(y=>y.classList.remove('active')); b.classList.add('active'); INV_FILTER=b.dataset.if; renderInventory(); });
+  tbl.addEventListener('change',e=>{ const el=e.target.closest('.inv-in'); if(!el) return; const tr=el.closest('tr'); if(!tr) return; const id=tr.dataset.id; const field=el.dataset.field;
+    let val = el.type==='number' ? (el.value===''?null:Number(el.value)) : (el.value===''&&(field==='eta')?null:el.value);
+    invPatch(id, field, val); if(field==='status') renderInventory(); });
+  tbl.addEventListener('click',e=>{ const d=e.target.closest('.inv-del'); if(!d) return; const tr=d.closest('tr'); if(tr) invDelete(tr.dataset.id); });
+  renderInventory();
+}
+
 /* =================== STUDENT ROSTER TAB =================== */
 function rosWeek(){ return document.getElementById('ros-week').value; }
 let ROS_FILTER='all';
@@ -4557,7 +4689,7 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','events','guide','resources','slack','famguide','access'];
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','access'];
 const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
@@ -4574,6 +4706,7 @@ function showTab(t){
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();
   if(t==='medical' && typeof renderMedical==='function'){ if(SUPA) hydrateRoster().then(renderMedical); else renderMedical(); }
   if(t==='planning' && typeof renderPlanning==='function'){ if(SUPA) hydrateRoster().then(renderPlanning); else renderPlanning(); }
+  if(t==='inventory' && typeof renderInventory==='function'){ if(SUPA) invLoad().then(renderInventory); else renderInventory(); }
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
@@ -5171,7 +5304,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); planningInit(); visitorsInit(); emInit(); scoreInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); planningInit(); invInit(); visitorsInit(); emInit(); scoreInit(); authInit();
 // Tribe scoreboard (Alpha Survivor) only applied to Week 1 — hide it from the nav afterwards.
 if(NOW!==0){ ['nav-games-label','nav-scoreboard'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; }); }
 loadContent().then(()=>{

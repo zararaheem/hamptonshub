@@ -67,7 +67,20 @@
   .ahead-chip .th2 b{color:var(--brass-b);font-weight:700}
   .ahead-chip.next{border-color:var(--teal);background:rgba(95,179,169,.2)}
   @media (max-width:520px){ .ribbon .chips{grid-template-columns:repeat(2,1fr)} }
-  .loginbar{margin:18px 0 2px}
+  #invpub{margin-top:20px}
+  .invrow{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px}
+  .invrow .it{font-weight:600}
+  .invrow .meta{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted);margin-top:3px}
+  .invrow.s-delivered{border-left-color:var(--ok)}
+  .invrow.s-delayed,.invrow.s-short{border-left-color:var(--coral)}
+  .invrow.s-ordered,.invrow.s-in_transit{border-left-color:var(--teal)}
+  .invrow.s-to_order{border-left-color:var(--brass)}
+  .invbadge{font-family:ui-monospace,Menlo,monospace;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid;white-space:nowrap}
+  .invbadge.delivered{color:var(--ok);border-color:var(--ok);background:rgba(87,184,148,.12)}
+  .invbadge.delayed,.invbadge.short{color:var(--coral);border-color:var(--coral);background:rgba(224,115,107,.12)}
+  .invbadge.ordered,.invbadge.in_transit{color:var(--teal);border-color:var(--teal);background:rgba(95,179,169,.12)}
+  .invbadge.to_order{color:var(--brass-b);border-color:var(--brass);background:rgba(200,146,74,.12)}
+  .loginbar{margin:18px 0 2px;display:flex;flex-wrap:wrap;gap:10px}
   .loginbar a{display:inline-block;background:var(--panel);border:1px solid var(--brass);color:var(--brass-b);border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;text-decoration:none}
   .loginbar a:hover{background:rgba(200,146,74,.12)}
   .empty{background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted)}
@@ -116,8 +129,14 @@
 
     <div id="ahead" class="ribbon" hidden></div>
 
+    <div id="invpub" hidden>
+      <div class="sec-title">Inventory status</div>
+      <div id="invpub-list"></div>
+    </div>
+
     <div class="loginbar">
       <a href="/#planning" target="_blank" rel="noopener" id="loginlink">Log in to mark swag bags given out →</a>
+      <a href="/#inventory" target="_blank" rel="noopener" id="invlink">Log in to update inventory →</a>
     </div>
 
     <div class="foot">Counts only — no student names or details. Sizes come in with the roster.<br>Auto-refreshes every 2 minutes.</div>
@@ -205,6 +224,20 @@
   }
   function setNowline(){ const cw=currentWeekN(); const w=WEEKS.find(x=>x.n===cw); const ds=new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'}); $('nowline').textContent=`${ds} · Week ${cw}${w?` · ${w.theme}`:''}`; }
 
+  const INVLABEL={to_order:'To order',ordered:'Ordered',in_transit:'In transit',delivered:'Delivered',delayed:'Delayed',short:'Short'};
+  async function loadInventory(){
+    let d=null; try{ const r=await sb.rpc('inventory_public'); d=r&&r.data; }catch(e){}
+    const box=$('invpub'), list=$('invpub-list');
+    if(!d||!d.ok||!d.items||!d.items.length){ box.hidden=true; return; }
+    box.hidden=false;
+    list.innerHTML=d.items.map(it=>{
+      const st=it.status||'to_order', lb=INVLABEL[st]||st;
+      const qty=(it.qtyReceived!=null||it.qtyOrdered!=null)?`${it.qtyReceived!=null?it.qtyReceived:0} of ${it.qtyOrdered!=null?it.qtyOrdered:(it.qtyNeeded!=null?it.qtyNeeded:'?')} received`:'';
+      const bits=[qty, it.vendor||'', it.eta?`ETA ${it.eta}`:'', it.notes||''].filter(Boolean).map(esc).join(' · ');
+      return `<div class="invrow s-${esc(st)}"><div><div class="it">${esc(it.item||'—')}${it.category?` <span class="meta" style="display:inline">· ${esc(it.category)}</span>`:''}</div>${bits?`<div class="meta">${bits}</div>`:''}</div><div><span class="invbadge ${esc(st)}">${esc(lb)}</span></div></div>`;
+    }).join('');
+  }
+
   // clickable multi-week selector — default to the current week
   function timeClass(n){ const c=currentWeekN(); return n<c?'t-past':(n===c?'t-cur':'t-future'); }
   function renderChips(){ $('weekchips').innerHTML=WEEKS.map(w=>`<span class="wchip ${timeClass(w.n)} ${SEL.has(w.n)?'on':''}" data-w="${w.n}" title="${esc(w.theme)}">Wk ${w.n}</span>`).join(''); }
@@ -228,7 +261,7 @@
   renderChips(); renderDetail(); syncButtons();
   setNowline();
   tick(); setInterval(tick,1000);
-  load(); loadAhead(); setInterval(()=>{ load(); loadAhead(); },120000);
+  load(); loadAhead(); loadInventory(); setInterval(()=>{ load(); loadAhead(); loadInventory(); },120000);
 </script>
 </body>
 </html>

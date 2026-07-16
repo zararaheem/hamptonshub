@@ -1163,7 +1163,8 @@
       <p class="page-lead">A limited planning roster for the events team — first name + last initial, level, shirt size and media consent (no contact details). Built for <b>ordering merch</b>, planning photos, and spotting <b>returning campers</b> (kids enrolled more than one week).</p>
 
       <div class="callout" style="margin:0 0 14px">
-        <b>Ordering merch?</b> Pick a <b>week</b> below for that week's shirts, or <b>“All weeks · unique”</b> for the whole-season order (each camper counted once). The <b>shirt-size breakdown</b> is right underneath — tap <b>Copy order</b> to drop the sizes straight into an email or the vendor form. As kids hand out bags, check <b>Swag bag</b> so nobody's missed or doubled up.
+        <b>Ordering merch?</b> Pick a <b>week</b> below for that week's shirts, or <b>“All weeks · unique”</b> for the whole-season order (each camper counted once). The <b>shirt-size breakdown</b> is right underneath — tap <b>Copy order</b> to drop the sizes straight into an email or the vendor form. As kids hand out bags, check <b>Swag bag</b> so nobody's missed or doubled up.<br>
+        <span style="color:var(--muted)">No-login link to share with the merch/events team (shirt totals only, no names): <a href="/planning/" target="_blank" rel="noopener" style="color:var(--brass-bright)">the public merch page ↗</a>.</span>
       </div>
 
       <div class="att-bar">
@@ -2382,6 +2383,14 @@ function weekStaff(idx){
   rows.forEach(r=>{ if(/^(lead guide|guide\s*\d)/i.test(r.role)){ const v=String(r.cells[idx]||'').trim(); if(v && v.toUpperCase()!=='TBD') guides.push(v); }});
   return { coord, guides };
 }
+// Unique people assigned across ALL roster roles for a week (coordinator, guides,
+// nurse, workshops, content…), splitting "A AND B"/"A & B"/"A, B" and dropping TBD/blanks.
+function staffCountForWeek(idx){
+  const rows = (typeof CONTENT!=='undefined' && CONTENT.roster) ? CONTENT.roster : ROSTER;
+  const set=new Set();
+  rows.forEach(r=>{ String(r.cells[idx]||'').split(/\s+and\s+|[&,]/i).forEach(nm=>{ const n=nm.trim(); if(n && !/^(tbd|—|–|-)$/i.test(n)) set.add(n.toLowerCase()); }); });
+  return set.size;
+}
 function weekStaffLine(idx){
   const {coord, guides} = weekStaff(idx);
   const bits=[];
@@ -2421,8 +2430,10 @@ function renderWeekSummary(){
   let p=0,l=0,a=0; studs.forEach(s=>{ const v=(typeof attStat==='function')?attStat(att[s.id]):att[s.id]; if(v==='p')p++; else if(v==='l')l++; else if(v==='a')a++; });
   const unmarked=enrolled-p-l-a;
   const hd=document.getElementById('week-summary-head'); if(hd) hd.textContent=`This week at a glance — Week ${wk} · ${w.theme} · ${w.range}`;
+  const staff=staffCountForWeek(NOW);
   el.innerHTML=`
     <div class="ministat"><div class="n">${enrolled}</div><div class="l">Enrolled</div></div>
+    <div class="ministat"><div class="n">${staff}</div><div class="l">Staff this week</div></div>
     <div class="ministat p"><div class="n">${p}</div><div class="l">Present${inWeek?' today':''}</div></div>
     <div class="ministat l-late"><div class="n">${l}</div><div class="l">Late</div></div>
     <div class="ministat a"><div class="n">${a}</div><div class="l">Absent</div></div>
@@ -3516,6 +3527,8 @@ function planWeeksLabel(weeks){ // e.g. [1,2,3,5] -> "1–3, 5"
   return out.join(', ');
 }
 function planConsentBadge(v){ return v==='yes'?'<span class="pill-ok">Yes</span>':v==='no'?'<span class="pill-no">No</span>':'<span class="pill-pending">Pending</span>'; }
+// A dash placeholder means no size on file — treat it as missing.
+function cleanShirt(v){ const s=String(v==null?'':v).trim(); return (s==='—'||s==='-'||s==='–')?'':s; }
 function renderPlanning(){
   const tbl=document.getElementById('plan-table'); if(!tbl) return;
   const wk=planWeek();
@@ -3552,7 +3565,7 @@ function renderPlanning(){
   if(PLAN_FILTER==='returning') studs=studs.filter(isReturning);
   else if(PLAN_FILTER==='consent') studs=studs.filter(s=>s.media_consent==='yes');
   else if(PLAN_FILTER==='noconsent') studs=studs.filter(s=>s.media_consent==='no');
-  else if(PLAN_FILTER==='noshirt') studs=studs.filter(s=>bagWeek(s) && !((s.shirt_size||'').trim()));
+  else if(PLAN_FILTER==='noshirt') studs=studs.filter(s=>bagWeek(s) && !cleanShirt(s.shirt_size));
   else if(PLAN_FILTER==='noswag') studs=studs.filter(s=>bagWeek(s) && !s.swag_received);
   const q=((document.getElementById('plan-search')||{}).value||'').trim().toLowerCase();
   if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(q));
@@ -3566,7 +3579,7 @@ function renderPlanning(){
     <td class="role-cell">${i+1}</td>
     <td style="white-space:nowrap">${esc(studentLabel(s))}${ret?' <span class="pill-ret">Returning</span>':''}</td>
     <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
-    <td>${esc(s.shirt_size||'')||'<span class="blank">—</span>'}</td>
+    <td>${esc(cleanShirt(s.shirt_size))||'<span class="blank">—</span>'}</td>
     <td>${planConsentBadge(s.media_consent)}</td>
     <td style="white-space:nowrap">${wks.length?'Wk '+esc(planWeeksLabel(wks)):'<span class="blank">—</span>'}</td>
     ${swagCell}
@@ -3579,7 +3592,7 @@ let PLAN_SHIRT_ORDER='';
 function renderPlanShirts(roster){
   const box=document.getElementById('plan-shirtsum'); if(!box) return;
   const counts={}; let unknown=0;
-  roster.forEach(s=>{ const sz=(s.shirt_size||'').trim(); if(!sz){ unknown++; return; } counts[sz]=(counts[sz]||0)+1; });
+  roster.forEach(s=>{ const sz=cleanShirt(s.shirt_size); if(!sz){ unknown++; return; } counts[sz]=(counts[sz]||0)+1; });
   const order=['Youth XS','Youth S','Youth M','Youth L','Youth XL','Adult XS','Adult S','Adult M','Adult L','Adult XL','Adult XXL'];
   const keys=Object.keys(counts).sort((a,b)=>{ const ia=order.indexOf(a), ib=order.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b); });
   const sized=keys.reduce((n,k)=>n+counts[k],0);
@@ -3614,7 +3627,7 @@ function planExport(){
   else roster=studentsForWeek(wk);
   const cl=v=>v==='yes'?'Yes':v==='no'?'No':'Pending';
   const rows=[["Name","Level","Shirt size","Media consent","Weeks","Returning","Swag bag","Notes"]];
-  roster.forEach(s=>{ const wks=weeksOf(s); rows.push([studentLabel(s),levelOf(s.grade),s.shirt_size||'',cl(s.media_consent),planWeeksLabel(wks),wks.length>1?'Yes':'No',s.swag_received?`Received (Wk ${wks[0]})`:'Pending',s.swag_notes||'']); });
+  roster.forEach(s=>{ const wks=weeksOf(s); rows.push([studentLabel(s),levelOf(s.grade),cleanShirt(s.shirt_size),cl(s.media_consent),planWeeksLabel(wks),wks.length>1?'Yes':'No',s.swag_received?`Received (Wk ${wks[0]})`:'Pending',s.swag_notes||'']); });
   csvDownload(`event-planning-${wk==='all'?'all-weeks':'w'+wk}.csv`, rows);
 }
 // Bulk-mark every returning camper on the current roster as already having their swag bag.

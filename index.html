@@ -2126,16 +2126,34 @@ function planRegistration(children){
     const name=`${ch.first} ${ch.last}`.trim();
     childRows.push({name, weeks:ch.weeks.slice()});
     ch.weeks.forEach(w=>{
-      const pw=perWeek[w]=perWeek[w]||{toUpdate:[],toAdd:[],used:new Set(),added:new Set()};
+      const pw=perWeek[w]=perWeek[w]||{toUpdate:[],toAdd:[],used:new Set(),added:new Set(),toRemove:[]};
       const m=matchStudent({first:ch.first,last:ch.last}, (ROSTER_DATA[w]||[]), pw.used);
       if(m){ pw.used.add(m.id); pw.toUpdate.push({id:m.id, name:`${m.first} ${m.last}`.trim(), ch}); }
       else { const k=foldName(ch.first)+'|'+foldName(ch.last); if(pw.added.has(k)) return; pw.added.add(k); pw.toAdd.push({name, ch}); }
     });
   });
-  return {perWeek, childRows, children, skippedTest};
+  // Removal: this export is the authoritative roster. For every week it covers,
+  // anyone currently on that week's roster who isn't in the upload has dropped —
+  // delete that week-row. (Only weeks the upload references are touched, so a
+  // partial export can never wipe untouched weeks.)
+  const uploadedKeys=new Set(children.map(ch=>foldName(ch.first)+'|'+foldName(ch.last)));
+  const removedByChild={};
+  Object.keys(perWeek).map(Number).forEach(w=>{
+    const pw=perWeek[w];
+    (ROSTER_DATA[w]||[]).forEach(e=>{ if(pw.used.has(e.id)) return;
+      pw.toRemove.push({id:e.id, name:`${e.first||''} ${e.last||''}`.trim()||'(unnamed)', week:w});
+      const k=foldName(e.first)+'|'+foldName(e.last); (removedByChild[k]=removedByChild[k]||{name:`${e.first||''} ${e.last||''}`.trim()||'(unnamed)', weeks:[]}).weeks.push(w);
+    });
+  });
+  // "Fully removed" = a child no longer anywhere in the new upload (record deleted);
+  // the rest are still enrolled but dropped a week.
+  const fullyRemoved=Object.keys(removedByChild).filter(k=>!uploadedKeys.has(k)).map(k=>removedByChild[k]);
+  const weekDrops=Object.keys(removedByChild).filter(k=>uploadedKeys.has(k)).length;
+  const removedTotal=Object.values(perWeek).reduce((n,pw)=>n+pw.toRemove.length,0);
+  return {perWeek, childRows, children, skippedTest, fullyRemoved, weekDrops, removedTotal};
 }
 async function applyRegistration(plan){
-  let updated=0, added=0, contacts=0; const weeksTouched=new Set();
+  let updated=0, added=0, contacts=0, removed=0; const weeksTouched=new Set();
   const canContacts=SESSION&&(SESSION.owner||SESSION.contacts);
   const stuPatch=ch=>{ const p={}; if(ch.grade) p.grade=ch.grade; if(ch.allergies) p.allergies=ch.allergies; if(ch.notes) p.notes=ch.notes; if(ch.media_consent) p.media_consent=ch.media_consent; if(ch.shirt_size) p.shirt_size=ch.shirt_size; if(ch.birthday) p.birthday=ch.birthday; if(ch.bus_rider) p.bus_rider=true; if(ch.immunizations) p.immunizations=ch.immunizations; if(ch.consent_treat) p.consent_treat=ch.consent_treat; if(ch.doctor_name) p.doctor_name=ch.doctor_name; if(ch.doctor_phone) p.doctor_phone=ch.doctor_phone; if(ch.hospital) p.hospital=ch.hospital; if(ch.medical_conditions) p.medical_conditions=ch.medical_conditions; if(ch.registration_url) p.registration_url=ch.registration_url; if(ch.forms_status) p.forms_status=ch.forms_status; return p; };
   const writeContact=async(id,ch)=>{ if(!canContacts) return; const ep={}; Object.entries(ch.contact).forEach(([k,v])=>{ if((v||'')!=='') ep[k]=v; }); if(Object.keys(ep).length){ const e=await dbSetEmergency(id,ep); if(!e) contacts++; } };
@@ -2143,8 +2161,9 @@ async function applyRegistration(plan){
     const pw=plan.perWeek[w]; weeksTouched.add(w);
     for(const u of pw.toUpdate){ const p=stuPatch(u.ch); if(Object.keys(p).length){ const err=await dbUpdateStudent(u.id,p); if(err) return {err}; } await writeContact(u.id,u.ch); updated++; }
     for(const a of pw.toAdd){ const ch=a.ch; const err=await dbAddStudent(w, ch.first, ch.last, ch.grade||''); if(err) return {err}; const row=(ROSTER_DATA[w]||[]).slice(-1)[0]; if(row){ const p=stuPatch(ch); delete p.grade; if(Object.keys(p).length) await dbUpdateStudent(row.id,p); await writeContact(row.id,ch); } added++; }
+    for(const r of (pw.toRemove||[])){ const err=await dbDeleteStudent(r.id); if(err) return {err}; removed++; }
   }
-  return {updated, added, contacts, weeks:[...weeksTouched].sort((a,b)=>a-b)};
+  return {updated, added, contacts, removed, weeks:[...weeksTouched].sort((a,b)=>a-b)};
 }
 function showRegistrationReview(plan){
   const box=document.getElementById('ros-review'); if(!box) return;
@@ -2158,6 +2177,10 @@ function showRegistrationReview(plan){
   box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
     <h3 style="margin:0 0 6px">Review registration import <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by child first name)</span></h3>
     <p class="lc-desc" style="margin:0 0 10px">${plan.children.length} children → <b style="color:var(--teal-bright)">${totU} student records updated</b>, <b style="color:var(--brass-bright)">${totA} added</b> across ${weeks.length} week${weeks.length===1?'':'s'}.${canContacts?' Parent &amp; emergency contacts will be written to Family Contacts.':' <i>Contacts skipped — you don\'t have Family Contacts access.</i>'}${noWeek?` <span style="color:#d9534f">${noWeek} child(ren) had no week listed and will be skipped.</span>`:''}${plan.skippedTest&&plan.skippedTest.length?` <span style="color:var(--muted)">${plan.skippedTest.length} test entr${plan.skippedTest.length===1?'y':'ies'} skipped (${esc(plan.skippedTest.slice(0,5).join(', '))}${plan.skippedTest.length>5?'…':''}).</span>`:''}</p>
+    ${(plan.removedTotal||0)?`<div class="callout" style="border-color:#d9534f;background:rgba(217,83,79,.08);margin:0 0 12px">
+      <b style="color:#d9534f">${plan.fullyRemoved.length} student${plan.fullyRemoved.length===1?'':'s'} will be removed</b> — no longer on this roster, so their record will be <b>deleted</b>${plan.weekDrops?`; ${plan.weekDrops} more dropped a week`:''}.
+      ${plan.fullyRemoved.length?`<div style="margin-top:6px;font-size:13px;color:var(--muted)">${plan.fullyRemoved.slice(0,50).map(r=>esc(r.name)).join(', ')}${plan.fullyRemoved.length>50?'…':''}</div>`:''}
+    </div>`:''}
     <table style="border-collapse:collapse;margin:0 0 12px;font-size:13px">${weekRows}</table>
     <details style="margin:0 0 12px"><summary style="cursor:pointer;color:var(--muted)">Show children (${plan.childRows.length})</summary><div style="margin-top:8px;font-size:13px;line-height:1.7">${childList}${plan.childRows.length>80?'<br>…':''}</div></details>
     <button class="btn" id="ros-review-go">Confirm import</button>
@@ -2169,7 +2192,7 @@ function showRegistrationReview(plan){
     const res=await applyRegistration(plan);
     box.innerHTML='';
     if(res.err){ m.className='gate-msg err'; m.textContent=res.err.message||'Import failed.'; return; }
-    m.className='gate-msg ok'; m.textContent=`Imported ${plan.children.length} children — ${res.updated} updated, ${res.added} added across week${res.weeks.length===1?'':'s'} ${res.weeks.join(', ')}${res.contacts?`, ${res.contacts} contact records`:''} ✓`;
+    m.className='gate-msg ok'; m.textContent=`Imported ${plan.children.length} children — ${res.updated} updated, ${res.added} added${res.removed?`, ${res.removed} removed`:''} across week${res.weeks.length===1?'':'s'} ${res.weeks.join(', ')}${res.contacts?`, ${res.contacts} contact records`:''} ✓`;
     renderRosterTab(); if(typeof renderEmergency==='function') renderEmergency();
   });
 }

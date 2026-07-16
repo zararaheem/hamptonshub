@@ -34,6 +34,24 @@
   .copybar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:20px 0 6px}
   button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer}
   button:hover{border-color:var(--brass)}
+  .now{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--brass-b);margin-top:7px;letter-spacing:.02em}
+  .weekchips{display:flex;flex-wrap:wrap;gap:7px}
+  .wchip{font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;user-select:none}
+  .wchip.on{border-color:var(--brass);background:rgba(200,146,74,.18);color:var(--brass-b);font-weight:700}
+  .wchip:hover{border-color:var(--brass)}
+  .wq{font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:6px 11px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .wq:hover{border-color:var(--teal);color:var(--teal)}
+  .ribbon{margin:14px 0 4px;background:linear-gradient(135deg,rgba(95,179,169,.14),rgba(95,179,169,.05));border:1px solid rgba(95,179,169,.4);border-radius:14px;padding:14px 16px}
+  .ribbon .rh{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin-bottom:10px}
+  .ribbon .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .ahead-chip{display:flex;flex-direction:column;gap:2px;background:rgba(95,179,169,.1);border:1px solid rgba(95,179,169,.35);border-radius:11px;padding:8px 12px;min-width:96px}
+  .ahead-chip .wn{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--teal);letter-spacing:.04em}
+  .ahead-chip .cc{font-size:19px;font-weight:700;color:var(--ink)}
+  .ahead-chip .th{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+  .ahead-chip.next{border-color:var(--teal);background:rgba(95,179,169,.2)}
+  .loginbar{margin:18px 0 2px}
+  .loginbar a{display:inline-block;background:var(--panel);border:1px solid var(--brass);color:var(--brass-b);border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;text-decoration:none}
+  .loginbar a:hover{background:rgba(200,146,74,.12)}
   .empty{background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted)}
   .foot{margin-top:28px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
   .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle}
@@ -45,15 +63,21 @@
       <div>
         <div class="eyebrow">Events · Merch Planning</div>
         <h1>Alpha Summer — Shirt &amp; swag totals</h1>
+        <div class="now" id="nowline">—</div>
       </div>
       <div class="clock"><span class="dot"></span><span id="clock">—</span></div>
     </header>
     <p class="lead">Live shirt-size counts for ordering merch. Each camper is counted <b>once</b> — in their first week — so returning campers never double the order. Pick <b>All weeks</b> for the whole-season order, or a single week for that week's new campers. Counts only — no names or camper details.</p>
 
     <div class="bar">
-      <label for="week">Roster</label>
-      <select id="week"></select>
-      <span id="wklabel" class="clock"></span>
+      <label>Weeks</label>
+      <div id="weekchips" class="weekchips"></div>
+    </div>
+    <div class="bar" style="margin-top:-6px">
+      <button class="wq" id="q-this">This week</button>
+      <button class="wq" id="q-up">Upcoming</button>
+      <button class="wq" id="q-all">All weeks</button>
+      <span id="wklabel" class="clock" style="margin-left:auto"></span>
     </div>
 
     <div class="stats">
@@ -70,6 +94,12 @@
       <span id="copymsg" class="clock"></span>
     </div>
 
+    <div id="ahead" class="ribbon" hidden></div>
+
+    <div class="loginbar">
+      <a href="/#planning" target="_blank" rel="noopener" id="loginlink">Log in to mark swag bags given out →</a>
+    </div>
+
     <div class="foot">Counts only — no student names or details. Sizes come in with the roster.<br>Auto-refreshes every 2 minutes.</div>
   </div>
 
@@ -82,30 +112,36 @@
   const $=id=>document.getElementById(id);
 
   const WEEKS=[
-    {n:1,theme:"Survivor"},{n:2,theme:"Master Chef"},{n:3,theme:"Pottery & Forge"},
-    {n:4,theme:"Sky & Siege"},{n:5,theme:"Surf & Odyssey"},{n:6,theme:"Shadow & Screen"},
-    {n:7,theme:"Serhant Real Estate"},{n:8,theme:"Songwriting & Concert"},{n:9,theme:"Maker's Workshop"}
+    {n:1,theme:"Survivor",end:"2026-07-03"},{n:2,theme:"Master Chef",end:"2026-07-10"},{n:3,theme:"Pottery & Forge",end:"2026-07-17"},
+    {n:4,theme:"Sky & Siege",end:"2026-07-24"},{n:5,theme:"Surf & Odyssey",end:"2026-07-31"},{n:6,theme:"Shadow & Screen",end:"2026-08-07"},
+    {n:7,theme:"Serhant Real Estate",end:"2026-08-14"},{n:8,theme:"Songwriting & Concert",end:"2026-08-21"},{n:9,theme:"Maker's Workshop",end:"2026-08-28"}
   ];
+  function nyTodayISO(){ const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const g=t=>p.find(x=>x.type===t).value; return `${g('year')}-${g('month')}-${g('day')}`; }
+  function currentWeekN(){ const t=nyTodayISO(); const w=WEEKS.find(x=>t<=x.end); return w?w.n:WEEKS[WEEKS.length-1].n; }
   const ORDER=['Youth XS','Youth S','Youth M','Youth L','Youth XL','Adult XS','Adult S','Adult M','Adult L','Adult XL','Adult XXL'];
   const sizeRank=s=>{ const i=ORDER.indexOf(s); return i<0?99:i; };
 
   function tick(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit'}); }
 
   let LAST=null;
-  function label(){ const v=$('week').value; if(v==='all') return 'All weeks · each camper once'; const w=WEEKS.find(x=>String(x.n)===v); return w?`Week ${w.n} · ${w.theme} · new campers`:`Week ${v}`; }
+  const SEL=new Set();
+  const selWeeks=()=>Array.from(SEL).sort((a,b)=>a-b);
+  function rangeLabel(ws){ const w=ws.slice().sort((a,b)=>a-b); const out=[]; let i=0; while(i<w.length){ let j=i; while(j+1<w.length&&w[j+1]===w[j]+1)j++; out.push(i===j?`${w[i]}`:`${w[i]}–${w[j]}`); i=j+1; } return out.join(', '); }
+  function label(){ const ws=selWeeks(); if(!ws.length) return 'No weeks selected'; if(ws.length===1){ const w=WEEKS.find(x=>x.n===ws[0]); return `Week ${ws[0]}${w?` · ${w.theme}`:''} · new campers`; } return `Weeks ${rangeLabel(ws)} · new campers`; }
 
   async function load(){
-    const v=$('week').value;
+    const ws=selWeeks();
     $('wklabel').textContent=label();
+    if(!ws.length){ $('sizes').innerHTML='<div class="empty">Pick one or more weeks above.</div>'; ['s-shirts','s-campers','s-swag'].forEach(id=>$(id).textContent='—'); return; }
     let d=null;
-    try{ const r=await sb.rpc('planning_merch',{p_week: v==='all'?null:Number(v)}); d=r&&r.data; }catch(e){}
+    try{ const r=await sb.rpc('planning_merch_multi',{p_weeks: ws}); d=r&&r.data; }catch(e){}
     if(!d||!d.ok){ $('sizes').innerHTML='<div class="empty">Couldn’t load right now — refreshing shortly.</div>'; return; }
     LAST=d;
     const sizes=(d.sizes||[]).slice().sort((a,b)=>sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size));
     const shirts=sizes.reduce((n,x)=>n+x.count,0);
     $('s-shirts').textContent=shirts;
     $('s-campers').textContent=d.total||0;
-    $('s-campers-l').textContent = v==='all' ? 'Campers (season)' : 'New campers';
+    $('s-campers-l').textContent='Campers';
     $('s-swag').textContent=`${d.swagReceived||0}/${d.total||0}`;
     if(!sizes.length){ $('sizes').innerHTML='<div class="empty">No shirt sizes recorded yet.</div>'; return; }
     $('sizes').innerHTML=`<div class="grid">`+
@@ -126,13 +162,34 @@
     else alert(txt);
   }
 
-  // build week selector
-  $('week').innerHTML=`<option value="all">All weeks · whole-season order</option>`+WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${esc(w.theme)}</option>`).join('');
-  $('week').value='all';
-  $('week').addEventListener('change',load);
+  // Upcoming-week ribbon (new campers still to come)
+  let WEEKLY=null;
+  async function loadAhead(){ try{ const r=await sb.rpc('planning_weekly'); if(r&&r.data&&r.data.ok) WEEKLY=r.data.weeks||[]; }catch(e){} renderAhead(); }
+  function renderAhead(){
+    const box=$('ahead'); if(!WEEKLY){ box.hidden=true; return; }
+    const ws=selWeeks(); const from=ws.length?Math.max(...ws):0;
+    const up=WEEKLY.filter(x=>x.week>from && x.newCampers>0 && !SEL.has(x.week));
+    if(!up.length){ box.hidden=true; return; }
+    const w0=WEEKS.find(k=>k.n===up[0].week);
+    box.hidden=false;
+    box.innerHTML=`<div class="rh">Looking ahead: Week ${up[0].week}${w0?` · ${esc(w0.theme)}`:''} — new campers needing merch</div>`+
+      `<div class="chips">`+up.map((x,i)=>{ const w=WEEKS.find(k=>k.n===x.week); return `<div class="ahead-chip ${i===0?'next':''}"><span class="wn">Week ${x.week}</span><span class="cc">${x.newCampers}</span><span class="th">${esc(w?w.theme:'')}</span></div>`; }).join('')+`</div>`;
+  }
+  function setNowline(){ const cw=currentWeekN(); const w=WEEKS.find(x=>x.n===cw); const ds=new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'}); $('nowline').textContent=`${ds} · Week ${cw}${w?` · ${w.theme}`:''}`; }
+
+  // clickable multi-week selector — default to the current week
+  function renderChips(){ $('weekchips').innerHTML=WEEKS.map(w=>`<span class="wchip ${SEL.has(w.n)?'on':''}" data-w="${w.n}" title="${esc(w.theme)}">Wk ${w.n}</span>`).join(''); }
+  function refresh(){ renderChips(); renderAhead(); load(); }
+  SEL.add(currentWeekN());
+  $('weekchips').addEventListener('click',e=>{ const c=e.target.closest('.wchip'); if(!c) return; const n=Number(c.dataset.w); if(SEL.has(n)) SEL.delete(n); else SEL.add(n); refresh(); });
+  $('q-this').addEventListener('click',()=>{ SEL.clear(); SEL.add(currentWeekN()); refresh(); });
+  $('q-up').addEventListener('click',()=>{ SEL.clear(); WEEKS.forEach(w=>{ if(w.n>currentWeekN()) SEL.add(w.n); }); if(!SEL.size) SEL.add(currentWeekN()); refresh(); });
+  $('q-all').addEventListener('click',()=>{ SEL.clear(); WEEKS.forEach(w=>SEL.add(w.n)); refresh(); });
   $('copy').addEventListener('click',copyOrder);
+  renderChips();
+  setNowline();
   tick(); setInterval(tick,1000);
-  load(); setInterval(load,120000);
+  load(); loadAhead(); setInterval(()=>{ load(); loadAhead(); },120000);
 </script>
 </body>
 </html>

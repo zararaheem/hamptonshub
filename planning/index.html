@@ -93,7 +93,8 @@
     </div>
     <div class="bar" style="margin-top:-6px">
       <button class="wq" id="q-this">This week</button>
-      <button class="wq" id="q-up">Upcoming week</button>
+      <button class="wq" id="q-next">Next week</button>
+      <button class="wq" id="q-upall">All upcoming weeks</button>
       <span id="wklabel" class="clock" style="margin-left:auto"></span>
     </div>
     <div id="weekdetail" class="weekdetail"></div>
@@ -212,13 +213,17 @@
     if(!ws.length){ box.innerHTML=''; return; }
     box.innerHTML=ws.map(n=>{ const w=WEEKS.find(x=>x.n===n); const done=n<currentWeekN()?' · <span class="wd-done">handed out</span>':(n===currentWeekN()?' · <span class="wd-now">this week</span>':''); return `<span class="wd-item"><b>Week ${n}</b> — ${esc(w?w.theme:'')}${done}</span>`; }).join('');
   }
-  function syncButtons(){ $('q-this').classList.toggle('on', SEL.has(currentWeekN())); const nx=currentWeekN()+1; $('q-up').classList.toggle('on', SEL.has(nx)); }
+  const upcomingWeeks=()=>WEEKS.filter(w=>w.n>currentWeekN()).map(w=>w.n);
+  const sameSet=a=>{ const s=selWeeks(); return s.length===a.length && a.every(n=>SEL.has(n)); };
+  function syncButtons(){ const nx=currentWeekN()+1; $('q-this').classList.toggle('on', sameSet([currentWeekN()])); $('q-next').classList.toggle('on', sameSet([nx])); $('q-upall').classList.toggle('on', sameSet(upcomingWeeks())); }
   function refresh(){ renderChips(); renderDetail(); syncButtons(); renderAhead(); load(); }
   function toggleWeek(n){ if(SEL.has(n)) SEL.delete(n); else SEL.add(n); refresh(); }
+  function setSel(arr){ SEL.clear(); arr.forEach(n=>SEL.add(n)); refresh(); }
   SEL.add(currentWeekN());
   $('weekchips').addEventListener('click',e=>{ const c=e.target.closest('.wchip'); if(!c) return; toggleWeek(Number(c.dataset.w)); });
-  $('q-this').addEventListener('click',()=>toggleWeek(currentWeekN()));
-  $('q-up').addEventListener('click',()=>{ const nx=currentWeekN()+1; toggleWeek(WEEKS.some(w=>w.n===nx)?nx:currentWeekN()); });
+  $('q-this').addEventListener('click',()=>setSel([currentWeekN()]));
+  $('q-next').addEventListener('click',()=>{ const nx=currentWeekN()+1; setSel([WEEKS.some(w=>w.n===nx)?nx:currentWeekN()]); });
+  $('q-upall').addEventListener('click',()=>{ const up=upcomingWeeks(); setSel(up.length?up:[currentWeekN()]); });
   $('copy').addEventListener('click',copyOrder);
   renderChips(); renderDetail(); syncButtons();
   setNowline();

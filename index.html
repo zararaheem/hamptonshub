@@ -643,6 +643,9 @@
   .swag-check{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
   .swag-check input{width:16px;height:16px;accent-color:var(--ok);cursor:pointer}
   .swag-check input:checked+span{color:var(--ok)}
+  .swag-earlier{opacity:.6;font-family:var(--mono);font-size:10px;white-space:nowrap}
+  .swag-done{color:var(--ok)} .swag-prior{color:var(--muted)}
+  .plan-note{min-width:150px;font-size:12px;padding:5px 8px}
   .health-toggle{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
     padding:8px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:auto}
   .health-toggle:hover{border-color:var(--teal);color:var(--oyster)}
@@ -1705,7 +1708,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,tribe,withdrawn,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,swag_notes,tribe,withdrawn,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -1889,6 +1892,15 @@ async function dbSetSwagForChild(s, val){
   if(SUPA){
     const { error } = await SB.from('students').update({swag_received:val, updated_at:new Date().toISOString()}).eq('first', f).eq('last', l);
     if(error){ console.warn('swag update failed:', error); return error; }
+  } else { persistLocalRoster(); }
+  return null;
+}
+async function dbSetSwagNotesForChild(s, val){
+  const f=s.first, l=s.last;
+  for(const w in ROSTER_DATA){ ROSTER_DATA[w].forEach(x=>{ if(x.first===f && x.last===l) x.swag_notes=val; }); }
+  if(SUPA){
+    const { error } = await SB.from('students').update({swag_notes:val, updated_at:new Date().toISOString()}).eq('first', f).eq('last', l);
+    if(error){ console.warn('swag notes update failed:', error); return error; }
   } else { persistLocalRoster(); }
   return null;
 }
@@ -3515,32 +3527,41 @@ function renderPlanning(){
     Object.keys(ROSTER_DATA).map(Number).sort((a,b)=>a-b).forEach(w=>{ (ROSTER_DATA[w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); if(k!=='|' && !seen.has(k)){ seen.add(k); roster.push(s); } }); });
   } else { roster=studentsForWeek(wk).slice(); }
   const isReturning=s=>weeksOf(s).length>1;
-  // stats over the roster
+  // Each camper gets ONE shirt + ONE swag bag, counted in the FIRST week we see them.
+  const firstWk=s=>weeksOf(s)[0];
+  const bagWeek=s=> wk==='all' || firstWk(s)===Number(wk);   // is this the week the bag/shirt is counted?
+  // shirt + swag totals count each camper once — only in their first week
+  const orderRoster=roster.filter(bagWeek);
+  // stats
   const total=roster.length;
   const returning=roster.filter(isReturning).length;
   const consentYes=roster.filter(s=>s.media_consent==='yes').length;
   const noConsent=roster.filter(s=>s.media_consent==='no').length;
-  const swagDone=roster.filter(s=>s.swag_received).length;
+  const bagTotal=orderRoster.length;
+  const swagDone=orderRoster.filter(s=>s.swag_received).length;
   const st=document.getElementById('plan-stats');
   if(st) st.innerHTML=`<div class="ministat"><div class="n">${total}</div><div class="l">Students</div></div>
     <div class="ministat l-late"><div class="n">${returning}</div><div class="l">Returning</div></div>
     <div class="ministat p"><div class="n">${consentYes}</div><div class="l">Media consent</div></div>
     <div class="ministat a"><div class="n">${noConsent}</div><div class="l">No consent</div></div>
-    <div class="ministat present"><div class="n">${swagDone}/${total}</div><div class="l">Swag bags</div></div>`;
-  // shirt totals (for merch)
-  renderPlanShirts(roster);
+    <div class="ministat present"><div class="n">${swagDone}/${bagTotal}</div><div class="l">Bags out${wk==='all'?'':' (new)'}</div></div>`;
+  // shirt totals count only first-week campers (no double-counting returners)
+  renderPlanShirts(orderRoster);
   // filter + search
   let studs=roster;
   if(PLAN_FILTER==='returning') studs=studs.filter(isReturning);
   else if(PLAN_FILTER==='consent') studs=studs.filter(s=>s.media_consent==='yes');
   else if(PLAN_FILTER==='noconsent') studs=studs.filter(s=>s.media_consent==='no');
-  else if(PLAN_FILTER==='noshirt') studs=studs.filter(s=>!((s.shirt_size||'').trim()));
-  else if(PLAN_FILTER==='noswag') studs=studs.filter(s=>!s.swag_received);
+  else if(PLAN_FILTER==='noshirt') studs=studs.filter(s=>bagWeek(s) && !((s.shirt_size||'').trim()));
+  else if(PLAN_FILTER==='noswag') studs=studs.filter(s=>bagWeek(s) && !s.swag_received);
   const q=((document.getElementById('plan-search')||{}).value||'').trim().toLowerCase();
-  if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
+  if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(q));
   studs=studs.slice().sort((a,b)=> (levelOf(a.grade)||'').localeCompare(levelOf(b.grade)||'') || (a.last||'').localeCompare(b.last||'') || (a.first||'').localeCompare(b.first||''));
-  const head=`<thead><tr><th>#</th><th>Name</th><th>Level</th><th>Shirt size</th><th>Media consent</th><th>Weeks</th><th class="swag-th">Swag bag</th></tr></thead>`;
-  const body=studs.length?studs.map((s,i)=>{ const wks=weeksOf(s); const ret=wks.length>1;
+  const head=`<thead><tr><th>#</th><th>Name</th><th>Level</th><th>Shirt size</th><th>Media consent</th><th>Weeks</th><th class="swag-th">Swag bag</th><th>Notes</th></tr></thead>`;
+  const body=studs.length?studs.map((s,i)=>{ const wks=weeksOf(s); const ret=wks.length>1; const fw=firstWk(s);
+    const swagCell = bagWeek(s)
+      ? `<td class="swag-cell"><label class="swag-check"><input type="checkbox" class="plan-swag" ${s.swag_received?'checked':''}><span>${s.swag_received?'Received':'Pending'}</span></label></td>`
+      : `<td class="swag-cell swag-earlier" title="Swag bag is counted in this camper's first week">${s.swag_received?`<span class="swag-done">✓ Received · Wk ${fw}</span>`:`<span class="swag-prior">Bag in Wk ${fw}</span>`}</td>`;
     return `<tr data-id="${esc(s.id||'')}">
     <td class="role-cell">${i+1}</td>
     <td style="white-space:nowrap">${esc(studentLabel(s))}${ret?' <span class="pill-ret">Returning</span>':''}</td>
@@ -3548,11 +3569,12 @@ function renderPlanning(){
     <td>${esc(s.shirt_size||'')||'<span class="blank">—</span>'}</td>
     <td>${planConsentBadge(s.media_consent)}</td>
     <td style="white-space:nowrap">${wks.length?'Wk '+esc(planWeeksLabel(wks)):'<span class="blank">—</span>'}</td>
-    <td class="swag-cell"><label class="swag-check"><input type="checkbox" class="plan-swag" ${s.swag_received?'checked':''}><span>${s.swag_received?'Received':'Pending'}</span></label></td>
-  </tr>`; }).join('') : `<tr><td colspan="7" class="note-row">${total?'No students match this filter.':'No students on this roster yet.'}</td></tr>`;
+    ${swagCell}
+    <td><input class="cell-input plan-note" value="${esc(s.swag_notes||'')}" placeholder="e.g. towel missing" title="Notes for the events team — saved for this camper across all their weeks"></td>
+  </tr>`; }).join('') : `<tr><td colspan="8" class="note-row">${total?'No students match this filter.':'No students on this roster yet.'}</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
 }
-function planRosterLabel(){ const wk=planWeek(); if(wk==='all') return 'All weeks · each camper once'; const w=WEEKS.find(x=>String(x.n)===String(wk)); return w?`Week ${w.n} · ${w.theme}`:`Week ${wk}`; }
+function planRosterLabel(){ const wk=planWeek(); if(wk==='all') return 'All weeks · each camper once'; const w=WEEKS.find(x=>String(x.n)===String(wk)); return (w?`Week ${w.n} · ${w.theme}`:`Week ${wk}`)+' · new campers'; }
 let PLAN_SHIRT_ORDER='';
 function renderPlanShirts(roster){
   const box=document.getElementById('plan-shirtsum'); if(!box) return;
@@ -3591,8 +3613,8 @@ function planExport(){
   if(wk==='all'){ const seen=new Set(); roster=[]; Object.keys(ROSTER_DATA).map(Number).sort((a,b)=>a-b).forEach(w=>{ (ROSTER_DATA[w]||[]).forEach(s=>{ const k=foldName(s.first)+'|'+foldName(s.last); if(k!=='|'&&!seen.has(k)){ seen.add(k); roster.push(s);} }); }); }
   else roster=studentsForWeek(wk);
   const cl=v=>v==='yes'?'Yes':v==='no'?'No':'Pending';
-  const rows=[["Name","Level","Shirt size","Media consent","Weeks","Returning","Swag bag"]];
-  roster.forEach(s=>{ const wks=weeksOf(s); rows.push([studentLabel(s),levelOf(s.grade),s.shirt_size||'',cl(s.media_consent),planWeeksLabel(wks),wks.length>1?'Yes':'No',s.swag_received?'Received':'Pending']); });
+  const rows=[["Name","Level","Shirt size","Media consent","Weeks","Returning","Swag bag","Notes"]];
+  roster.forEach(s=>{ const wks=weeksOf(s); rows.push([studentLabel(s),levelOf(s.grade),s.shirt_size||'',cl(s.media_consent),planWeeksLabel(wks),wks.length>1?'Yes':'No',s.swag_received?`Received (Wk ${wks[0]})`:'Pending',s.swag_notes||'']); });
   csvDownload(`event-planning-${wk==='all'?'all-weeks':'w'+wk}.csv`, rows);
 }
 // Bulk-mark every returning camper on the current roster as already having their swag bag.
@@ -3621,9 +3643,14 @@ function planningInit(){
   const x=document.getElementById('plan-export'); if(x) x.addEventListener('click',planExport);
   const rs=document.getElementById('plan-retswag'); if(rs) rs.addEventListener('click',planMarkReturningSwag);
   const tbl=document.getElementById('plan-table');
-  if(tbl) tbl.addEventListener('change',async e=>{ const cb=e.target.closest('.plan-swag'); if(!cb) return;
-    const id=cb.closest('tr').dataset.id; const s=id&&findStudent(id); if(!s) return;
-    cb.disabled=true; await dbSetSwagForChild(s, cb.checked); cb.disabled=false; renderPlanning(); });
+  if(tbl) tbl.addEventListener('change',async e=>{
+    const cb=e.target.closest('.plan-swag');
+    if(cb){ const id=cb.closest('tr').dataset.id; const s=id&&findStudent(id); if(!s) return;
+      cb.disabled=true; await dbSetSwagForChild(s, cb.checked); cb.disabled=false; renderPlanning(); return; }
+    const nt=e.target.closest('.plan-note');
+    if(nt){ const id=nt.closest('tr').dataset.id; const s=id&&findStudent(id); if(!s) return;
+      nt.disabled=true; await dbSetSwagNotesForChild(s, nt.value.trim()); nt.disabled=false; }
+  });
   renderPlanning();
 }
 

@@ -3574,7 +3574,7 @@ function renderPlanning(){
   const body=studs.length?studs.map((s,i)=>{ const wks=weeksOf(s); const ret=wks.length>1; const fw=firstWk(s);
     const swagCell = bagWeek(s)
       ? `<td class="swag-cell"><label class="swag-check"><input type="checkbox" class="plan-swag" ${s.swag_received?'checked':''}><span>${s.swag_received?'Received':'Pending'}</span></label></td>`
-      : `<td class="swag-cell swag-earlier" title="Swag bag is counted in this camper's first week">${s.swag_received?`<span class="swag-done">✓ Received · Wk ${fw}</span>`:`<span class="swag-prior">Bag in Wk ${fw}</span>`}</td>`;
+      : `<td class="swag-cell"><label class="swag-check" title="Swag bag is given out in this camper's first week (Wk ${fw})"><input type="checkbox" class="plan-swag" ${s.swag_received?'checked':''}><span>${s.swag_received?`Bag given out in Wk ${fw}`:`Bag due in Wk ${fw}`}</span></label></td>`;
     return `<tr data-id="${esc(s.id||'')}">
     <td class="role-cell">${i+1}</td>
     <td style="white-space:nowrap">${esc(studentLabel(s))}${ret?' <span class="pill-ret">Returning</span>':''}</td>

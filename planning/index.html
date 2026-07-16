@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Merch Planning · Alpha Summer</title>
+<style>
+  :root{--navy:#0e1c2b;--navy-2:#12283d;--panel:#16324b;--line:#22405c;--ink:#eaf1f7;--muted:#9db2c6;--brass:#c8924a;--brass-b:#e0b872;--teal:#5fb3a9;--ok:#57b894;--coral:#e0736b}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#173250,#0c1826 60%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh}
+  .wrap{max-width:820px;margin:0 auto;padding:26px 18px 60px}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--brass)}
+  h1{font-size:26px;margin:2px 0 0;font-weight:700}
+  .clock{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
+  .lead{color:var(--muted);font-size:14px;margin:10px 0 4px;line-height:1.55;max-width:640px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0 20px}
+  .bar label{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 10px;font-size:14px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .stat .n{font-size:34px;font-weight:700;line-height:1}
+  .stat .l{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+  .stat.shirts .n{color:var(--brass-b)}
+  .stat.campers .n{color:var(--teal)}
+  .stat.swag .n{color:var(--ok)}
+  .sec-title{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);margin:0 2px 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+  .size{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+  .size .c{font-size:28px;font-weight:700;line-height:1;color:var(--brass-b)}
+  .size .s{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.04em;color:var(--muted)}
+  .size.muted .c{color:var(--muted)}
+  .copybar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:20px 0 6px}
+  button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer}
+  button:hover{border-color:var(--brass)}
+  .empty{background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted)}
+  .foot{margin-top:28px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="eyebrow">Events · Merch Planning</div>
+        <h1>Alpha Summer — Shirt &amp; swag totals</h1>
+      </div>
+      <div class="clock"><span class="dot"></span><span id="clock">—</span></div>
+    </header>
+    <p class="lead">Live shirt-size counts for ordering merch. Each camper is counted <b>once</b> — in their first week — so returning campers never double the order. Pick <b>All weeks</b> for the whole-season order, or a single week for that week's new campers. Counts only — no names or camper details.</p>
+
+    <div class="bar">
+      <label for="week">Roster</label>
+      <select id="week"></select>
+      <span id="wklabel" class="clock"></span>
+    </div>
+
+    <div class="stats">
+      <div class="stat shirts"><div class="n" id="s-shirts">—</div><div class="l">Shirts to order</div></div>
+      <div class="stat campers"><div class="n" id="s-campers">—</div><div class="l" id="s-campers-l">Campers</div></div>
+      <div class="stat swag"><div class="n" id="s-swag">—</div><div class="l">Swag bags out</div></div>
+    </div>
+
+    <div class="sec-title">Shirt sizes</div>
+    <div id="sizes"><div class="empty">Loading…</div></div>
+
+    <div class="copybar">
+      <button id="copy">Copy order</button>
+      <span id="copymsg" class="clock"></span>
+    </div>
+
+    <div class="foot">Counts only — no student names or details. Sizes come in with the roster.<br>Auto-refreshes every 2 minutes.</div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
+  const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+  const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const $=id=>document.getElementById(id);
+
+  const WEEKS=[
+    {n:1,theme:"Survivor"},{n:2,theme:"Master Chef"},{n:3,theme:"Pottery & Forge"},
+    {n:4,theme:"Sky & Siege"},{n:5,theme:"Surf & Odyssey"},{n:6,theme:"Shadow & Screen"},
+    {n:7,theme:"Serhant Real Estate"},{n:8,theme:"Songwriting & Concert"},{n:9,theme:"Maker's Workshop"}
+  ];
+  const ORDER=['Youth XS','Youth S','Youth M','Youth L','Youth XL','Adult XS','Adult S','Adult M','Adult L','Adult XL','Adult XXL'];
+  const sizeRank=s=>{ const i=ORDER.indexOf(s); return i<0?99:i; };
+
+  function tick(){ $('clock').textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit'}); }
+
+  let LAST=null;
+  function label(){ const v=$('week').value; if(v==='all') return 'All weeks · each camper once'; const w=WEEKS.find(x=>String(x.n)===v); return w?`Week ${w.n} · ${w.theme} · new campers`:`Week ${v}`; }
+
+  async function load(){
+    const v=$('week').value;
+    $('wklabel').textContent=label();
+    let d=null;
+    try{ const r=await sb.rpc('planning_merch',{p_week: v==='all'?null:Number(v)}); d=r&&r.data; }catch(e){}
+    if(!d||!d.ok){ $('sizes').innerHTML='<div class="empty">Couldn’t load right now — refreshing shortly.</div>'; return; }
+    LAST=d;
+    const sizes=(d.sizes||[]).slice().sort((a,b)=>sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size));
+    const shirts=sizes.reduce((n,x)=>n+x.count,0);
+    $('s-shirts').textContent=shirts;
+    $('s-campers').textContent=d.total||0;
+    $('s-campers-l').textContent = v==='all' ? 'Campers (season)' : 'New campers';
+    $('s-swag').textContent=`${d.swagReceived||0}/${d.total||0}`;
+    if(!sizes.length){ $('sizes').innerHTML='<div class="empty">No shirt sizes recorded yet.</div>'; return; }
+    $('sizes').innerHTML=`<div class="grid">`+
+      sizes.map(x=>`<div class="size"><div class="c">${x.count}</div><div class="s">${esc(x.size)}</div></div>`).join('')+
+      (d.noSize?`<div class="size muted"><div class="c">${d.noSize}</div><div class="s">no size on file</div></div>`:'')+
+      `</div>`;
+  }
+
+  function copyOrder(){
+    if(!LAST){ return; }
+    const sizes=(LAST.sizes||[]).slice().sort((a,b)=>sizeRank(a.size)-sizeRank(b.size)||a.size.localeCompare(b.size));
+    const shirts=sizes.reduce((n,x)=>n+x.count,0);
+    const lines=[`Shirt order — ${label()}`,'',...sizes.map(x=>`${x.size}: ${x.count}`),'',`Total: ${shirts}`];
+    if(LAST.noSize) lines.push(`No size on file yet: ${LAST.noSize}`);
+    const txt=lines.join('\n');
+    const done=()=>{ $('copymsg').textContent='Copied ✓'; setTimeout(()=>$('copymsg').textContent='',1600); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>alert(txt)); }
+    else alert(txt);
+  }
+
+  // build week selector
+  $('week').innerHTML=`<option value="all">All weeks · whole-season order</option>`+WEEKS.map(w=>`<option value="${w.n}">Week ${w.n} · ${esc(w.theme)}</option>`).join('');
+  $('week').value='all';
+  $('week').addEventListener('change',load);
+  $('copy').addEventListener('click',copyOrder);
+  tick(); setInterval(tick,1000);
+  load(); setInterval(load,120000);
+</script>
+</body>
+</html>

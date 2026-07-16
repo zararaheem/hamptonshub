@@ -636,6 +636,8 @@
     background:var(--navy-2);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
   .shirt-chip b{color:var(--brass-bright);font-size:12.5px}
   .shirt-chip.muted{color:var(--muted)} .shirt-chip.muted b{color:var(--muted)}
+  .shirt-tot{margin-top:11px;font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;color:var(--muted)}
+  .shirt-tot b{color:var(--oyster)}
   .swag-th{text-align:center}
   .swag-cell{white-space:nowrap}
   .swag-check{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
@@ -1155,7 +1157,11 @@
     <section class="view" id="view-planning" hidden>
       <div class="eyebrow">Events · Planning roster</div>
       <h1 class="page-title">Event Planning</h1>
-      <p class="page-lead">A limited planning roster for the events team — first name + last initial, level, shirt size and media consent (no contact details). Handy for ordering shirts, planning photos, and spotting <b>returning campers</b> (kids enrolled more than one week).</p>
+      <p class="page-lead">A limited planning roster for the events team — first name + last initial, level, shirt size and media consent (no contact details). Built for <b>ordering merch</b>, planning photos, and spotting <b>returning campers</b> (kids enrolled more than one week).</p>
+
+      <div class="callout" style="margin:0 0 14px">
+        <b>Ordering merch?</b> Pick a <b>week</b> below for that week's shirts, or <b>“All weeks · unique”</b> for the whole-season order (each camper counted once). The <b>shirt-size breakdown</b> is right underneath — tap <b>Copy order</b> to drop the sizes straight into an email or the vendor form. As kids hand out bags, check <b>Swag bag</b> so nobody's missed or doubled up.
+      </div>
 
       <div class="att-bar">
         <div class="field"><label for="plan-week">Roster</label><select id="plan-week"></select></div>
@@ -1172,11 +1178,11 @@
           <button class="fbtn" data-pf="noswag">Swag bag pending</button>
         </div>
         <input class="cell-input" id="plan-search" placeholder="Search name…" style="max-width:200px">
-        <button class="btn ghost" id="plan-shirts" title="Show shirt-size totals for ordering">Shirt totals</button>
+        <button class="btn ghost" id="plan-shirts" title="Show or hide the shirt-size totals">Hide totals</button>
         <button class="btn ghost" id="plan-retswag" title="Mark all returning campers on this roster as already having their swag bag">Returning → bag received</button>
         <button class="btn ghost" id="plan-export" style="margin-left:auto">Export CSV</button>
       </div>
-      <div id="plan-shirtsum" style="display:none;margin-bottom:12px"></div>
+      <div id="plan-shirtsum" style="margin-bottom:12px"></div>
       <div class="tablewrap"><table id="plan-table"></table></div>
     </section>
 
@@ -3546,14 +3552,37 @@ function renderPlanning(){
   </tr>`; }).join('') : `<tr><td colspan="7" class="note-row">${total?'No students match this filter.':'No students on this roster yet.'}</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
 }
+function planRosterLabel(){ const wk=planWeek(); if(wk==='all') return 'All weeks · each camper once'; const w=WEEKS.find(x=>String(x.n)===String(wk)); return w?`Week ${w.n} · ${w.theme}`:`Week ${wk}`; }
+let PLAN_SHIRT_ORDER='';
 function renderPlanShirts(roster){
   const box=document.getElementById('plan-shirtsum'); if(!box) return;
   const counts={}; let unknown=0;
   roster.forEach(s=>{ const sz=(s.shirt_size||'').trim(); if(!sz){ unknown++; return; } counts[sz]=(counts[sz]||0)+1; });
   const order=['Youth XS','Youth S','Youth M','Youth L','Youth XL','Adult XS','Adult S','Adult M','Adult L','Adult XL','Adult XXL'];
   const keys=Object.keys(counts).sort((a,b)=>{ const ia=order.indexOf(a), ib=order.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b); });
-  const chips=keys.map(k=>`<span class="shirt-chip"><b>${counts[k]}</b> ${esc(k)}</span>`).join('') + (unknown?`<span class="shirt-chip muted"><b>${unknown}</b> no size</span>`:'');
-  box.innerHTML=`<div class="card" style="padding:12px 14px"><div class="eyebrow" style="margin-bottom:8px">Shirt totals for merch — ${roster.length} students</div><div class="shirt-chips">${chips||'<span class="note-row">No shirt sizes recorded yet.</span>'}</div></div>`;
+  const sized=keys.reduce((n,k)=>n+counts[k],0);
+  const youth=keys.filter(k=>/youth/i.test(k)).reduce((n,k)=>n+counts[k],0);
+  const adult=keys.filter(k=>/adult/i.test(k)).reduce((n,k)=>n+counts[k],0);
+  const chips=keys.map(k=>`<span class="shirt-chip"><b>${counts[k]}</b> ${esc(k)}</span>`).join('') + (unknown?`<span class="shirt-chip muted"><b>${unknown}</b> no size on file</span>`:'');
+  const label=planRosterLabel();
+  // plain-text version for the Copy order button (paste into an email / vendor form)
+  const lines=[`Shirt order — ${label}`, '', ...keys.map(k=>`${k}: ${counts[k]}`), '', `Total: ${sized}`+((youth&&adult)?` (${youth} youth, ${adult} adult)`:'')];
+  if(unknown) lines.push(`No size on file yet: ${unknown}`);
+  PLAN_SHIRT_ORDER=lines.join('\n');
+  box.innerHTML=`<div class="card" style="padding:14px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="eyebrow" style="margin:0">Shirt totals for merch — ${esc(label)}</div>
+      <button class="btn ghost" id="plan-copyorder" onclick="planCopyOrder()" title="Copy the size breakdown to paste into an order email or vendor form">Copy order</button>
+    </div>
+    <div class="shirt-chips">${chips||'<span class="note-row">No shirt sizes recorded yet — sizes come in with the roster import.</span>'}</div>
+    ${sized?`<div class="shirt-tot"><b>${sized}</b> shirt${sized===1?'':'s'} to order${youth?` · ${youth} youth`:''}${adult?` · ${adult} adult`:''}${unknown?` · <span style="color:var(--brass-bright)">${unknown} still missing a size</span>`:''}</div>`:''}
+  </div>`;
+}
+function planCopyOrder(){
+  const btn=document.getElementById('plan-copyorder');
+  const done=()=>{ if(btn){ btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent='Copy order',1400); } };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(PLAN_SHIRT_ORDER).then(done).catch(()=>alert(PLAN_SHIRT_ORDER)); }
+  else alert(PLAN_SHIRT_ORDER);
 }
 function planExport(){
   const wk=planWeek(); const byChild=planWeeksByChild();

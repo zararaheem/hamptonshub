@@ -48,6 +48,8 @@
   .gb-name{font-weight:700;color:var(--teal);font-size:15.5px;margin-bottom:3px}
   .guide-bio p{margin:0}
   .alert-soft{display:flex;gap:8px;align-items:flex-start;background:#fdeceb;border:1px solid #f3c6c2;border-radius:10px;padding:10px 13px;font-size:14px;color:#9b3a33;margin:10px 0}
+  .tbc{display:inline-block;background:#12e0f2;color:#04222a;font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:6px;vertical-align:middle;box-shadow:0 0 10px rgba(18,224,242,.55)}
+  .tbc-note{color:#0b7c8c;font-weight:600}
   .alert-soft::before{content:"!";flex:0 0 18px;height:18px;border-radius:50%;background:#d9534f;color:#fff;font-weight:700;font-size:12px;text-align:center;line-height:18px}
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
   .contact-role{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-bright);font-weight:600;margin-bottom:5px}
@@ -139,8 +141,10 @@
       const coord = esc((w.coordinators||'your campus coordinator').replace(/\s*(&|and)\s*/ig,' or '));
       const nameFromEmail = e => e.split('@')[0].split(/[._]/).filter(Boolean).map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');
       const coordNames = esc(String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean).map(nameFromEmail).join(' & ') || (w.coordinators||''));
-      const lunchMenuUrl = w.lunch_menu_url || 'https://docs.google.com/document/d/1WofSoVIhayVCJXjwtQGBXsqVV6_8V1NiqgWFipKi1ww/edit?usp=sharing';
-      const lunch = `The week's lunch menu is here: <a href="${esc(lunchMenuUrl)}" target="_blank" rel="noopener">${esc(w.lunch_menu_label||'Lunch menu')}</a>.`;
+      const lunchSet = !!(w.lunch_menu_url||'').trim();
+      const lunch = lunchSet
+        ? `The week's lunch menu is here: <a href="${esc(w.lunch_menu_url)}" target="_blank" rel="noopener">${esc(w.lunch_menu_label||'Lunch menu')}</a>.`
+        : `The week's lunch menu <span class="tbc">TBC</span> <span class="tbc-note">— details to be confirmed closer to the week.</span>`;
       const locSet = (w.friday_showcase_loc||'').trim() && !/to be confirmed|tbd|finaliz/i.test(w.friday_showcase_loc);
       const showLoc = w.friday_showcase_loc_url
         ? `<a href="${esc(w.friday_showcase_loc_url)}" target="_blank" rel="noopener">${esc(w.friday_showcase_loc)}</a>`
@@ -295,7 +299,7 @@
 
       h+=`<div class="sec-head"><h2>Events to Note</h2></div><div class="card">
         <div class="qa"><h3>${esc(w.monday_event_day||'Monday')} · Coffee &amp; Conversations <span class="pill">${esc(w.monday_event_time)}</span></h3><p>A warm welcome for families. After drop-off, meet your campus team and other Alpha families, enjoy coffee and light refreshments, and hear about Alpha's approach and the week ahead. No RSVP needed — just come. Parking will be available on-site for families that may require it.</p>${(w.monday_event_note||'').trim()?`<div class="note">⚠️ ${esc(w.monday_event_note)}</div>`:''}${calLinks('Alpha Summer — Coffee & Conversations', mEventDate, w.monday_event_time, 'A warm welcome for families after drop-off.', w.dropoff_loc)}</div>
-        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>On Friday, families will join us as students showcase everything they've learned through the week.${locSet ? ` Please plan to arrive at ${showLoc}, where your child shares what they've worked on all week.` : ''}</p>${locSet ? '' : `<div class="alert-soft">We're finalizing a location and will share details closer to the date.</div>`}${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", w.friday_showcase_loc)}</div>
+        <div class="qa"><h3>Friday · Life Skills Showcase <span class="pill">${esc(w.friday_showcase_time)}</span></h3><p>On Friday, families will join us as students showcase everything they've learned through the week.${locSet ? ` Please plan to arrive at ${showLoc}, where your child shares what they've worked on all week.` : ''}</p>${locSet ? '' : `<div class="alert-soft">📍 Showcase location <span class="tbc">TBC</span> <span class="tbc-note">— details to be confirmed closer to the week.</span></div>`}${calLinks('Alpha Summer — Life Skills Showcase', w.end_date, w.friday_showcase_time, "Your child shares what they've worked on all week.", locSet?w.friday_showcase_loc:'')}</div>
       </div>`;
 
       h+=`<div class="sec-head"><h2>Bus Service</h2></div><div class="card">

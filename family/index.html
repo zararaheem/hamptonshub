@@ -292,8 +292,8 @@
 
       if(headGuide || guideTeam){
         h+=`<div class="sec-head"><h2>Meet the Guide Team</h2></div><div class="card">
-          <div class="qa">${SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`)}
-          ${guideTeam ? guideTeamHtml(guideTeam) : (headGuide?`<p><b>Head Guide:</b> ${esc(headGuide)}</p>`:'')}</div>
+          <div class="qa">${guideTeam ? SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`) : ''}
+          ${guideTeam ? guideTeamHtml(guideTeam) : `<p>Your child's guide team <span class="tbc">TBC</span> <span class="tbc-note">— we'll share details closer to the week.</span></p>`}</div>
         </div>`;
       }
 

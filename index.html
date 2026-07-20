@@ -2177,10 +2177,10 @@ function showRegistrationReview(plan){
   box.innerHTML=`<div class="card" style="margin-top:14px;border-color:var(--brass)">
     <h3 style="margin:0 0 6px">Review registration import <span style="font-weight:400;color:var(--muted);font-size:13px">(matched by child first name)</span></h3>
     <p class="lc-desc" style="margin:0 0 10px">${plan.children.length} children → <b style="color:var(--teal-bright)">${totU} student records updated</b>, <b style="color:var(--brass-bright)">${totA} added</b> across ${weeks.length} week${weeks.length===1?'':'s'}.${canContacts?' Parent &amp; emergency contacts will be written to Family Contacts.':' <i>Contacts skipped — you don\'t have Family Contacts access.</i>'}${noWeek?` <span style="color:#d9534f">${noWeek} child(ren) had no week listed and will be skipped.</span>`:''}${plan.skippedTest&&plan.skippedTest.length?` <span style="color:var(--muted)">${plan.skippedTest.length} test entr${plan.skippedTest.length===1?'y':'ies'} skipped (${esc(plan.skippedTest.slice(0,5).join(', '))}${plan.skippedTest.length>5?'…':''}).</span>`:''}</p>
-    ${(plan.removedTotal||0)?`<div class="callout" style="border-color:#d9534f;background:rgba(217,83,79,.08);margin:0 0 12px">
-      <b style="color:#d9534f">${plan.fullyRemoved.length} student${plan.fullyRemoved.length===1?'':'s'} will be removed</b> — no longer on this roster, so their record will be <b>deleted</b>${plan.weekDrops?`; ${plan.weekDrops} more dropped a week`:''}.
-      ${plan.fullyRemoved.length?`<div style="margin-top:6px;font-size:13px;color:var(--muted)">${plan.fullyRemoved.slice(0,50).map(r=>esc(r.name)).join(', ')}${plan.fullyRemoved.length>50?'…':''}</div>`:''}
-    </div>`:''}
+    ${(plan.removedTotal||0)?`<label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border:1px solid #d9534f;border-radius:9px;background:rgba(217,83,79,.07);cursor:pointer">
+      <input type="checkbox" id="reg-review-remove" ${weeks.length>1?'checked':''} style="margin-top:3px;width:15px;height:15px;flex:none">
+      <span class="lc-desc" style="margin:0"><b style="color:#d9534f">Remove ${plan.fullyRemoved.length} student${plan.fullyRemoved.length===1?'':'s'} no longer in this file</b>${plan.weekDrops?` (and drop ${plan.weekDrops} from a week they left)`:''} — their record is <b>deleted</b>.${plan.fullyRemoved.length?`<br><span style="color:var(--muted)">${plan.fullyRemoved.slice(0,50).map(r=>esc(r.name)).join(', ')}${plan.fullyRemoved.length>50?'…':''}</span>`:''}<br><span style="color:var(--muted)">Only week${weeks.length===1?'':'s'} ${weeks.join(', ')} in this file ${weeks.length===1?'is':'are'} touched — other weeks are never affected. ${weeks.length>1?'This looks like a full export, so removals are on.':`<b>Off by default</b> — this is a single-week sheet; tick only if it's the complete Week ${weeks[0]} list.`}</span></span>
+    </label>`:''}
     <table style="border-collapse:collapse;margin:0 0 12px;font-size:13px">${weekRows}</table>
     <details style="margin:0 0 12px"><summary style="cursor:pointer;color:var(--muted)">Show children (${plan.childRows.length})</summary><div style="margin-top:8px;font-size:13px;line-height:1.7">${childList}${plan.childRows.length>80?'<br>…':''}</div></details>
     <button class="btn" id="ros-review-go">Confirm import</button>
@@ -2188,6 +2188,8 @@ function showRegistrationReview(plan){
   </div>`;
   document.getElementById('ros-review-cancel').addEventListener('click',()=>{ box.innerHTML=''; });
   document.getElementById('ros-review-go').addEventListener('click',async()=>{
+    const rmEl=document.getElementById('reg-review-remove');
+    if(!rmEl || !rmEl.checked) Object.values(plan.perWeek).forEach(pw=>pw.toRemove=[]);
     const m=document.getElementById('ros-io-msg'); m.className='gate-msg'; m.textContent='Importing…';
     const res=await applyRegistration(plan);
     box.innerHTML='';

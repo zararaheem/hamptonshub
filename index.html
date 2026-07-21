@@ -1217,7 +1217,7 @@
     <section class="view" id="view-reports" hidden>
       <div class="eyebrow">Parent Comms · Weekly Reports</div>
       <h1 class="page-title">Weekly Reports</h1>
-      <p class="page-lead">Upload each week's student report PDFs, then share a private link and code with each family. Families open <a href="https://hamptonsfamilyguide.vercel.app/reports" target="_blank" rel="noopener" style="color:var(--brass-bright)">the reports page ↗</a>, enter their <b>last name</b> (or a code like <b>smithwk1</b>) and see their child's report — <b>siblings toggle</b> within the one family code, and multi-week families can switch between weeks.</p>
+      <p class="page-lead">Upload each week's student report PDFs, then share a private link and code with each family. Families open <a href="https://hamptonsfamilyguide.vercel.app/reports" target="_blank" rel="noopener" style="color:var(--brass-bright)">the reports page ↗</a>, enter their <b>family name + week</b> (e.g. <b>smith wk2</b>) and see their child's report — <b>siblings toggle</b> within the one code, and multi-week families can switch between weeks.</p>
 
       <div class="att-bar">
         <div class="field"><label for="rep-week">Week</label><select id="rep-week"></select></div>
@@ -3931,11 +3931,11 @@ function renderReports(){
   if(st) st.innerHTML=`<div class="ministat"><div class="n">${REP_ROWS.length}</div><div class="l">Reports</div></div>
     <div class="ministat p"><div class="n">${codes.length}</div><div class="l">Families</div></div>`;
   const head=`<thead><tr><th>Family code</th><th>Students</th><th>Share link</th></tr></thead>`;
-  const body=codes.length?codes.map(code=>{ const g=groups[code]; const fk=g[0].family_key; const link=reportsPublicUrl()+'?code='+encodeURIComponent(fk);
+  const body=codes.length?codes.map(code=>{ const g=groups[code]; const link=reportsPublicUrl()+'?code='+encodeURIComponent(code);
     return `<tr>
-      <td style="white-space:nowrap"><code class="rep-codechip">${esc(code)}</code><div class="rep-fam">link opens all weeks · <b>${esc(fk)}</b></div></td>
+      <td style="white-space:nowrap"><code class="rep-codechip">${esc(code)}</code><div class="rep-fam">opens on Wk ${esc(g[0].week)} · other weeks toggle in</div></td>
       <td>${g.map(r=>`<span class="rep-stud">${esc(r.label)}<button class="rep-del" data-id="${esc(r.id)}" title="Delete this report">✕</button></span>`).join(' ')}</td>
-      <td style="white-space:nowrap"><button class="btn ghost rep-copy" data-link="${esc(link)}" title="Opens every week this family has a report for">Copy link</button></td>
+      <td style="white-space:nowrap"><button class="btn ghost rep-copy" data-link="${esc(link)}" title="Opens this week; multi-week families can toggle to their other weeks">Copy link</button></td>
     </tr>`; }).join('') : `<tr><td colspan="3" class="note-row">No reports uploaded for Week ${repWeek()} yet — pick PDFs above.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
 }

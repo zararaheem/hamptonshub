@@ -114,9 +114,13 @@
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
-  if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  // Rendering engine: MuPDF (WASM). PDF.js draws hatch/tiling patterns as a solid
+  // pink fill (both v3 and v4), which added colour that isn't in the real PDF.
+  // MuPDF renders patterns faithfully, so the preview matches the actual document.
+  const MUPDF_URL='https://cdn.jsdelivr.net/npm/mupdf@1.28.0/dist/mupdf.js';
+  let _mupdf=null, _mupdfP=null;
+  function loadMuPdf(){ if(_mupdf) return Promise.resolve(_mupdf); if(!_mupdfP) _mupdfP=import(MUPDF_URL).then(m=>{ _mupdf=m; return m; }); return _mupdfP; }
   const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
   const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
   const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -130,29 +134,38 @@
   async function paintPdf(url, view, mode){
     if(!view) return; const token=++pdfTok;
     view.innerHTML='<div class="pdf-msg">Loading report…</div>';
-    if(!window.pdfjsLib || !url){ view.innerHTML='<div class="pdf-msg">Open the report using the link below.</div>'; return; }
+    if(!url){ view.innerHTML='<div class="pdf-msg">Open the report using the link below.</div>'; return; }
+    let doc=null;
     try{
-      const pdf=await pdfjsLib.getDocument({url}).promise;
+      const mupdf=await loadMuPdf();
       if(token!==pdfTok) return;
+      const res=await fetch(url); const buf=new Uint8Array(await res.arrayBuffer());
+      if(token!==pdfTok) return;
+      doc=mupdf.Document.openDocument(buf, 'application/pdf');
+      const nPages=doc.countPages();
       view.innerHTML='';
       const dpr=Math.min(window.devicePixelRatio||1, 2);
       const cw=Math.min((view.clientWidth||600), 1000);
-      for(let n=1;n<=pdf.numPages;n++){
+      for(let i=0;i<nPages;i++){
         if(token!==pdfTok) return;
-        const page=await pdf.getPage(n);
-        const base=page.getViewport({scale:1});
-        const vp=page.getViewport({scale:(cw/base.width)*dpr});
-        const canvas=document.createElement('canvas');
-        canvas.className='pdf-page'; canvas.width=vp.width; canvas.height=vp.height;
-        const ctx=canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); // opaque white — no transparent gaps
+        const page=doc.loadPage(i);
+        const b=page.getBounds(); const wpt=(b[2]-b[0])||612;
+        const scale=(cw*dpr)/wpt;
+        const pix=page.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false, true); // alpha=false → opaque white background
+        const blob=new Blob([pix.asPNG()], {type:'image/png'});
+        const src=URL.createObjectURL(blob);
+        const img=document.createElement('img'); img.className='pdf-page'; img.decoding='async'; img.alt='';
+        img.onload=()=>URL.revokeObjectURL(src);
+        img.src=src;
         if(mode==='full'){
-          canvas.dataset.bw=String(cw); // base display width (css px) at zoom 1
-          const slide=document.createElement('div'); slide.className='fs-slide'; slide.appendChild(canvas); view.appendChild(slide);
-          applyFsZoom(canvas);
-        } else { canvas.style.width='100%'; canvas.style.height='auto'; view.appendChild(canvas); }
-        await page.render({canvasContext:ctx, viewport:vp, background:'#ffffff'}).promise;
+          img.dataset.bw=String(cw); // base display width (css px) at zoom 1
+          const slide=document.createElement('div'); slide.className='fs-slide'; slide.appendChild(img); view.appendChild(slide);
+          applyFsZoom(img);
+        } else { img.style.width='100%'; img.style.height='auto'; view.appendChild(img); }
+        pix.destroy && pix.destroy(); page.destroy && page.destroy();
       }
     }catch(e){ if(token===pdfTok) view.innerHTML='<div class="pdf-msg">Couldn’t display the report here — please use “Open / download” below.</div>'; }
+    finally{ if(doc && doc.destroy) doc.destroy(); }
   }
   function showSib(i){
     const wk=WEEKS[selW], r=wk&&wk.reports[i]; if(!r) return;

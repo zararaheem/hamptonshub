@@ -21,10 +21,16 @@
   .gate button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--brass);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
   .gate button:disabled{opacity:.6;cursor:default}
   .gate .err{color:#b23b3b;font-size:13px;min-height:18px;margin-top:8px}
+  .gate .help{margin-top:14px;font-size:12.5px;color:var(--muted)}
+  .gate .help a{color:var(--brass-b);font-weight:600}
   .report{margin:28px auto 0;max-width:900px}
   .rhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
   .rhead .wk{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
   .rhead a.change{font-size:13px;color:var(--brass-b);cursor:pointer;text-decoration:none}
+  .weeks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .weeks:empty{display:none}
+  .wkbtn{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700;padding:8px 15px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+  .wkbtn.on{border-color:var(--teal);background:#eef6f5;color:var(--teal)}
   .sibs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .sib{font-size:15px;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
   .sib.on{border-color:var(--brass);background:#fbf4e8;color:var(--brass-b)}
@@ -49,10 +55,11 @@
   <div class="wrap">
     <div id="gate" class="gate">
       <h2>Enter your code</h2>
-      <p>Your code looks like <b>lastname-wk1</b>. It was shared with you by your campus team.</p>
-      <input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. smith-wk1">
+      <p>Enter your <b>last name</b> to see <b>every week</b> your child has attended — or a specific code like <b>smithwk1</b> for one week.</p>
+      <input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. smith">
       <button id="go" type="button">View report</button>
       <div id="err" class="err"></div>
+      <div class="help">Having trouble with access? Contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
     </div>
 
     <div id="report" class="report" hidden>
@@ -60,6 +67,7 @@
         <div class="wk" id="wklabel">—</div>
         <a class="change" id="change">Use a different code</a>
       </div>
+      <div class="weeks" id="weeks"></div>
       <div class="sibs" id="sibs"></div>
       <div class="viewer">
         <iframe id="pdf" title="Weekly report"></iframe>
@@ -78,23 +86,31 @@
   const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const $=id=>document.getElementById(id);
   const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  let REPORTS=[];
-
-  function showReport(i){
-    const r=REPORTS[i]; if(!r) return;
+  let WEEKS=[], selW=0;
+  function byWeek(reports){ const m={}; (reports||[]).forEach(r=>{ (m[r.week]=m[r.week]||[]).push(r); });
+    return Object.keys(m).map(Number).sort((a,b)=>a-b).map(w=>({week:w, reports:m[w]})); }
+  function showSib(i){
+    const wk=WEEKS[selW], r=wk&&wk.reports[i]; if(!r) return;
     $('pdf').src = r.url || '';
-    $('who').textContent = r.label || 'Report';
+    $('who').textContent = (r.label||'Report') + (WEEKS.length>1?(' · Week '+wk.week):'');
     $('open').href = r.url || '#';
-    [...document.querySelectorAll('.sib')].forEach((b,j)=>b.classList.toggle('on', j===i));
+    [...document.querySelectorAll('#sibs .sib')].forEach((b,j)=>b.classList.toggle('on', j===i));
   }
-  function renderReport(week, reports){
-    REPORTS=reports||[];
-    $('gate').hidden=true; $('report').hidden=false;
-    $('wklabel').textContent = week ? ('Week '+week+' report') : 'Weekly report';
+  function selectWeek(wi){
+    selW=wi; const wk=WEEKS[selW]; if(!wk) return;
+    [...document.querySelectorAll('#weeks .wkbtn')].forEach((b,j)=>b.classList.toggle('on', j===wi));
     const sibs=$('sibs');
-    sibs.innerHTML = REPORTS.length>1 ? REPORTS.map((r,i)=>`<button class="sib" data-i="${i}">${esc(r.label||('Report '+(i+1)))}</button>`).join('') : '';
-    sibs.style.display = REPORTS.length>1 ? 'flex' : 'none';
-    showReport(0);
+    sibs.innerHTML = wk.reports.length>1 ? wk.reports.map((r,i)=>`<button class="sib" data-i="${i}">${esc(r.label||('Report '+(i+1)))}</button>`).join('') : '';
+    sibs.style.display = wk.reports.length>1 ? 'flex' : 'none';
+    showSib(0);
+  }
+  function renderReport(data){
+    WEEKS=byWeek(data.reports);
+    $('gate').hidden=true; $('report').hidden=false;
+    $('wklabel').textContent = WEEKS.length>1 ? (WEEKS.length+' weeks of reports') : ('Week '+(WEEKS[0]?WEEKS[0].week:'')+' report');
+    const wb=$('weeks');
+    wb.innerHTML = WEEKS.length>1 ? WEEKS.map((w,i)=>`<button class="wkbtn" data-i="${i}">Week ${w.week}</button>`).join('') : '';
+    selectWeek(WEEKS.length-1);   // default to the most recent week
   }
   async function lookup(code){
     const err=$('err'), go=$('go');
@@ -103,13 +119,14 @@
     try{ const r=await sb.functions.invoke('student-report',{ body:{ code } }); d=r&&r.data; }catch(e){}
     go.disabled=false; go.textContent='View report';
     if(!d || !d.ok || !(d.reports&&d.reports.length)){ err.textContent="We couldn't find a report for that code. Double-check it with your campus team."; return false; }
-    renderReport(d.week, d.reports);
+    renderReport(d);
     try{ history.replaceState(null,'','?code='+encodeURIComponent(code)); }catch(e){}
     return true;
   }
   $('go').addEventListener('click',()=>{ const c=$('code').value.trim(); if(c) lookup(c); });
   $('code').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const c=$('code').value.trim(); if(c) lookup(c); } });
-  $('sibs').addEventListener('click',e=>{ const b=e.target.closest('.sib'); if(b) showReport(+b.dataset.i); });
+  $('weeks').addEventListener('click',e=>{ const b=e.target.closest('.wkbtn'); if(b) selectWeek(+b.dataset.i); });
+  $('sibs').addEventListener('click',e=>{ const b=e.target.closest('.sib'); if(b) showSib(+b.dataset.i); });
   $('change').addEventListener('click',()=>{ $('report').hidden=true; $('gate').hidden=false; $('code').focus(); });
 
   (function(){ const u=new URLSearchParams(location.search).get('code'); if(u){ $('code').value=u; lookup(u); } })();

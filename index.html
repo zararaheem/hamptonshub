@@ -1216,7 +1216,7 @@
     <section class="view" id="view-reports" hidden>
       <div class="eyebrow">Parent Comms · Weekly Reports</div>
       <h1 class="page-title">Weekly Reports</h1>
-      <p class="page-lead">Upload each week's student report PDFs, then share a private link and code with each family. Families open <a href="/reports/" target="_blank" rel="noopener" style="color:var(--brass-bright)">the reports page ↗</a>, enter their code (e.g. <b>smith-wk1</b>), and see their child's report for that week — <b>siblings toggle</b> within the one family code.</p>
+      <p class="page-lead">Upload each week's student report PDFs, then share a private link and code with each family. Families open <a href="https://hamptonsfamilyguide.vercel.app/reports" target="_blank" rel="noopener" style="color:var(--brass-bright)">the reports page ↗</a>, enter their <b>last name</b> (or a code like <b>smithwk1</b>) and see their child's report — <b>siblings toggle</b> within the one family code, and multi-week families can switch between weeks.</p>
 
       <div class="att-bar">
         <div class="field"><label for="rep-week">Week</label><select id="rep-week"></select></div>
@@ -3857,7 +3857,7 @@ let REP_STAGE=[];    // staged files pending upload: {file, name, studentId}
 function repWeek(){ const s=document.getElementById('rep-week'); return s?+s.value:1; }
 function repNorm(s){ return String(s==null?'':s).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
 function repCode(last, week){ return repNorm(last)+'wk'+week; }
-function reportsPublicUrl(){ return location.origin.replace(/\/$/,'')+'/reports/'; }
+function reportsPublicUrl(){ return 'https://hamptonsfamilyguide.vercel.app/reports'; }
 async function repLoad(){
   if(!SUPA){ REP_ROWS=[]; return; }
   const { data, error } = await SB.from('student_reports').select('*').eq('week', repWeek()).order('label');
@@ -3895,21 +3895,24 @@ async function repUpload(){
   const ready=REP_STAGE.filter(st=>st.studentId);
   if(!ready.length){ if(msg){ msg.className='gate-msg err'; msg.textContent='Assign each file to a student first.'; } return; }
   const btn=document.getElementById('rep-upload'); if(btn){ btn.disabled=true; btn.textContent='Uploading…'; }
-  let ok=0, fail=0;
+  let ok=0, fail=0, replaced=0;
   for(const st of ready){
     const s=findStudent(st.studentId); if(!s) continue;
-    const wk=repWeek(), code=repCode(s.last, wk);
+    const wk=repWeek(), code=repCode(s.last, wk), fk=repNorm(s.last), fn=repNorm(s.first);
+    // Replace any existing report for this same student + week (no duplicates on re-upload).
+    const dup=REP_ROWS.find(r=>r.week===wk && repNorm(r.last)===fk && repNorm(r.first)===fn);
+    if(dup){ if(dup.file_path) await SB.storage.from('reports').remove([dup.file_path]); await SB.from('student_reports').delete().eq('id', dup.id); REP_ROWS=REP_ROWS.filter(r=>r.id!==dup.id); replaced++; }
     const path=`${wk}/${code}/${repNorm(s.preferred||s.first)||'report'}-${Date.now()}-${Math.floor(Math.random()*9999)}.pdf`;
     const up=await SB.storage.from('reports').upload(path, st.file, {contentType:'application/pdf', upsert:true});
     if(up.error){ console.warn('report upload failed:', up.error); fail++; continue; }
-    const rec={ week:wk, code, family_key:repNorm(s.last), first:s.first||'', last:s.last||'', label:studentLabel(s), file_path:path, file_name:st.name };
+    const rec={ week:wk, code, family_key:fk, first:s.first||'', last:s.last||'', label:studentLabel(s), file_path:path, file_name:st.name };
     const ins=await SB.from('student_reports').insert(rec);
     if(ins.error){ console.warn('report insert failed:', ins.error); await SB.storage.from('reports').remove([path]); fail++; continue; }
     ok++;
   }
   REP_STAGE=[]; const fi=document.getElementById('rep-files'); if(fi) fi.value='';
   await repLoad(); renderReports(); renderRepStage();
-  const msg2=document.getElementById('rep-up-msg'); if(msg2){ msg2.className='gate-msg ok'; msg2.textContent=`Uploaded ${ok}${fail?`, ${fail} failed`:''} ✓`; }
+  const msg2=document.getElementById('rep-up-msg'); if(msg2){ msg2.className='gate-msg ok'; msg2.textContent=`Uploaded ${ok}${replaced?` (${replaced} replaced)`:''}${fail?`, ${fail} failed`:''} ✓`; }
 }
 async function repDelete(id){
   const r=REP_ROWS.find(x=>x.id===id); if(!r) return;

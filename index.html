@@ -3857,7 +3857,11 @@ let REP_ROWS=[];     // student_reports for the selected week
 let REP_STAGE=[];    // staged files pending upload: {file, name, studentId}
 function repWeek(){ const s=document.getElementById('rep-week'); return s?+s.value:1; }
 function repNorm(s){ return String(s==null?'':s).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
-function repCode(last, week){ return repNorm(last)+'wk'+week; }
+// Drop a trailing generational suffix (Jr, Sr, II–V) so e.g. "Evans III" keys to the
+// same family as "Evans" — the family code is by surname, not by individual.
+function repLastBase(last){ return String(last==null?'':last).replace(/[\s,]+(?:jr|sr|ii|iii|iv|v)\.?$/i,'').trim(); }
+function repFamKey(last){ return repNorm(repLastBase(last)); }
+function repCode(last, week){ return repFamKey(last)+'wk'+week; }
 function reportsPublicUrl(){ return 'https://hamptonsfamilyguide.vercel.app/reports'; }
 async function repLoad(){
   if(!SUPA){ REP_ROWS=[]; return; }
@@ -3899,9 +3903,9 @@ async function repUpload(){
   let ok=0, fail=0, replaced=0;
   for(const st of ready){
     const s=findStudent(st.studentId); if(!s) continue;
-    const wk=repWeek(), code=repCode(s.last, wk), fk=repNorm(s.last), fn=repNorm(s.first);
+    const wk=repWeek(), code=repCode(s.last, wk), fk=repFamKey(s.last), fn=repNorm(s.first);
     // Replace any existing report for this same student + week (no duplicates on re-upload).
-    const dup=REP_ROWS.find(r=>r.week===wk && repNorm(r.last)===fk && repNorm(r.first)===fn);
+    const dup=REP_ROWS.find(r=>r.week===wk && repFamKey(r.last)===fk && repNorm(r.first)===fn);
     if(dup){ if(dup.file_path) await SB.storage.from('reports').remove([dup.file_path]); await SB.from('student_reports').delete().eq('id', dup.id); REP_ROWS=REP_ROWS.filter(r=>r.id!==dup.id); replaced++; }
     const path=`${wk}/${code}/${repNorm(s.preferred||s.first)||'report'}-${Date.now()}-${Math.floor(Math.random()*9999)}.pdf`;
     const up=await SB.storage.from('reports').upload(path, st.file, {contentType:'application/pdf', upsert:true});

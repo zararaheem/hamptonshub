@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
+<title>Alpha Summer · East Hampton — Week 8 Lunch Menu</title>
+<meta name="description" content="Week 8 lunch menu for Alpha Summer in the Hamptons." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0e2233; --panel:#fff; --line:#e6e0d4; --ink:#1f2d3a; --muted:#5d6b78;
+    --brass:#b07a2c; --teal:#1f7a73; --teal-bright:#2aa39a; --sand:#f6f1e7; --shadow:0 8px 30px rgba(20,40,60,.10);
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.55}
+  a{color:var(--brass)}
+  .hero{background:linear-gradient(160deg,#0e2233,#143b4a);color:#fdf8ee;padding:44px 22px 36px;text-align:center}
+  .hero .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7fd4cc;margin-bottom:10px}
+  .hero h1{font-family:var(--display);font-weight:600;font-size:34px;margin:0 0 8px;line-height:1.12}
+  .hero p{margin:6px auto 0;max-width:560px;color:#cdd8de;font-size:15px}
+  .wrap{max-width:840px;margin:0 auto;padding:26px 20px 70px}
+  .intro{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow);font-size:15px;color:#33414e}
+  .intro p{margin:8px 0}
+  .note{background:#fbf4e8;border:1px solid #ecd9b4;border-radius:10px;padding:11px 14px;font-size:14px;color:#6b5320;margin:10px 0 0}
+  .weeknav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 20px}
+  .weeknav a{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:14px;font-weight:600;color:var(--navy);text-decoration:none;box-shadow:var(--shadow)}
+  .weeknav a:hover{border-color:var(--brass);color:var(--brass)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:0 0 22px;font-size:13px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+  .wk{scroll-margin-top:14px;margin-bottom:30px}
+  .wk-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 4px 12px}
+  .wk-head h2{font-family:var(--display);font-weight:600;font-size:26px;color:var(--navy);margin:0}
+  .wk-head .dates{font-size:14px;color:var(--muted);font-weight:600}
+  .day{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .day-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .day-name{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-bright);font-weight:700}
+  .day-theme{font-family:var(--display);font-weight:600;font-size:19px;color:var(--navy)}
+  .main-row{display:flex;gap:10px;margin:7px 0}
+  .main-tag{flex:0 0 auto;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:#8a6d3b;background:#faf3e4;border:1px solid #ecd9b4;border-radius:6px;padding:3px 7px;height:fit-content;margin-top:2px}
+  .main-name{font-size:15.5px;color:#2a3742;font-weight:600}
+  .comp{color:var(--muted);font-weight:400;font-size:14px}
+  .sides{margin:9px 0 2px;font-size:14.5px;color:#33414e}
+  .sides .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:6px}
+  .diet{display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle}
+  .d{font-size:9.5px;font-weight:700;letter-spacing:.03em;padding:1px 5px;border-radius:5px;line-height:1.5}
+  .d.gf{background:#eef6f5;color:#1f7a73;border:1px solid #cfe6e3}
+  .d.v{background:#eef3ea;color:#4a7a2c;border:1px solid #d5e6c6}
+  .d.vg{background:#f0f7e8;color:#3f7a1f;border:1px solid #d0e8b6}
+  .d.df{background:#f3eefb;color:#6a4aa3;border:1px solid #ddd0f0}
+  .dips{margin-top:8px;font-size:13.5px;color:var(--muted)}
+  .station{background:linear-gradient(165deg,#fffdf8,#f3efe4);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .station h3{font-family:var(--display);font-weight:600;font-size:20px;color:var(--navy);margin:0 0 4px}
+  .station .sub{font-size:13px;color:var(--teal);font-weight:600;letter-spacing:.02em;margin-bottom:10px}
+  .station ul{margin:0;padding-left:18px}
+  .station li{font-size:15px;color:#33414e;margin:5px 0}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:6px 20px 40px}
+  @media(max-width:520px){ .hero h1{font-size:27px} .day{padding:14px 16px} .wk-head h2{font-size:22px} }
+
+  .weeknav .cur{background:#0e2233;color:#fff;border-color:#0e2233}
+  .wkcard{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:12px;box-shadow:var(--shadow);text-decoration:none;color:inherit}
+  .wkcard:hover{border-color:var(--brass)}
+  .wkcard .wk-n{font-family:var(--display);font-weight:600;font-size:20px;color:var(--navy)}
+  .wkcard .wk-d{font-size:13.5px;color:var(--muted)}
+  .wkcard .go{color:var(--brass);font-weight:700}</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">Alpha Summer · East Hampton</div>
+    <h1>Week 8 Lunch Menu</h1>
+    <p>Week of Aug 17</p>
+  </div>
+  <div class="wrap">
+    <div class="intro">
+      <p>We&rsquo;ve partnered with <b>Insatiable Eats</b> as our lunch service provider. Each day brings two mains — one with a vegetarian or vegan option — plus a rotating set of sides and fresh fruit. A <b>Daily Alternative Station</b> is always available for allergies, dietary needs, or selective eaters, and every <b>Friday</b> there&rsquo;s a fresh fruit &amp; dip station.</p>
+      <p>Prefer to pack? Your child is welcome to bring a labeled lunch — we keep it refrigerated. Please make sure any allergies or dietary needs are noted in your enrollment forms.</p>
+    </div>
+    <div class="legend"><span><b>GF</b> Gluten-Free</span><span><b>V</b> Vegetarian</span><span><b>VG</b> Vegan</span><span><b>DF</b> Dairy-Free</span></div>
+    
+      <div class="day">
+        <div class="day-head"><span class="day-name">Monday</span><span class="day-theme">Chef's Favorites</span></div>
+        <div class="main-row"><span class="main-tag">Main 1</span><span class="main-name">Lemon Herb Chicken<span class="diet"><span class="d gf">GF</span></span></span></div><div class="main-row"><span class="main-tag">Main 2</span><span class="main-name">Cheese Ravioli<span class="diet"><span class="d v">V</span></span></span></div>
+        <div class="sides"><span class="lbl">Sides</span>Roasted Potatoes &nbsp;·&nbsp; Green Beans &nbsp;·&nbsp; Fresh Fruit</div>
+        
+      </div>
+      <div class="day">
+        <div class="day-head"><span class="day-name">Tuesday</span><span class="day-theme">Slider Bar</span></div>
+        <div class="main-row"><span class="main-tag">Main 1</span><span class="main-name">Beef or Turkey Sliders</span></div><div class="main-row"><span class="main-tag">Main 2</span><span class="main-name">Grilled Cheese<span class="diet"><span class="d v">V</span></span></span></div>
+        <div class="sides"><span class="lbl">Sides</span>Sweet Potato Fries &nbsp;·&nbsp; Cucumber Coins &nbsp;·&nbsp; Fresh Fruit</div>
+        
+      </div>
+      <div class="day">
+        <div class="day-head"><span class="day-name">Wednesday</span><span class="day-theme">Oriental Day</span></div>
+        <div class="main-row"><span class="main-tag">Main 1</span><span class="main-name">Orange Chicken</span></div><div class="main-row"><span class="main-tag">Main 2</span><span class="main-name">Vegetable Lo Mein<span class="diet"><span class="d v">V</span></span></span></div>
+        <div class="sides"><span class="lbl">Sides</span>Fried Rice &nbsp;·&nbsp; Stir-Fried Vegetables &nbsp;·&nbsp; Fresh Fruit</div>
+        
+      </div>
+      <div class="day">
+        <div class="day-head"><span class="day-name">Thursday</span><span class="day-theme">Taste of Italy</span></div>
+        <div class="main-row"><span class="main-tag">Main 1</span><span class="main-name">Chicken Parmesan</span></div><div class="main-row"><span class="main-tag">Main 2</span><span class="main-name">Baked Stuffed Shells<span class="diet"><span class="d v">V</span></span></span></div>
+        <div class="sides"><span class="lbl">Sides</span>Penne Marinara &nbsp;·&nbsp; Garlic Bread &nbsp;·&nbsp; Roasted Broccoli &nbsp;·&nbsp; Fresh Fruit</div>
+        
+      </div>
+      <div class="day">
+        <div class="day-head"><span class="day-name">Friday</span><span class="day-theme">Fun Fair Day</span></div>
+        <div class="main-row"><span class="main-tag">Main 1</span><span class="main-name">Crispy Chicken Sandwiches</span></div><div class="main-row"><span class="main-tag">Main 2</span><span class="main-name">Cheese Pizza<span class="diet"><span class="d v">V</span></span></span></div>
+        <div class="sides"><span class="lbl">Sides</span>Curly Fries &nbsp;·&nbsp; Cucumber Coins &nbsp;·&nbsp; Fresh Fruit</div>
+        <div class="dips"><b>Dipping sauces:</b> Ketchup · Ranch · Honey Mustard · BBQ Sauce</div>
+      </div>
+    <div class="station"><h3>Daily Alternative Station</h3><div class="sub">Available every day — for allergies, dietary restrictions, or selective eaters</div><ul><li>Plain Grilled Chicken Breast<span class="diet"><span class="d gf">GF</span><span class="d df">DF</span></span></li><li>Steamed White Rice<span class="diet"><span class="d vg">VG</span><span class="d gf">GF</span></span></li><li>Roasted Potatoes<span class="diet"><span class="d vg">VG</span><span class="d gf">GF</span></span></li><li>Hard-Boiled Eggs<span class="diet"><span class="d v">V</span><span class="d gf">GF</span></span></li><li>Fresh Fruit<span class="diet"><span class="d vg">VG</span><span class="d gf">GF</span></span></li></ul></div>
+    <div class="station"><h3>Every Friday · Fresh Fruit &amp; Dip Station</h3><div class="sub">A build-your-own fruit &amp; dip bar to finish the week</div><ul><li>Honey Vanilla Yogurt<span class="diet"><span class="d v">V</span><span class="d gf">GF</span></span></li><li>Strawberry Cream Dip<span class="diet"><span class="d v">V</span><span class="d gf">GF</span></span></li><li>Cinnamon Cream Cheese Dip<span class="diet"><span class="d v">V</span><span class="d gf">GF</span></span></li><li>Chocolate Hummus<span class="diet"><span class="d vg">VG</span><span class="d gf">GF</span></span></li><li>Coconut Yogurt Dip<span class="diet"><span class="d vg">VG</span><span class="d df">DF</span><span class="d gf">GF</span></span></li><li>Peanut Butter Dip <span class="comp">(contains peanuts — served separately)</span><span class="diet"><span class="d v">V</span><span class="d gf">GF</span></span></li></ul></div>
+    <div class="weeknav" style="margin-top:26px"><a href="/lunch/week5">Week 5</a><a href="/lunch/week6">Week 6</a><a href="/lunch/week7">Week 7</a><span class="cur">Week 8</span><a href="/lunch/week9">Week 9</a></div>
+    <div class="foot">Catered by Insatiable Eats Pastaria &amp; Restaurant · Menu items may rotate slightly based on availability.</div>
+  </div>
+</body>
+</html>

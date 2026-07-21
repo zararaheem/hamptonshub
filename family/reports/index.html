@@ -27,6 +27,7 @@
   .rhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
   .rhead .wk{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
   .rhead a.change{font-size:13px;color:var(--brass-b);cursor:pointer;text-decoration:none}
+  .mwnote{background:#eef6f5;border:1px solid #cfe6e3;border-radius:10px;padding:10px 13px;font-size:14px;color:#2d6e68;margin-bottom:12px}
   .weeks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
   .weeks:empty{display:none}
   .wkbtn{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700;padding:8px 15px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
@@ -55,11 +56,11 @@
   <div class="wrap">
     <div id="gate" class="gate">
       <h2>Enter your code</h2>
-      <p>Enter your <b>last name</b> to see <b>every week</b> your child has attended — or a specific code like <b>smithwk1</b> for one week.</p>
+      <p>Enter your <b>last name</b> to open your child's report. <b>Returning families</b> — if your child has been here more than one week, you'll see <b>all your weeks in one place</b>. (Or use a specific code like <b>smithwk1</b> for a single week.)</p>
       <input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. smith">
       <button id="go" type="button">View report</button>
       <div id="err" class="err"></div>
-      <div class="help">Having trouble with access? Contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
+      <div class="help">If you face any trouble with access, please contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
     </div>
 
     <div id="report" class="report" hidden>
@@ -67,6 +68,7 @@
         <div class="wk" id="wklabel">—</div>
         <a class="change" id="change">Use a different code</a>
       </div>
+      <div class="mwnote" id="mwnote" hidden></div>
       <div class="weeks" id="weeks"></div>
       <div class="sibs" id="sibs"></div>
       <div class="viewer">
@@ -108,6 +110,9 @@
     WEEKS=byWeek(data.reports);
     $('gate').hidden=true; $('report').hidden=false;
     $('wklabel').textContent = WEEKS.length>1 ? (WEEKS.length+' weeks of reports') : ('Week '+(WEEKS[0]?WEEKS[0].week:'')+' report');
+    const mw=$('mwnote');
+    if(WEEKS.length>1){ mw.hidden=false; mw.innerHTML='📅 Your child has been here for <b>'+WEEKS.length+' weeks</b> — switch between each week’s report using the tabs below.'; }
+    else { mw.hidden=true; }
     const wb=$('weeks');
     wb.innerHTML = WEEKS.length>1 ? WEEKS.map((w,i)=>`<button class="wkbtn" data-i="${i}">Week ${w.week}</button>`).join('') : '';
     selectWeek(WEEKS.length-1);   // default to the most recent week

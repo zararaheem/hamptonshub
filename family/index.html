@@ -151,8 +151,11 @@
         : esc(w.friday_showcase_loc);
       const guideTeam = (w.guide_team||'').trim();
       const headGuide = (w.head_guide||'').trim();
-      const hgName = headGuide || 'Jenna Klemm';
-      const hgEmail = hgName.toLowerCase().trim().split(/\s+/).join('.') + '@alpha.school';
+      const hgRaw = headGuide || 'Jenna Klemm';
+      // head_guide may carry an explicit email as "Name <email>"; otherwise derive name.surname@alpha.school
+      const hgMatch = hgRaw.match(/^(.*?)\s*<([^>]+)>\s*$/);
+      const hgName = (hgMatch ? hgMatch[1] : hgRaw).trim();
+      const hgEmail = hgMatch ? hgMatch[2].trim() : (hgName.toLowerCase().trim().split(/\s+/).join('.') + '@alpha.school');
       const emailA = (addr,label) => `<a href="mailto:${esc(addr)}">${esc(label||'Email')}</a>`;
       const coordEmails = String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
       const coordContact = coordEmails.length ? coordEmails.map(e=>`<b>${esc(nameFromEmail(e))}</b> — ${emailA(e)}`).join('<br>') : `<b>${coordNames}</b>`;

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
+<title>Alpha Summer · East Hampton — Lunch Menu (Weeks 5–9)</title>
+<meta name="description" content="Weekly lunch menu for Alpha Summer in the Hamptons." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0e2233; --panel:#fff; --line:#e6e0d4; --ink:#1f2d3a; --muted:#5d6b78;
+    --brass:#b07a2c; --teal:#1f7a73; --teal-bright:#2aa39a; --sand:#f6f1e7; --shadow:0 8px 30px rgba(20,40,60,.10);
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.55}
+  a{color:var(--brass)}
+  .hero{background:linear-gradient(160deg,#0e2233,#143b4a);color:#fdf8ee;padding:44px 22px 36px;text-align:center}
+  .hero .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7fd4cc;margin-bottom:10px}
+  .hero h1{font-family:var(--display);font-weight:600;font-size:34px;margin:0 0 8px;line-height:1.12}
+  .hero p{margin:6px auto 0;max-width:560px;color:#cdd8de;font-size:15px}
+  .wrap{max-width:840px;margin:0 auto;padding:26px 20px 70px}
+  .intro{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow);font-size:15px;color:#33414e}
+  .intro p{margin:8px 0}
+  .note{background:#fbf4e8;border:1px solid #ecd9b4;border-radius:10px;padding:11px 14px;font-size:14px;color:#6b5320;margin:10px 0 0}
+  .weeknav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 20px}
+  .weeknav a{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:14px;font-weight:600;color:var(--navy);text-decoration:none;box-shadow:var(--shadow)}
+  .weeknav a:hover{border-color:var(--brass);color:var(--brass)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:0 0 22px;font-size:13px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+  .wk{scroll-margin-top:14px;margin-bottom:30px}
+  .wk-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 4px 12px}
+  .wk-head h2{font-family:var(--display);font-weight:600;font-size:26px;color:var(--navy);margin:0}
+  .wk-head .dates{font-size:14px;color:var(--muted);font-weight:600}
+  .day{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .day-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .day-name{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-bright);font-weight:700}
+  .day-theme{font-family:var(--display);font-weight:600;font-size:19px;color:var(--navy)}
+  .main-row{display:flex;gap:10px;margin:7px 0}
+  .main-tag{flex:0 0 auto;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:#8a6d3b;background:#faf3e4;border:1px solid #ecd9b4;border-radius:6px;padding:3px 7px;height:fit-content;margin-top:2px}
+  .main-name{font-size:15.5px;color:#2a3742;font-weight:600}
+  .comp{color:var(--muted);font-weight:400;font-size:14px}
+  .sides{margin:9px 0 2px;font-size:14.5px;color:#33414e}
+  .sides .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:6px}
+  .diet{display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle}
+  .d{font-size:9.5px;font-weight:700;letter-spacing:.03em;padding:1px 5px;border-radius:5px;line-height:1.5}
+  .d.gf{background:#eef6f5;color:#1f7a73;border:1px solid #cfe6e3}
+  .d.v{background:#eef3ea;color:#4a7a2c;border:1px solid #d5e6c6}
+  .d.vg{background:#f0f7e8;color:#3f7a1f;border:1px solid #d0e8b6}
+  .d.df{background:#f3eefb;color:#6a4aa3;border:1px solid #ddd0f0}
+  .dips{margin-top:8px;font-size:13.5px;color:var(--muted)}
+  .station{background:linear-gradient(165deg,#fffdf8,#f3efe4);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .station h3{font-family:var(--display);font-weight:600;font-size:20px;color:var(--navy);margin:0 0 4px}
+  .station .sub{font-size:13px;color:var(--teal);font-weight:600;letter-spacing:.02em;margin-bottom:10px}
+  .station ul{margin:0;padding-left:18px}
+  .station li{font-size:15px;color:#33414e;margin:5px 0}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:6px 20px 40px}
+  @media(max-width:520px){ .hero h1{font-size:27px} .day{padding:14px 16px} .wk-head h2{font-size:22px} }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">Alpha Summer · East Hampton</div>
+    <h1>Lunch Menu</h1>
+    <p>An organic, freshly prepared lunch every day — with a vegetarian option, an allergy-friendly station, and healthy snacks throughout the day.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="intro">
+      <p><b>Every day</b> we serve two mains (one with a vegetarian or vegan option), a rotating set of sides, and fresh fruit. A <b>Daily Alternative Station</b> is always available for allergies, dietary needs, or selective eaters, and every <b>Friday</b> there's a fresh fruit &amp; dip station.</p>
+      <p>Prefer to pack? Your child is welcome to bring a labeled lunch — we keep it refrigerated. Please make sure any allergies or dietary needs are noted in your enrollment forms.</p>
+      <div class="note" id="wk9note"></div>
+    </div>
+
+    <div class="weeknav" id="weeknav"></div>
+    <div class="legend">
+      <span><b>GF</b> Gluten-Free</span><span><b>V</b> Vegetarian</span><span><b>VG</b> Vegan</span><span><b>DF</b> Dairy-Free</span>
+    </div>
+
+    <div id="weeks"></div>
+
+    <div class="station">
+      <h3>Daily Alternative Station</h3>
+      <div class="sub">Available every day — for allergies, dietary restrictions, or selective eaters</div>
+      <ul id="altstation"></ul>
+    </div>
+
+    <div class="station">
+      <h3>Every Friday · Fresh Fruit &amp; Dip Station</h3>
+      <div class="sub">A build-your-own fruit &amp; dip bar to finish the week</div>
+      <ul id="fridaystation"></ul>
+    </div>
+
+    <div class="foot">Catered by Insatiable Eats Pastaria &amp; Restaurant · Menu items may rotate slightly based on availability.</div>
+  </div>
+
+<script>
+  // ---- Menu data (Weeks 5–8 from the caterer; Week 9 confirmed closer to the week) ----
+  const WEEKS = [
+    { n:5, dates:'Week of Jul 27', days:[
+      { day:'Monday', theme:'Mexican Fiesta',
+        mains:[{t:'Main 1',name:'Chicken Burrito Bowls',comp:'grilled chicken · cilantro rice · black beans · roasted corn',diet:['gf']},{t:'Main 2',name:'Cheese Quesadilla',diet:['v']}],
+        sides:[{name:'Cucumber Coins & Baby Carrots',diet:['vg','gf']},{name:'Fresh Fruit',diet:['vg','gf']}] },
+      { day:'Tuesday', theme:'Homestyle Favorites',
+        mains:[{t:'Main 1',name:'Turkey Meatballs with Gravy'},{t:'Main 2',name:'Creamy Mac & Cheese',diet:['v']}],
+        sides:[{name:'Mashed Potatoes',diet:['v','gf']},{name:'Steamed Green Beans',diet:['vg','gf']},{name:'Dinner Rolls'},{name:'Fresh Fruit',diet:['vg','gf']}] },
+      { day:'Wednesday', theme:'Asian Street Market',
+        mains:[{t:'Main 1',name:'Teriyaki Chicken Bowls'},{t:'Main 2',name:'Vegetable Stir Fry with Rice',diet:['v','vg']}],
+        sides:[{name:'Jasmine Rice',diet:['vg','gf']},{name:'Cucumber Coins',diet:['vg','gf']},{name:'Steamed Broccoli',diet:['vg','gf']},{name:'Fresh Fruit',diet:['vg','gf']}] },
+      { day:'Thursday', theme:'Italian Classics',
+        mains:[{t:'Main 1',name:'Chicken Alfredo Penne'},{t:'Main 2',name:'Cheese Tortellini Marinara',diet:['v']}],
+        sides:[{name:'Garlic Bread'},{name:'Roasted Broccoli'},{name:'Roasted Carrots'},{name:'Fresh Fruit',diet:['vg','gf']}] },
+      { day:'Friday', theme:'BBQ Picnic',
+        mains:[{t:'Main 1',name:'BBQ Pulled Chicken Sandwiches'},{t:'Main 2',name:'Grilled Cheese',diet:['v']}],
+        sides:[{name:'Potato Wedges',diet:['vg','gf']},{name:'Sweet Corn Cups',diet:['v','gf']},{name:'Fresh Fruit',diet:['vg','gf']}],
+        dips:['BBQ Sauce','Honey Mustard','Ranch','Ketchup'] },
+    ]},
+    { n:6, dates:'Week of Aug 3', days:[
+      { day:'Monday', theme:'Hawaiian Day',
+        mains:[{t:'Main 1',name:'Hawaiian Chicken Rice Bowls',diet:['gf']},{t:'Main 2',name:'Pineapple Fried Rice',diet:['v','vg']}],
+        sides:[{name:'Steamed Mixed Vegetables'},{name:'Hawaiian Rolls'},{name:'Fresh Fruit'}] },
+      { day:'Tuesday', theme:'Pizza Party',
+        mains:[{t:'Main 1',name:'Pepperoni Pizza'},{t:'Main 2',name:'Cheese & Vegetable Pizza',diet:['v']}],
+        sides:[{name:'Garlic Knots'},{name:'Roasted Broccoli'},{name:'Baby Carrots with Ranch'},{name:'Fresh Fruit'}] },
+      { day:'Wednesday', theme:'Comfort Food',
+        mains:[{t:'Main 1',name:'Crispy Chicken Tenders'},{t:'Main 2',name:'Vegetable Lasagna',diet:['v']}],
+        sides:[{name:'Roasted Potatoes'},{name:'Steamed Carrots'},{name:'Fresh Fruit'}] },
+      { day:'Thursday', theme:'Mediterranean Day',
+        mains:[{t:'Main 1',name:'Chicken Gyro Bowls'},{t:'Main 2',name:'Falafel with Tzatziki',diet:['v']}],
+        sides:[{name:'Rice Pilaf'},{name:'Cucumber Tomato Cups'},{name:'Pita Bread'},{name:'Fresh Fruit'}] },
+      { day:'Friday', theme:'Hot Dog & Burger Day',
+        mains:[{t:'Main 1',name:'All-Beef Hot Dogs & Hamburgers'},{t:'Main 2',name:'Veggie Burger',diet:['v']}],
+        sides:[{name:'French Fries'},{name:'Dill Pickles'},{name:'Fresh Fruit'}],
+        dips:['Ketchup','Mustard','Ranch','BBQ Sauce'] },
+    ]},
+    { n:7, dates:'Week of Aug 10', days:[
+      { day:'Monday', theme:'Southwest Day',
+        mains:[{t:'Main 1',name:'Southwest Chicken Rice Bowls',diet:['gf']},{t:'Main 2',name:'Black Bean Burrito Bowls',diet:['v','vg']}],
+        sides:[{name:'Spanish Rice'},{name:'Mexican Street Corn'},{name:'Fresh Fruit'}] },
+      { day:'Tuesday', theme:'Pasta Day',
+        mains:[{t:'Main 1',name:'Baked Ziti with Meat Sauce'},{t:'Main 2',name:'Baked Ziti Marinara',diet:['v']}],
+        sides:[{name:'Garlic Bread'},{name:'Steamed Green Beans'},{name:'Fresh Fruit'}] },
+      { day:'Wednesday', theme:'Country Cooking',
+        mains:[{t:'Main 1',name:'Oven-Roasted Chicken',diet:['gf']},{t:'Main 2',name:'Vegetable Pot Pie',diet:['v']}],
+        sides:[{name:'Mashed Potatoes'},{name:'Buttered Corn'},{name:'Fresh Fruit'}] },
+      { day:'Thursday', theme:'Build Your Own Bowl',
+        mains:[{t:'Main 1',name:'Beef Meatball Bowls'},{t:'Main 2',name:'Vegetable Rice Bowls',diet:['v','vg']}],
+        sides:[{name:'Brown Rice'},{name:'Roasted Broccoli'},{name:'Dinner Rolls'},{name:'Fresh Fruit'}] },
+      { day:'Friday', theme:'Deli Day',
+        mains:[{t:'Main 1',name:'Turkey & Cheese Sandwiches'},{t:'Main 2',name:'Grilled Cheese',diet:['v']}],
+        sides:[{name:'Pasta Salad'},{name:'Vegetable Chips'},{name:'Fresh Fruit'}],
+        dips:['Ranch','Honey Mustard','Chipotle Mayo'] },
+    ]},
+    { n:8, dates:'Week of Aug 17', days:[
+      { day:'Monday', theme:"Chef's Favorites",
+        mains:[{t:'Main 1',name:'Lemon Herb Chicken',diet:['gf']},{t:'Main 2',name:'Cheese Ravioli',diet:['v']}],
+        sides:[{name:'Roasted Potatoes'},{name:'Green Beans'},{name:'Fresh Fruit'}] },
+      { day:'Tuesday', theme:'Slider Bar',
+        mains:[{t:'Main 1',name:'Beef or Turkey Sliders'},{t:'Main 2',name:'Grilled Cheese',diet:['v']}],
+        sides:[{name:'Sweet Potato Fries'},{name:'Cucumber Coins'},{name:'Fresh Fruit'}] },
+      { day:'Wednesday', theme:'Oriental Day',
+        mains:[{t:'Main 1',name:'Orange Chicken'},{t:'Main 2',name:'Vegetable Lo Mein',diet:['v']}],
+        sides:[{name:'Fried Rice'},{name:'Stir-Fried Vegetables'},{name:'Fresh Fruit'}] },
+      { day:'Thursday', theme:'Taste of Italy',
+        mains:[{t:'Main 1',name:'Chicken Parmesan'},{t:'Main 2',name:'Baked Stuffed Shells',diet:['v']}],
+        sides:[{name:'Penne Marinara'},{name:'Garlic Bread'},{name:'Roasted Broccoli'},{name:'Fresh Fruit'}] },
+      { day:'Friday', theme:'Fun Fair Day',
+        mains:[{t:'Main 1',name:'Crispy Chicken Sandwiches'},{t:'Main 2',name:'Cheese Pizza',diet:['v']}],
+        sides:[{name:'Curly Fries'},{name:'Cucumber Coins'},{name:'Fresh Fruit'}],
+        dips:['Ketchup','Ranch','Honey Mustard','BBQ Sauce'] },
+    ]},
+  ];
+  const ALT = [
+    {name:'Plain Grilled Chicken Breast',diet:['gf','df']},
+    {name:'Steamed White Rice',diet:['vg','gf']},
+    {name:'Roasted Potatoes',diet:['vg','gf']},
+    {name:'Hard-Boiled Eggs',diet:['v','gf']},
+    {name:'Fresh Fruit',diet:['vg','gf']},
+  ];
+  const FRIDAY = [
+    {name:'Honey Vanilla Yogurt',diet:['v','gf']},
+    {name:'Strawberry Cream Dip',diet:['v','gf']},
+    {name:'Cinnamon Cream Cheese Dip',diet:['v','gf']},
+    {name:'Chocolate Hummus',diet:['vg','gf']},
+    {name:'Coconut Yogurt Dip',diet:['vg','df','gf']},
+    {name:'Peanut Butter Dip',diet:['v','gf'],note:'contains peanuts — served separately'},
+  ];
+  const WEEK9_NOTE = 'Week 9 (Week of Aug 24) — the final week’s menu will be shared closer to the week.';
+
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const diet=arr=>!arr||!arr.length?'':'<span class="diet">'+arr.map(d=>`<span class="d ${d}">${d.toUpperCase()}</span>`).join('')+'</span>';
+  const item=x=>`${esc(x.name)}${x.note?` <span class="comp">(${esc(x.note)})</span>`:''}${diet(x.diet)}`;
+
+  document.getElementById('weeknav').innerHTML =
+    WEEKS.map(w=>`<a href="#week${w.n}">Week ${w.n}</a>`).join('') + `<a href="#week9">Week 9</a>`;
+
+  document.getElementById('weeks').innerHTML = WEEKS.map(w=>`
+    <section class="wk" id="week${w.n}">
+      <div class="wk-head"><h2>Week ${w.n}</h2><span class="dates">${esc(w.dates)}</span></div>
+      ${w.days.map(d=>`
+        <div class="day">
+          <div class="day-head"><span class="day-name">${esc(d.day)}</span><span class="day-theme">${esc(d.theme)}</span></div>
+          ${d.mains.map(m=>`<div class="main-row"><span class="main-tag">${esc(m.t)}</span><span class="main-name">${esc(m.name)}${diet(m.diet)}${m.comp?`<div class="comp">${esc(m.comp)}</div>`:''}</span></div>`).join('')}
+          <div class="sides"><span class="lbl">Sides</span>${d.sides.map(item).join(' &nbsp;·&nbsp; ')}</div>
+          ${d.dips?`<div class="dips"><b>Dipping sauces:</b> ${d.dips.map(esc).join(' · ')}</div>`:''}
+        </div>`).join('')}
+    </section>`).join('') + `
+    <section class="wk" id="week9">
+      <div class="wk-head"><h2>Week 9</h2><span class="dates">Week of Aug 24</span></div>
+      <div class="day"><p style="margin:6px 0;font-size:15px;color:#33414e">The final week&rsquo;s menu will be shared closer to the week.</p></div>
+    </section>`;
+
+  document.getElementById('wk9note').textContent = WEEK9_NOTE;
+  document.getElementById('altstation').innerHTML = ALT.map(x=>`<li>${item(x)}</li>`).join('');
+  document.getElementById('fridaystation').innerHTML = FRIDAY.map(x=>`<li>${item(x)}</li>`).join('');
+</script>
+</body>
+</html>

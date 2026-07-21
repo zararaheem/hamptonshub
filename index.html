@@ -663,6 +663,7 @@
   .inv-pending td:first-child{border-left-color:var(--brass-bright)}
   /* weekly reports */
   .rep-codechip{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--brass-bright)}
+  .rep-fam{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px}
   .rep-stud{display:inline-flex;align-items:center;gap:5px;background:var(--navy-2);border:1px solid var(--line);border-radius:8px;padding:3px 6px 3px 10px;margin:2px 4px 2px 0;font-size:12.5px;color:var(--oyster)}
   .rep-del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;padding:2px 4px;border-radius:4px}
   .rep-del:hover{color:var(--coral);background:rgba(226,101,74,.12)}
@@ -3930,11 +3931,11 @@ function renderReports(){
   if(st) st.innerHTML=`<div class="ministat"><div class="n">${REP_ROWS.length}</div><div class="l">Reports</div></div>
     <div class="ministat p"><div class="n">${codes.length}</div><div class="l">Families</div></div>`;
   const head=`<thead><tr><th>Family code</th><th>Students</th><th>Share link</th></tr></thead>`;
-  const body=codes.length?codes.map(code=>{ const g=groups[code]; const link=reportsPublicUrl()+'?code='+encodeURIComponent(code);
+  const body=codes.length?codes.map(code=>{ const g=groups[code]; const fk=g[0].family_key; const link=reportsPublicUrl()+'?code='+encodeURIComponent(fk);
     return `<tr>
-      <td style="white-space:nowrap"><code class="rep-codechip">${esc(code)}</code></td>
+      <td style="white-space:nowrap"><code class="rep-codechip">${esc(code)}</code><div class="rep-fam">link opens all weeks · <b>${esc(fk)}</b></div></td>
       <td>${g.map(r=>`<span class="rep-stud">${esc(r.label)}<button class="rep-del" data-id="${esc(r.id)}" title="Delete this report">✕</button></span>`).join(' ')}</td>
-      <td style="white-space:nowrap"><button class="btn ghost rep-copy" data-link="${esc(link)}">Copy link</button></td>
+      <td style="white-space:nowrap"><button class="btn ghost rep-copy" data-link="${esc(link)}" title="Opens every week this family has a report for">Copy link</button></td>
     </tr>`; }).join('') : `<tr><td colspan="3" class="note-row">No reports uploaded for Week ${repWeek()} yet — pick PDFs above.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
 }

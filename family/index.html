@@ -49,19 +49,6 @@
   .guide-bio p{margin:0}
   .alert-soft{display:flex;gap:8px;align-items:flex-start;background:#fdeceb;border:1px solid #f3c6c2;border-radius:10px;padding:10px 13px;font-size:14px;color:#9b3a33;margin:10px 0}
   .tbc{display:inline-block;background:#12e0f2;color:#04222a;font-weight:800;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:6px;vertical-align:middle;box-shadow:0 0 10px rgba(18,224,242,.55)}
-  .report-embed{margin-top:12px}
-  .re-form{display:flex;gap:8px;flex-wrap:wrap}
-  .re-form input{flex:1;min-width:180px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:15px}
-  .re-form button{padding:11px 18px;border:0;border-radius:10px;background:var(--brass);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
-  .re-form button:disabled{opacity:.6;cursor:default}
-  .re-err{color:#b23b3b;font-size:13.5px;margin-top:8px;min-height:0}
-  .re-sibs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}
-  .re-sib{font-size:14.5px;font-weight:600;padding:8px 15px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-  .re-sib.on{border-color:var(--brass);background:#fbf4e8;color:#a9741f}
-  .re-viewer{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
-  .re-viewer iframe{width:100%;height:70vh;min-height:460px;border:0;display:block;background:#f4f4f4}
-  .re-vbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);font-size:14px}
-  .re-vbar a{color:#a9741f;font-weight:600;text-decoration:none}
   .tbc-note{color:#0b7c8c;font-weight:600}
   .alert-soft::before{content:"!";flex:0 0 18px;height:18px;border-radius:50%;background:#d9534f;color:#fff;font-weight:700;font-size:12px;text-align:center;line-height:18px}
   .contact-card{background:linear-gradient(165deg,#fffdf8,#f6f1e7)}
@@ -304,20 +291,6 @@
         <div class="note">For any questions or concerns about your child's report, contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div></div>
       </div>`;
 
-      h+=`<div class="sec-head"><h2>Your Child's Weekly Report</h2></div><div class="card">
-        <div class="qa"><p>Week ${esc(w.week)}'s accountability report is posted here by <b>Sunday evening / the Monday after</b>. Enter your family's <b>last name</b> to open it${` (siblings appear together)`}.</p>
-          <div class="report-embed">
-            <div class="re-form"><input id="re-code" placeholder="Your last name" autocomplete="off" autocapitalize="none" spellcheck="false"><button id="re-go" type="button">View report</button></div>
-            <div id="re-err" class="re-err"></div>
-            <div id="re-out" hidden>
-              <div id="re-sibs" class="re-sibs"></div>
-              <div class="re-viewer"><iframe id="re-pdf" title="Weekly report"></iframe><div class="re-vbar"><b id="re-who"></b><a id="re-open" target="_blank" rel="noopener">Open / download ↗</a></div></div>
-            </div>
-          </div>
-          <div class="note" style="margin-top:12px">Not showing yet? This week's report is posted by Sunday/Monday the following week. For any questions, contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
-        </div>
-      </div>`;
-
       if(headGuide || guideTeam){
         h+=`<div class="sec-head"><h2>Meet the Guide Team</h2></div><div class="card">
           <div class="qa">${guideTeam ? SEC('guide_team_intro', `<p>These are the people your child will be working with this week. Guides stay with their group throughout the day, fully focused on students.</p>`) : ''}
@@ -369,32 +342,6 @@
       document.title = 'Alpha Summer Family Guide — Week '+w.week;
       const dl=document.getElementById('dl-pdf');
       if(dl) dl.addEventListener('click', ()=>window.print());
-
-      // ---- Embedded weekly report lookup ----
-      const reNorm = s => String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
-      const reCode = v => { const t=reNorm(v); return /wk\d+/.test(t) ? t : (t+'wk'+w.week); };
-      let RE_REPORTS=[];
-      const reShow = i => { const r=RE_REPORTS[i]; if(!r) return;
-        const pdf=document.getElementById('re-pdf'); if(pdf) pdf.src=r.url||'';
-        const who=document.getElementById('re-who'); if(who) who.textContent=r.label||'';
-        const op=document.getElementById('re-open'); if(op) op.href=r.url||'#';
-        [...document.querySelectorAll('#re-sibs .re-sib')].forEach((b,j)=>b.classList.toggle('on', j===i)); };
-      async function reLookup(){
-        const inp=document.getElementById('re-code'), err=document.getElementById('re-err'), out=document.getElementById('re-out'), go=document.getElementById('re-go');
-        if(!inp) return; const val=inp.value.trim(); if(!val) return;
-        err.textContent=''; go.disabled=true; go.textContent='Loading…';
-        let d=null; try{ const r=await sb.functions.invoke('student-report',{ body:{ code: reCode(val) } }); d=r&&r.data; }catch(e){}
-        go.disabled=false; go.textContent='View report';
-        if(!d || !d.ok || !(d.reports&&d.reports.length)){ out.hidden=true; err.textContent="No report found yet for Week "+w.week+". It's posted by Sunday/Monday the following week — check the last name and try again, or contact Zara."; return; }
-        RE_REPORTS=d.reports;
-        const sibs=document.getElementById('re-sibs');
-        sibs.innerHTML = d.reports.length>1 ? d.reports.map((r,i)=>`<button class="re-sib" data-i="${i}">${esc(r.label||('Report '+(i+1)))}</button>`).join('') : '';
-        sibs.style.display = d.reports.length>1 ? 'flex' : 'none';
-        out.hidden=false; reShow(0);
-      }
-      const reGo=document.getElementById('re-go'); if(reGo) reGo.addEventListener('click', reLookup);
-      const reInp=document.getElementById('re-code'); if(reInp) reInp.addEventListener('keydown', e=>{ if(e.key==='Enter') reLookup(); });
-      const reSibs=document.getElementById('re-sibs'); if(reSibs) reSibs.addEventListener('click', e=>{ const b=e.target.closest('.re-sib'); if(b) reShow(+b.dataset.i); });
     }
 
     // Always live: a ?code= in the link picks a specific week; a bare URL

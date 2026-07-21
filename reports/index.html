@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Weekly Report · Alpha Summer</title>
+<style>
+  :root{--navy:#0e2233;--panel:#fff;--line:#e6e0d4;--ink:#1f2d3a;--muted:#5d6b78;--sand:#f6f1e7;--brass:#c8924a;--brass-b:#a9741f;--teal:#2d6e68;--ok:#2f8f6b;--shadow:0 10px 30px rgba(20,40,55,.08)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--sand);line-height:1.55}
+  .hero{background:linear-gradient(160deg,#0e2233,#143b4a);color:#fdf8ee;padding:40px 22px 34px;text-align:center}
+  .hero .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#e0b872}
+  .hero h1{margin:8px 0 0;font-size:26px;font-weight:700}
+  .hero p{margin:8px auto 0;max-width:560px;color:#cdd8de;font-size:15px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 16px 60px}
+  .gate{max-width:420px;margin:44px auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:32px 28px;box-shadow:var(--shadow);text-align:center}
+  .gate h2{font-size:22px;margin:0 0 6px}
+  .gate p{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .gate input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:17px;text-align:center;letter-spacing:.06em;margin-bottom:12px;text-transform:lowercase}
+  .gate button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--brass);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+  .gate button:disabled{opacity:.6;cursor:default}
+  .gate .err{color:#b23b3b;font-size:13px;min-height:18px;margin-top:8px}
+  .report{margin:28px auto 0;max-width:900px}
+  .rhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .rhead .wk{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--muted)}
+  .rhead a.change{font-size:13px;color:var(--brass-b);cursor:pointer;text-decoration:none}
+  .sibs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .sib{font-size:15px;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+  .sib.on{border-color:var(--brass);background:#fbf4e8;color:var(--brass-b)}
+  .viewer{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .viewer iframe{width:100%;height:78vh;min-height:520px;border:0;display:block;background:#f4f4f4}
+  .vbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
+  .vbar b{font-size:15px}
+  .vbar a{color:var(--brass-b);font-weight:600;text-decoration:none}
+  .foot{margin-top:26px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
+  @media (max-width:640px){ .viewer iframe{height:70vh} }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">Alpha Summer · Family</div>
+    <h1>Your child's weekly report</h1>
+    <p>Enter the code from your campus team to view this week's report.</p>
+  </div>
+
+  <div class="wrap">
+    <div id="gate" class="gate">
+      <h2>Enter your code</h2>
+      <p>Your code looks like <b>lastname-wk1</b>. It was shared with you by your campus team.</p>
+      <input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. smith-wk1">
+      <button id="go" type="button">View report</button>
+      <div id="err" class="err"></div>
+    </div>
+
+    <div id="report" class="report" hidden>
+      <div class="rhead">
+        <div class="wk" id="wklabel">—</div>
+        <a class="change" id="change">Use a different code</a>
+      </div>
+      <div class="sibs" id="sibs"></div>
+      <div class="viewer">
+        <iframe id="pdf" title="Weekly report"></iframe>
+        <div class="vbar"><b id="who">—</b><a id="open" target="_blank" rel="noopener">Open / download PDF ↗</a></div>
+      </div>
+    </div>
+
+    <div class="foot">Private to your family. Reports are shared securely and links expire — reopen with your code anytime.</div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
+  const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+  const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let REPORTS=[];
+
+  function showReport(i){
+    const r=REPORTS[i]; if(!r) return;
+    $('pdf').src = r.url || '';
+    $('who').textContent = r.label || 'Report';
+    $('open').href = r.url || '#';
+    [...document.querySelectorAll('.sib')].forEach((b,j)=>b.classList.toggle('on', j===i));
+  }
+  function renderReport(week, reports){
+    REPORTS=reports||[];
+    $('gate').hidden=true; $('report').hidden=false;
+    $('wklabel').textContent = week ? ('Week '+week+' report') : 'Weekly report';
+    const sibs=$('sibs');
+    sibs.innerHTML = REPORTS.length>1 ? REPORTS.map((r,i)=>`<button class="sib" data-i="${i}">${esc(r.label||('Report '+(i+1)))}</button>`).join('') : '';
+    sibs.style.display = REPORTS.length>1 ? 'flex' : 'none';
+    showReport(0);
+  }
+  async function lookup(code){
+    const err=$('err'), go=$('go');
+    err.textContent=''; go.disabled=true; go.textContent='Loading…';
+    let d=null;
+    try{ const r=await sb.functions.invoke('student-report',{ body:{ code } }); d=r&&r.data; }catch(e){}
+    go.disabled=false; go.textContent='View report';
+    if(!d || !d.ok || !(d.reports&&d.reports.length)){ err.textContent="We couldn't find a report for that code. Double-check it with your campus team."; return false; }
+    renderReport(d.week, d.reports);
+    try{ history.replaceState(null,'','?code='+encodeURIComponent(code)); }catch(e){}
+    return true;
+  }
+  $('go').addEventListener('click',()=>{ const c=$('code').value.trim(); if(c) lookup(c); });
+  $('code').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const c=$('code').value.trim(); if(c) lookup(c); } });
+  $('sibs').addEventListener('click',e=>{ const b=e.target.closest('.sib'); if(b) showReport(+b.dataset.i); });
+  $('change').addEventListener('click',()=>{ $('report').hidden=true; $('gate').hidden=false; $('code').focus(); });
+
+  (function(){ const u=new URLSearchParams(location.search).get('code'); if(u){ $('code').value=u; lookup(u); } })();
+</script>
+</body>
+</html>

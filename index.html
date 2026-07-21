@@ -661,6 +661,11 @@
   .inv-bad td:first-child{border-left-color:var(--coral)}
   .inv-info td:first-child{border-left-color:var(--teal-bright,var(--teal))}
   .inv-pending td:first-child{border-left-color:var(--brass-bright)}
+  /* weekly reports */
+  .rep-codechip{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--brass-bright)}
+  .rep-stud{display:inline-flex;align-items:center;gap:5px;background:var(--navy-2);border:1px solid var(--line);border-radius:8px;padding:3px 6px 3px 10px;margin:2px 4px 2px 0;font-size:12.5px;color:var(--oyster)}
+  .rep-del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;padding:2px 4px;border-radius:4px}
+  .rep-del:hover{color:var(--coral);background:rgba(226,101,74,.12)}
   .health-toggle{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
     padding:8px 11px;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;margin-left:auto}
   .health-toggle:hover{border-color:var(--teal);color:var(--oyster)}
@@ -802,6 +807,7 @@
       <button class="nav-item admin-only cat-comms" data-tab="slack">Weekly Slack</button>
       <div class="nav-label">Parent Comms</div>
       <button class="nav-item admin-only cat-comms" data-tab="famguide">Family Guide</button>
+      <button class="nav-item admin-only cat-comms" data-tab="reports">Weekly Reports</button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only cat-admin" data-tab="access">Access</button>
     </nav>
@@ -1204,6 +1210,27 @@
       </div>
       <div id="plan-shirtsum" style="margin-bottom:12px"></div>
       <div class="tablewrap"><table id="plan-table"></table></div>
+    </section>
+
+    <!-- ===== WEEKLY STUDENT REPORTS ===== -->
+    <section class="view" id="view-reports" hidden>
+      <div class="eyebrow">Parent Comms · Weekly Reports</div>
+      <h1 class="page-title">Weekly Reports</h1>
+      <p class="page-lead">Upload each week's student report PDFs, then share a private link and code with each family. Families open <a href="/reports/" target="_blank" rel="noopener" style="color:var(--brass-bright)">the reports page ↗</a>, enter their code (e.g. <b>smith-wk1</b>), and see their child's report for that week — <b>siblings toggle</b> within the one family code.</p>
+
+      <div class="att-bar">
+        <div class="field"><label for="rep-week">Week</label><select id="rep-week"></select></div>
+        <div class="att-stats" id="rep-stats" style="margin-left:auto"></div>
+      </div>
+
+      <div class="card" style="padding:14px 16px;margin:6px 0 16px">
+        <div class="eyebrow" style="margin-bottom:8px">Bulk upload PDFs</div>
+        <p class="lc-desc" style="margin:0 0 10px">Pick this week's report PDFs. I'll match each file to a student by its name (name the files with the student's name, e.g. <b>Smith Ava.pdf</b>) — fix any match below, then upload. Codes are generated per family.</p>
+        <input id="rep-files" type="file" accept="application/pdf,.pdf" multiple>
+        <div id="rep-stage"></div>
+      </div>
+
+      <div class="tablewrap"><table id="rep-table"></table></div>
     </section>
 
     <!-- ===== INVENTORY ===== -->
@@ -3824,6 +3851,106 @@ function invInit(){
   renderInventory();
 }
 
+/* =================== WEEKLY STUDENT REPORTS =================== */
+let REP_ROWS=[];     // student_reports for the selected week
+let REP_STAGE=[];    // staged files pending upload: {file, name, studentId}
+function repWeek(){ const s=document.getElementById('rep-week'); return s?+s.value:1; }
+function repNorm(s){ return String(s==null?'':s).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }
+function repCode(last, week){ return repNorm(last)+'wk'+week; }
+function reportsPublicUrl(){ return location.origin.replace(/\/$/,'')+'/reports/'; }
+async function repLoad(){
+  if(!SUPA){ REP_ROWS=[]; return; }
+  const { data, error } = await SB.from('student_reports').select('*').eq('week', repWeek()).order('label');
+  REP_ROWS = (!error && data) ? data : [];
+}
+// Best-guess the student for a file name from the week's roster.
+function repGuess(fileName){
+  const fold=repNorm(fileName); const studs=studentsForWeek(repWeek());
+  let best=null, score=0;
+  studs.forEach(s=>{ const ln=repNorm(s.last), fn=repNorm(s.first), pf=repNorm(s.preferred);
+    let sc=0; if(ln && fold.includes(ln)) sc+=2; if(fn && fold.includes(fn)) sc+=1; if(pf && fold.includes(pf)) sc+=1;
+    if(sc>score){ score=sc; best=s; } });
+  return score>0?best:null;
+}
+function repStageFiles(files){
+  REP_STAGE=[...files].map(f=>{ const g=repGuess(f.name); return { file:f, name:f.name, studentId: g?g.id:'' }; });
+  renderRepStage();
+}
+function renderRepStage(){
+  const box=document.getElementById('rep-stage'); if(!box) return;
+  if(!REP_STAGE.length){ box.innerHTML=''; return; }
+  const studs=studentsForWeek(repWeek()).slice().sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  const opts=sel=>`<option value="">— choose student —</option>`+studs.map(s=>`<option value="${s.id}" ${s.id===sel?'selected':''}>${esc(studentLabel(s))} · ${esc(s.last||'')}</option>`).join('');
+  const unassigned=REP_STAGE.filter(st=>!st.studentId).length;
+  box.innerHTML=`<div class="tablewrap" style="margin-top:12px"><table id="rep-stage-tbl"><thead><tr><th>File</th><th>Student</th><th>Code</th></tr></thead><tbody>`+
+    REP_STAGE.map((st,i)=>{ const s=findStudent(st.studentId); const code=s?repCode(s.last,repWeek()):'';
+      return `<tr data-i="${i}"><td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(st.name)}</td>
+        <td><select class="rep-assign cell-input" data-i="${i}" style="min-width:180px">${opts(st.studentId)}</select></td>
+        <td>${code?`<code class="rep-codechip">${esc(code)}</code>`:'<span class="blank">—</span>'}</td></tr>`; }).join('')+
+    `</tbody></table></div>
+    <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="rep-upload">Upload ${REP_STAGE.length-unassigned} report${(REP_STAGE.length-unassigned)===1?'':'s'}</button>${unassigned?`<span class="note-row" style="margin:0">${unassigned} file${unassigned===1?'':'s'} still need a student</span>`:''}<span class="gate-msg" id="rep-up-msg"></span></div>`;
+}
+async function repUpload(){
+  const msg=document.getElementById('rep-up-msg');
+  const ready=REP_STAGE.filter(st=>st.studentId);
+  if(!ready.length){ if(msg){ msg.className='gate-msg err'; msg.textContent='Assign each file to a student first.'; } return; }
+  const btn=document.getElementById('rep-upload'); if(btn){ btn.disabled=true; btn.textContent='Uploading…'; }
+  let ok=0, fail=0;
+  for(const st of ready){
+    const s=findStudent(st.studentId); if(!s) continue;
+    const wk=repWeek(), code=repCode(s.last, wk);
+    const path=`${wk}/${code}/${repNorm(s.preferred||s.first)||'report'}-${Date.now()}-${Math.floor(Math.random()*9999)}.pdf`;
+    const up=await SB.storage.from('reports').upload(path, st.file, {contentType:'application/pdf', upsert:true});
+    if(up.error){ console.warn('report upload failed:', up.error); fail++; continue; }
+    const rec={ week:wk, code, family_key:repNorm(s.last), first:s.first||'', last:s.last||'', label:studentLabel(s), file_path:path, file_name:st.name };
+    const ins=await SB.from('student_reports').insert(rec);
+    if(ins.error){ console.warn('report insert failed:', ins.error); await SB.storage.from('reports').remove([path]); fail++; continue; }
+    ok++;
+  }
+  REP_STAGE=[]; const fi=document.getElementById('rep-files'); if(fi) fi.value='';
+  await repLoad(); renderReports(); renderRepStage();
+  const msg2=document.getElementById('rep-up-msg'); if(msg2){ msg2.className='gate-msg ok'; msg2.textContent=`Uploaded ${ok}${fail?`, ${fail} failed`:''} ✓`; }
+}
+async function repDelete(id){
+  const r=REP_ROWS.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`Delete the Week ${r.week} report for ${r.label}?`)) return;
+  if(r.file_path) await SB.storage.from('reports').remove([r.file_path]);
+  const { error } = await SB.from('student_reports').delete().eq('id', id);
+  if(error){ alert('Could not delete: '+error.message); return; }
+  await repLoad(); renderReports();
+}
+function renderReports(){
+  const tbl=document.getElementById('rep-table'); if(!tbl) return;
+  const groups={}; REP_ROWS.forEach(r=>{ (groups[r.code]=groups[r.code]||[]).push(r); });
+  const codes=Object.keys(groups).sort();
+  const st=document.getElementById('rep-stats');
+  if(st) st.innerHTML=`<div class="ministat"><div class="n">${REP_ROWS.length}</div><div class="l">Reports</div></div>
+    <div class="ministat p"><div class="n">${codes.length}</div><div class="l">Families</div></div>`;
+  const head=`<thead><tr><th>Family code</th><th>Students</th><th>Share link</th></tr></thead>`;
+  const body=codes.length?codes.map(code=>{ const g=groups[code]; const link=reportsPublicUrl()+'?code='+encodeURIComponent(code);
+    return `<tr>
+      <td style="white-space:nowrap"><code class="rep-codechip">${esc(code)}</code></td>
+      <td>${g.map(r=>`<span class="rep-stud">${esc(r.label)}<button class="rep-del" data-id="${esc(r.id)}" title="Delete this report">✕</button></span>`).join(' ')}</td>
+      <td style="white-space:nowrap"><button class="btn ghost rep-copy" data-link="${esc(link)}">Copy link</button></td>
+    </tr>`; }).join('') : `<tr><td colspan="3" class="note-row">No reports uploaded for Week ${repWeek()} yet — pick PDFs above.</td></tr>`;
+  tbl.innerHTML=head+`<tbody>${body}</tbody>`;
+}
+function reportsInit(){
+  const sel=document.getElementById('rep-week'); if(!sel) return;
+  fillWeekSelect(sel);
+  sel.addEventListener('change', async()=>{ REP_STAGE=[]; renderRepStage(); if(SUPA){ await hydrateRoster(); await repLoad(); } renderReports(); });
+  const f=document.getElementById('rep-files'); if(f) f.addEventListener('change', e=>{ if(e.target.files&&e.target.files.length) repStageFiles(e.target.files); });
+  const stage=document.getElementById('rep-stage');
+  if(stage){
+    stage.addEventListener('change', e=>{ const a=e.target.closest('.rep-assign'); if(!a) return; const i=+a.dataset.i; if(REP_STAGE[i]) REP_STAGE[i].studentId=a.value; renderRepStage(); });
+    stage.addEventListener('click', e=>{ if(e.target.closest('#rep-upload')) repUpload(); });
+  }
+  const tbl=document.getElementById('rep-table');
+  if(tbl) tbl.addEventListener('click', e=>{ const d=e.target.closest('.rep-del'); if(d){ repDelete(d.dataset.id); return; }
+    const c=e.target.closest('.rep-copy'); if(c){ if(navigator.clipboard) navigator.clipboard.writeText(c.dataset.link); c.textContent='Copied ✓'; setTimeout(()=>c.textContent='Copy link',1400); } });
+  renderReports();
+}
+
 /* =================== STUDENT ROSTER TAB =================== */
 function rosWeek(){ return document.getElementById('ros-week').value; }
 let ROS_FILTER='all';
@@ -4714,7 +4841,7 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','access'];
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','reports','access'];
 const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
@@ -4732,6 +4859,7 @@ function showTab(t){
   if(t==='medical' && typeof renderMedical==='function'){ if(SUPA) hydrateRoster().then(renderMedical); else renderMedical(); }
   if(t==='planning' && typeof renderPlanning==='function'){ if(SUPA) hydrateRoster().then(renderPlanning); else renderPlanning(); }
   if(t==='inventory' && typeof renderInventory==='function'){ if(SUPA) invLoad().then(renderInventory); else renderInventory(); }
+  if(t==='reports' && typeof renderReports==='function'){ if(SUPA) hydrateRoster().then(repLoad).then(renderReports); else renderReports(); }
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
@@ -5329,7 +5457,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
     try{ history.replaceState(null,'', b.dataset.gv==='games' ? '#games' : '#weeklybrief'); }catch(e){}
   });
 })();
-attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); planningInit(); invInit(); visitorsInit(); emInit(); scoreInit(); authInit();
+attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); planningInit(); invInit(); reportsInit(); visitorsInit(); emInit(); scoreInit(); authInit();
 // Tribe scoreboard (Alpha Survivor) only applied to Week 1 — hide it from the nav afterwards.
 if(NOW!==0){ ['nav-games-label','nav-scoreboard'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; }); }
 loadContent().then(()=>{

@@ -4213,7 +4213,9 @@ function renderEmergency(){
   const q=(document.getElementById('em-search').value||'').trim().toLowerCase();
   let studs=studentsForWeek(wk);
   if(q) studs=studs.filter(s=>((s.first||'')+' '+(s.last||'')).toLowerCase().includes(q));
-  const head=`<thead><tr><th>#</th><th>Name</th><th>Grade</th><th>DOB</th>
+  // List by family — sort by last name (siblings group together), then first name.
+  studs=studs.slice().sort((a,b)=> (a.last||'').localeCompare(b.last||'') || (a.first||'').localeCompare(b.first||''));
+  const head=`<thead><tr><th>#</th><th>Family (last, first)</th><th>Grade</th><th>DOB</th>
     <th>Primary parent</th><th>Phone</th><th>Email</th>
     <th>Secondary parent</th><th>Phone</th><th>Email</th>
     <th>Authorized pickup</th><th>Phone</th>
@@ -4227,7 +4229,7 @@ function renderEmergency(){
     return `<div class="phone-cell"><input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" data-phone inputmode="tel" value="${escAttr(val||'')}"><a class="callbtn" href="tel:${escAttr(tel)}" title="Call"${tel?'':' style="display:none"'}>Call</a></div>`; };
   const body=studs.length? studs.map((s,i)=>{ const e=EMERGENCY[s.id]||{}; return `<tr>
     <td class="role-cell">${i+1}</td>
-    <td style="white-space:nowrap">${esc(s.first||'')} ${esc(s.last||'')}</td>
+    <td style="white-space:nowrap"><b>${esc(s.last||'')}</b>${s.first?', '+esc(s.first):''}</td>
     <td>${esc(s.grade||'')}</td>
     <td>${inp(s.id,'dob',e.dob)}</td>
     <td>${inp(s.id,'guardian',e.guardian)}</td>

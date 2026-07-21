@@ -1321,7 +1321,7 @@
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 0;gap:10px;flex-wrap:wrap">
-        <div class="eyebrow" style="margin:0">Tribe rosters</div>
+        <div class="eyebrow" style="margin:0">Tribe rosters · <span id="tribe-wk"></span></div>
         <button class="btn ghost" id="tr-manage" style="padding:6px 12px">Assign students</button>
       </div>
       <div id="tribe-rosters" style="margin-top:8px"></div>
@@ -3368,9 +3368,10 @@ function scoreSubscribe(){
   if(!SUPA || SCORE_CHAN) return;
   SCORE_CHAN=SB.channel('tribe-live').on('postgres_changes',{event:'*',schema:'public',table:'tribe_awards'},async()=>{ await scoreFetch(); renderScore(); }).subscribe();
 }
-const SCORE_WK=1; // Alpha Survivor tribes are set on the Week 1 roster
+const SCORE_WK=NOW+1; // roster the current (active) week's students into tribes
 function renderTribeRosters(){
   const box=document.getElementById('tribe-rosters'); if(!box) return;
+  const wkEl=document.getElementById('tribe-wk'); if(wkEl) wkEl.textContent='Week '+SCORE_WK;
   const studs=studentsForWeek(SCORE_WK);
   const g={helios:[],poseidon:[],none:[]};
   studs.forEach(s=>{ g[(s.tribe==='helios'||s.tribe==='poseidon')?s.tribe:'none'].push(s); });
@@ -5490,8 +5491,7 @@ renderWorkstreams('All'); renderEvents(); renderGuideWeeks(); renderGames();
   });
 })();
 attInit(); techInit(); supInit(); rosterInit(); dismissalInit(); medicalInit(); planningInit(); invInit(); reportsInit(); visitorsInit(); emInit(); scoreInit(); authInit();
-// Tribe scoreboard (Alpha Survivor) only applied to Week 1 — hide it from the nav afterwards.
-if(NOW!==0){ ['nav-games-label','nav-scoreboard'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; }); }
+// Tribe scoreboard is active — visible in the nav for every week.
 loadContent().then(()=>{
   const f=document.getElementById('ws-filter'); if(f) f.dataset.built='';
   renderTiles(); renderJumpCards(); renderRhythm();

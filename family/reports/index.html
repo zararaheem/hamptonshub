@@ -37,14 +37,16 @@
   .sib{font-size:15px;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
   .sib.on{border-color:var(--brass);background:#fbf4e8;color:var(--brass-b)}
   .viewer{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
-  .viewer iframe{width:100%;height:78vh;min-height:520px;border:0;display:block;background:#f4f4f4}
+  .pdfview{height:80vh;min-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#e9edf0;padding:12px;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .pdf-page{max-width:100%;height:auto;background:#fff;box-shadow:0 1px 8px rgba(20,40,55,.18);border-radius:2px}
+  .pdf-msg{margin:auto;padding:40px 20px;color:var(--muted);text-align:center;font-size:14px}
   .vbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
   .vbar b{font-size:15px}
   .vbar a{color:var(--brass-b);font-weight:600;text-decoration:none}
   .contact{margin-top:14px;background:#fbf4e8;border:1px solid #ecd9b4;border-radius:12px;padding:12px 15px;font-size:14.5px;color:#6b5320}
   .contact a{color:var(--brass-b);font-weight:600}
   .foot{margin-top:26px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
-  @media (max-width:640px){ .viewer iframe{height:70vh} }
+  @media (max-width:640px){ .pdfview{height:74vh;padding:8px} }
 </style>
 </head>
 <body>
@@ -73,7 +75,7 @@
       <div class="weeks" id="weeks"></div>
       <div class="sibs" id="sibs"></div>
       <div class="viewer">
-        <iframe id="pdf" title="Weekly report"></iframe>
+        <div id="pdfview" class="pdfview"></div>
         <div class="vbar"><b id="who">—</b><a id="open" target="_blank" rel="noopener">Open / download PDF ↗</a></div>
       </div>
       <div class="contact">For any questions or concerns about your child's report, contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
@@ -83,7 +85,9 @@
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
+  if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
   const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
   const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -92,9 +96,34 @@
   let WEEKS=[], selW=0;
   function byWeek(reports){ const m={}; (reports||[]).forEach(r=>{ (m[r.week]=m[r.week]||[]).push(r); });
     return Object.keys(m).map(Number).sort((a,b)=>a-b).map(w=>({week:w, reports:m[w]})); }
+  let pdfToken=0;
+  async function renderPdf(url){
+    const view=$('pdfview'); if(!view) return;
+    const token=++pdfToken;
+    view.innerHTML='<div class="pdf-msg">Loading report…</div>';
+    if(!window.pdfjsLib || !url){ view.innerHTML='<div class="pdf-msg">Open the report using the link below.</div>'; return; }
+    try{
+      const pdf=await pdfjsLib.getDocument({url}).promise;
+      if(token!==pdfToken) return;
+      view.innerHTML='';
+      const cssW=Math.min(view.clientWidth||600, 900);
+      const dpr=Math.min(window.devicePixelRatio||1, 2);
+      for(let n=1;n<=pdf.numPages;n++){
+        if(token!==pdfToken) return;
+        const page=await pdf.getPage(n);
+        const base=page.getViewport({scale:1});
+        const vp=page.getViewport({scale:(cssW/base.width)*dpr});
+        const canvas=document.createElement('canvas');
+        canvas.className='pdf-page'; canvas.width=vp.width; canvas.height=vp.height;
+        canvas.style.width='100%'; canvas.style.height='auto';
+        view.appendChild(canvas);
+        await page.render({canvasContext:canvas.getContext('2d'), viewport:vp}).promise;
+      }
+    }catch(e){ if(token===pdfToken) view.innerHTML='<div class="pdf-msg">Couldn’t display the report here — please use “Open / download” below.</div>'; }
+  }
   function showSib(i){
     const wk=WEEKS[selW], r=wk&&wk.reports[i]; if(!r) return;
-    $('pdf').src = r.url || '';
+    renderPdf(r.url);
     $('who').textContent = (r.label||'Report') + (WEEKS.length>1?(' · Week '+wk.week):'');
     $('open').href = r.url || '#';
     [...document.querySelectorAll('#sibs .sib')].forEach((b,j)=>b.classList.toggle('on', j===i));

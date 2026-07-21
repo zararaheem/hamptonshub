@@ -43,10 +43,26 @@
   .vbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
   .vbar b{font-size:15px}
   .vbar a{color:var(--brass-b);font-weight:600;text-decoration:none}
+  .vbar-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .fsbtn{border:1px solid #c3ccd3;background:#eef2f4;color:#243642;font-weight:600;font-size:13.5px;padding:7px 12px;border-radius:8px;cursor:pointer}
+  .fsbtn:hover{background:#e2e8ec}
   .contact{margin-top:14px;background:#fbf4e8;border:1px solid #ecd9b4;border-radius:12px;padding:12px 15px;font-size:14.5px;color:#6b5320}
   .contact a{color:var(--brass-b);font-weight:600}
   .foot{margin-top:26px;font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
-  @media (max-width:640px){ .pdfview{height:74vh;padding:8px} }
+  .fsoverlay{position:fixed;inset:0;z-index:1000;background:#1a2733;display:flex;flex-direction:column}
+  .fsoverlay[hidden]{display:none}
+  .fs-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:#0e2233;color:#fff;flex:0 0 auto}
+  .fs-title{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52%}
+  .fs-tools{display:flex;align-items:center;gap:8px}
+  .fsctl{border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.08);color:#fff;font-weight:700;font-size:16px;line-height:1;min-width:38px;height:38px;padding:0 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .fsctl:hover{background:rgba(255,255,255,.18)}
+  .fsclose{font-size:13.5px;font-weight:600}
+  .fszlabel{font-size:13px;min-width:46px;text-align:center;opacity:.9}
+  .fspages{flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .fspages .pdf-page{max-width:none;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.4);border-radius:2px}
+  .fs-slide{display:flex;justify-content:center;width:100%}
+  .fspages .pdf-msg{color:#cdd6dd}
+  @media (max-width:640px){ .pdfview{height:74vh;padding:8px} .fs-title{max-width:38%} .fspages{padding:8px} }
 </style>
 </head>
 <body>
@@ -76,12 +92,25 @@
       <div class="sibs" id="sibs"></div>
       <div class="viewer">
         <div id="pdfview" class="pdfview"></div>
-        <div class="vbar"><b id="who">—</b><a id="open" target="_blank" rel="noopener">Open / download PDF ↗</a></div>
+        <div class="vbar"><b id="who">—</b><span class="vbar-tools"><button id="fsopen" class="fsbtn" type="button">⤢ Full page</button><a id="open" target="_blank" rel="noopener">Open / download ↗</a></span></div>
       </div>
       <div class="contact">For any questions or concerns about your child's report, contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
     </div>
 
     <div class="foot">Private to your family. Reports are shared securely and links expire — reopen with your code anytime.</div>
+  </div>
+
+  <div id="fsoverlay" class="fsoverlay" hidden>
+    <div class="fs-bar">
+      <b id="fs-title" class="fs-title">—</b>
+      <div class="fs-tools">
+        <button id="fszout" class="fsctl" type="button" aria-label="Zoom out">−</button>
+        <span id="fszoom" class="fszlabel">100%</span>
+        <button id="fszin" class="fsctl" type="button" aria-label="Zoom in">+</button>
+        <button id="fsclose" class="fsctl fsclose" type="button" aria-label="Close">✕ Close</button>
+      </div>
+    </div>
+    <div id="fspages" class="fspages"></div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
@@ -96,38 +125,49 @@
   let WEEKS=[], selW=0;
   function byWeek(reports){ const m={}; (reports||[]).forEach(r=>{ (m[r.week]=m[r.week]||[]).push(r); });
     return Object.keys(m).map(Number).sort((a,b)=>a-b).map(w=>({week:w, reports:m[w]})); }
-  let pdfToken=0;
-  async function renderPdf(url){
-    const view=$('pdfview'); if(!view) return;
-    const token=++pdfToken;
+  let CUR_URL='', pdfTok=0;
+  // mode: 'inline' (fit width, continuous scroll) | 'full' (fit each page to the screen, page-through)
+  async function paintPdf(url, view, mode){
+    if(!view) return; const token=++pdfTok;
     view.innerHTML='<div class="pdf-msg">Loading report…</div>';
     if(!window.pdfjsLib || !url){ view.innerHTML='<div class="pdf-msg">Open the report using the link below.</div>'; return; }
     try{
       const pdf=await pdfjsLib.getDocument({url}).promise;
-      if(token!==pdfToken) return;
+      if(token!==pdfTok) return;
       view.innerHTML='';
-      const cssW=Math.min(view.clientWidth||600, 900);
       const dpr=Math.min(window.devicePixelRatio||1, 2);
+      const cw=Math.min((view.clientWidth||600), 1000);
       for(let n=1;n<=pdf.numPages;n++){
-        if(token!==pdfToken) return;
+        if(token!==pdfTok) return;
         const page=await pdf.getPage(n);
         const base=page.getViewport({scale:1});
-        const vp=page.getViewport({scale:(cssW/base.width)*dpr});
+        const vp=page.getViewport({scale:(cw/base.width)*dpr});
         const canvas=document.createElement('canvas');
         canvas.className='pdf-page'; canvas.width=vp.width; canvas.height=vp.height;
-        canvas.style.width='100%'; canvas.style.height='auto';
-        view.appendChild(canvas);
-        await page.render({canvasContext:canvas.getContext('2d'), viewport:vp}).promise;
+        const ctx=canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); // opaque white — no transparent gaps
+        if(mode==='full'){
+          canvas.dataset.bw=String(cw); // base display width (css px) at zoom 1
+          const slide=document.createElement('div'); slide.className='fs-slide'; slide.appendChild(canvas); view.appendChild(slide);
+          applyFsZoom(canvas);
+        } else { canvas.style.width='100%'; canvas.style.height='auto'; view.appendChild(canvas); }
+        await page.render({canvasContext:ctx, viewport:vp, background:'#ffffff'}).promise;
       }
-    }catch(e){ if(token===pdfToken) view.innerHTML='<div class="pdf-msg">Couldn’t display the report here — please use “Open / download” below.</div>'; }
+    }catch(e){ if(token===pdfTok) view.innerHTML='<div class="pdf-msg">Couldn’t display the report here — please use “Open / download” below.</div>'; }
   }
   function showSib(i){
     const wk=WEEKS[selW], r=wk&&wk.reports[i]; if(!r) return;
-    renderPdf(r.url);
+    CUR_URL=r.url||'';
+    paintPdf(CUR_URL, $('pdfview'), 'inline');
     $('who').textContent = (r.label||'Report') + (WEEKS.length>1?(' · Week '+wk.week):'');
     $('open').href = r.url || '#';
     [...document.querySelectorAll('#sibs .sib')].forEach((b,j)=>b.classList.toggle('on', j===i));
   }
+  let fsZoom=1;
+  function applyFsZoom(canvas){ const bw=parseFloat(canvas.dataset.bw||'0'); if(!bw) return; canvas.style.width=(bw*fsZoom)+'px'; canvas.style.height='auto'; }
+  function applyFsZoomAll(){ [...document.querySelectorAll('#fspages .pdf-page')].forEach(applyFsZoom); const z=$('fszoom'); if(z) z.textContent=Math.round(fsZoom*100)+'%'; }
+  function setFsZoom(z){ fsZoom=Math.max(0.5, Math.min(3, z)); applyFsZoomAll(); }
+  function openFull(){ if(!CUR_URL) return; const o=$('fsoverlay'); $('fs-title').textContent=$('who').textContent||''; o.hidden=false; document.body.style.overflow='hidden'; fsZoom=1; applyFsZoomAll(); paintPdf(CUR_URL, $('fspages'), 'full'); }
+  function closeFull(){ const o=$('fsoverlay'); o.hidden=true; document.body.style.overflow=''; $('fspages').innerHTML=''; pdfTok++; if(CUR_URL) paintPdf(CUR_URL, $('pdfview'), 'inline'); }
   function selectWeek(wi){
     selW=wi; const wk=WEEKS[selW]; if(!wk) return;
     [...document.querySelectorAll('#weeks .wkbtn')].forEach((b,j)=>b.classList.toggle('on', j===wi));
@@ -165,6 +205,11 @@
   $('weeks').addEventListener('click',e=>{ const b=e.target.closest('.wkbtn'); if(b) selectWeek(+b.dataset.i); });
   $('sibs').addEventListener('click',e=>{ const b=e.target.closest('.sib'); if(b) showSib(+b.dataset.i); });
   $('change').addEventListener('click',()=>{ $('report').hidden=true; $('gate').hidden=false; $('code').focus(); });
+  $('fsopen').addEventListener('click', openFull);
+  $('fsclose').addEventListener('click', closeFull);
+  $('fszin').addEventListener('click', ()=>setFsZoom(fsZoom+0.25));
+  $('fszout').addEventListener('click', ()=>setFsZoom(fsZoom-0.25));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('fsoverlay').hidden) closeFull(); });
 
   (function(){ const u=new URLSearchParams(location.search).get('code'); if(u){ $('code').value=u; lookup(u); } })();
 </script>

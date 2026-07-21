@@ -30,8 +30,9 @@
   .mwnote{background:#eef6f5;border:1px solid #cfe6e3;border-radius:10px;padding:10px 13px;font-size:14px;color:#2d6e68;margin-bottom:12px}
   .weeks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
   .weeks:empty{display:none}
-  .wkbtn{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700;padding:8px 15px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
-  .wkbtn.on{border-color:var(--teal);background:#eef6f5;color:var(--teal)}
+  .wkbtn{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700;padding:9px 17px;border-radius:10px;border:1px solid #c3ccd3;background:#e4e9ec;color:#3a4a55;cursor:pointer}
+  .wkbtn:hover{background:#d7dee2}
+  .wkbtn.on{border-color:#0e2233;background:#0e2233;color:#fff}
   .sibs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .sib{font-size:15px;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
   .sib.on{border-color:var(--brass);background:#fbf4e8;color:var(--brass-b)}
@@ -56,8 +57,8 @@
   <div class="wrap">
     <div id="gate" class="gate">
       <h2>Enter your code</h2>
-      <p>Enter your <b>last name</b> to open your child's report. <b>Returning families</b> — if your child has been here more than one week, you'll see <b>all your weeks in one place</b>. (Or use a specific code like <b>smithwk1</b> for a single week.)</p>
-      <input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. smith">
+      <p>Each family has a unique code. Please enter your <b>family name and week</b> — abbreviated, e.g. <b>smith wk2</b> (or <b>wk3</b> for week 3). If your child has been here more than one week, you'll be able to switch between all your weeks.</p>
+      <input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. smith wk2">
       <button id="go" type="button">View report</button>
       <div id="err" class="err"></div>
       <div class="help">If you face any trouble with access, please contact <b>Zara</b> — <a href="mailto:zara.raheem@alpha.school">zara.raheem@alpha.school</a>.</div>
@@ -111,11 +112,13 @@
     $('gate').hidden=true; $('report').hidden=false;
     $('wklabel').textContent = WEEKS.length>1 ? (WEEKS.length+' weeks of reports') : ('Week '+(WEEKS[0]?WEEKS[0].week:'')+' report');
     const mw=$('mwnote');
-    if(WEEKS.length>1){ mw.hidden=false; mw.innerHTML='📅 Your child has been here for <b>'+WEEKS.length+' weeks</b> — switch between each week’s report using the tabs below.'; }
+    if(WEEKS.length>1){ mw.hidden=false; mw.innerHTML='Your child has been here for <b>'+WEEKS.length+' weeks</b> — switch between each week’s report using the tabs below.'; }
     else { mw.hidden=true; }
     const wb=$('weeks');
     wb.innerHTML = WEEKS.length>1 ? WEEKS.map((w,i)=>`<button class="wkbtn" data-i="${i}">Week ${w.week}</button>`).join('') : '';
-    selectWeek(WEEKS.length-1);   // default to the most recent week
+    let di=WEEKS.length-1;                                    // default to most recent
+    if(data.requested!=null){ const ri=WEEKS.findIndex(w=>w.week===data.requested); if(ri>=0) di=ri; }  // …or the week in the link
+    selectWeek(di);
   }
   async function lookup(code){
     const err=$('err'), go=$('go');

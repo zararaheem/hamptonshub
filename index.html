@@ -1272,8 +1272,8 @@
     <!-- ===== TRIBE SCOREBOARD ===== -->
     <section class="view" id="view-scoreboard" hidden>
       <div class="eyebrow" id="score-clock">—</div>
-      <h1 class="page-title">Alpha Survivor · Week 1</h1>
-      <p class="page-lead">Helios vs Poseidon — points update live for everyone the moment they're awarded.</p>
+      <h1 class="page-title">Alpha Survivor · <span id="score-week">Week 1</span></h1>
+      <p class="page-lead">Helios vs Poseidon — points for this week update live for everyone the moment they're awarded.</p>
 
       <div style="display:flex;justify-content:flex-end;margin:-4px 0 4px">
         <a class="btn ghost" href="board/" target="_blank" rel="noopener" title="Full-screen live board for projecting on a TV/screen">📺 Open live board ↗</a>
@@ -3311,13 +3311,14 @@ function dismissalInit(){
 const TRIBES={helios:{name:'Helios',emoji:'☀️'}, poseidon:{name:'Poseidon',emoji:'🔱'}};
 let SCORE_ROWS=[]; let SCORE_CHAN=null;
 async function scoreFetch(){
-  if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').order('created_at',{ascending:false}); SCORE_ROWS=(!error&&data)?data:[]; }
-  else { SCORE_ROWS=store.get('tribe_awards')||[]; }
+  if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').eq('week',SCORE_WK).order('created_at',{ascending:false}); SCORE_ROWS=(!error&&data)?data:[]; }
+  else { SCORE_ROWS=(store.get('tribe_awards')||[]).filter(r=>(r.week==null||r.week===SCORE_WK)); }
 }
 function scoreTotals(){ const t={helios:0,poseidon:0}; SCORE_ROWS.forEach(r=>{ if(t[r.tribe]!=null) t[r.tribe]+=(+r.points||0); }); return t; }
 function whoShort(w){ w=(w||'').trim(); if(!w) return ''; const at=w.indexOf('@'); return at>0?w.slice(0,at):w; }
 function renderScore(){
   const board=document.getElementById('tribe-board'); if(!board) return;
+  const sw=document.getElementById('score-week'); if(sw) sw.textContent='Week '+SCORE_WK;
   const t=scoreTotals(); const total=t.helios+t.poseidon; const max=Math.max(t.helios,t.poseidon,1);
   const lead = t.helios===t.poseidon ? '' : (t.helios>t.poseidon?'helios':'poseidon');
   board.innerHTML=['helios','poseidon'].map(k=>{ const T=TRIBES[k];
@@ -3350,7 +3351,7 @@ async function awardPoints(tribe, pts, reasonArg){
   pts=parseInt(pts,10); if(!pts || !TRIBES[tribe]) return;
   const reason=(reasonArg!==undefined ? reasonArg : (document.getElementById('award-reason').value||'')).trim();
   const by=(SESSION&&SESSION.email)||'';
-  const rec={tribe, points:pts, reason, awarded_by:by};
+  const rec={tribe, points:pts, reason, awarded_by:by, week:SCORE_WK};   // scope the award to the active week
   const msg=document.getElementById('award-msg');
   if(SUPA){ const {error}=await SB.from('tribe_awards').insert(rec); if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not award — try again.';} return; } }
   else { rec.id='loc-'+Date.now(); rec.created_at=new Date().toISOString(); SCORE_ROWS.unshift(rec); store.set('tribe_awards',SCORE_ROWS); }

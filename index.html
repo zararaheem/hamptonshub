@@ -1705,6 +1705,15 @@ function studentFullName(s){
   const showPref=pref && pref.toLowerCase()!==first.toLowerCase();
   return `${first}${showPref?` (${pref})`:''}${last?` ${last}`:''}`.trim();
 }
+// Attendance/Dismissal display name — leads with the child's goes-by (preferred)
+// name when set, e.g. "Ted Pack" for Louis Pack; falls back to the legal first.
+function goesByName(s){
+  const first=String(s&&s.first!=null?s.first:'').trim();
+  const last=String(s&&s.last!=null?s.last:'').trim();
+  const pref=String(s&&s.preferred!=null?s.preferred:'').trim();
+  const shown=pref||first;
+  return `${shown}${last?` ${last}`:''}`.trim();
+}
 // Red allergy chip + yellow health-note chip for a student row.
 function healthChips(s){
   const allergy=cleanAllergy(s.allergies);
@@ -2880,7 +2889,7 @@ function renderAtt(){
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(studentFullName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
+        <div><div class="nm">${esc(goesByName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         ${showPermit?`<label class="permit-box ${permit[s.id]?'on':''}" title="Permit slip collected"><input type="checkbox" data-act="permit" ${permit[s.id]?'checked':''}><span>Permit</span></label>`:''}
         <div class="seg">
@@ -2933,7 +2942,7 @@ function renderAtt(){
       tgl.classList.toggle('flag-note',flag&&!(hasAllergy||hasMed));
       tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(studentFullName(s))}`+(s.bus_rider?' <span class="bus-chip">Bus</span>':'')+healthChips(s);
+      nm.innerHTML=`${esc(goesByName(s))}`+(s.bus_rider?' <span class="bus-chip">Bus</span>':'')+healthChips(s);
       flashSaved(); renderHealthSummary();
     });
   });
@@ -2949,14 +2958,14 @@ function renderAttLog(){
   const key=t=>{ const m=String(t||'').match(/(\d+):(\d+)\s*(AM|PM)?/i); if(!m) return 1e9; let h=+m[1]%12; if(/pm/i.test(m[3]||'')) h+=12; return h*60+ +m[2]; };
   rows.sort((a,b)=>key(a.t)-key(b.t) || (a.s.last||'').localeCompare(b.s.last||''));
   el.innerHTML=`<div class="eyebrow" style="margin-bottom:8px">Check-in log</div>`+rows.map(r=>
-    `<div class="att-logrow"><span class="alr-t">${esc(r.t||'—')}</span><span class="alr-n">${esc(studentFullName(r.s))}</span><span class="alr-s s-${r.st}">${esc(LB[r.st]||'')}</span></div>`).join('');
+    `<div class="att-logrow"><span class="alr-t">${esc(r.t||'—')}</span><span class="alr-n">${esc(goesByName(r.s))}</span><span class="alr-s s-${r.st}">${esc(LB[r.st]||'')}</span></div>`).join('');
 }
 function renderHealthSummary(){
   const el=document.getElementById('att-health'); if(!el) return;
   const flagged=[];
   studentsForWeek(curWeek()).forEach(s=>{
     const a=cleanAllergy(s.allergies), m=(s.meds||'').trim(), n=(s.notes||'').trim();
-    if(a||m||n) flagged.push({name:studentFullName(s), level:levelOf(s.grade), a, m, n});
+    if(a||m||n) flagged.push({name:goesByName(s), level:levelOf(s.grade), a, m, n});
   });
   if(!flagged.length){
     el.innerHTML=`<div class="callout">No allergies, medications, or health notes recorded for this roster yet. Tap <b>＋ health</b> on a student below to add details — they'll roll up here and flag on the roll.</div>`;
@@ -3011,7 +3020,7 @@ function renderLevelList(){
   studs=studs.slice().sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
   if(!studs.length){ el.innerHTML=`<div class="callout" style="margin-top:12px">No students in ${esc(lbl)} on this roster.</div>`; return; }
   const rows=studs.map(s=>{ const st=attStat(data[s.id]);
-    return `<div class="att-logrow"><span class="alr-n">${esc(studentFullName(s))}${ATT_LEVEL==='__all'?` <span class="ll-badge">${esc(levelOf(s.grade))}</span>`:''}</span><span class="alr-s ${st?'s-'+st:''}">${st?esc(LB[st]):'—'}</span></div>`;
+    return `<div class="att-logrow"><span class="alr-n">${esc(goesByName(s))}${ATT_LEVEL==='__all'?` <span class="ll-badge">${esc(levelOf(s.grade))}</span>`:''}</span><span class="alr-s ${st?'s-'+st:''}">${st?esc(LB[st]):'—'}</span></div>`;
   }).join('');
   el.innerHTML=`<div class="lvl-list-box"><div class="eyebrow" style="margin-bottom:8px">${esc(lbl)} · ${studs.length} student${studs.length===1?'':'s'}</div>${rows}</div>`;
 }
@@ -3066,8 +3075,8 @@ function dqName(s){
   const first=String(s&&s.first!=null?s.first:'').trim();
   const last=String(s&&s.last!=null?s.last:'').trim();
   const pref=String(s&&s.preferred!=null?s.preferred:'').trim();
-  const tag=(pref && pref.toLowerCase()!==first.toLowerCase())?` (${pref})`:'';
-  return DQ_SORT==='first' ? `${first}${tag}${last?` ${last}`:''}` : `${last}${first?`, ${first}`:''}${tag}`;
+  const shown=pref||first;   // lead with the child's goes-by name
+  return DQ_SORT==='first' ? `${shown}${last?` ${last}`:''}` : `${last}${shown?`, ${shown}`:''}`;
 }
 function dqSortStudents(arr){
   return arr.slice().sort((a,b)=> DQ_SORT==='first'

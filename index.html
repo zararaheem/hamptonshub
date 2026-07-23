@@ -1691,7 +1691,7 @@ function seedSupplies(wk){
     {title:"This week's supplies", items: wkItems}
   ];
 }
-function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); return `${String(f).toLowerCase()}.${String(l).toLowerCase()}@alpha.school`; }
+function studentEmail(s){ const f=(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); const clean=x=>String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,''); return `${clean(f)}.${clean(l)}@alpha.school`; }
 /* Display name: first name + last initial, e.g. "Maya R." */
 function studentLabel(s){ const pf=(s&&s.preferred!=null&&String(s.preferred).trim())?String(s.preferred).trim():''; const f=pf||(s&&s.first!=null?s.first:(s&&s[0])||''), l=(s&&s.last!=null?s.last:(s&&s[1])||''); const li=String(l).trim(); return `${String(f).trim()}${li?` ${li[0].toUpperCase()}.`:''}`; }
 // "None"-type allergy values count as no allergy — return '' so nothing flags.
@@ -3468,18 +3468,20 @@ function techKey(){ return `tech:w${techWeek()}`; }
 function loadTech(){ return stateGet(techKey()) || {}; }
 function saveTech(d){ stateSet(techKey(), d); flash('tech-saved'); }
 function renderTech(){
-  if(!canSeeWeek(techWeek())){ document.getElementById('tech-table').innerHTML=`<tbody><tr><td colspan="6">${accessBlockHTML(techWeek())}</td></tr></tbody>`; const e=document.getElementById('tech-stats'); if(e) e.innerHTML=''; return; }
+  if(!canSeeWeek(techWeek())){ document.getElementById('tech-table').innerHTML=`<tbody><tr><td colspan="7">${accessBlockHTML(techWeek())}</td></tr></tbody>`; const e=document.getElementById('tech-stats'); if(e) e.innerHTML=''; return; }
   const d = loadTech();
   const studs = studentsForWeek(techWeek());
-  const head = `<thead><tr><th>Student</th><th>Grade</th><th>Device</th><th>Asset tag</th><th style="white-space:nowrap">Laptop assigned <label class="selall-lbl"><input type="checkbox" id="tech-all"> all</label></th><th>Notes</th></tr></thead>`;
+  const head = `<thead><tr><th>Student</th><th>Email</th><th>Grade</th><th>Device</th><th>Asset tag</th><th style="white-space:nowrap">Laptop assigned <label class="selall-lbl"><input type="checkbox" id="tech-all"> all</label></th><th>Notes</th></tr></thead>`;
   if(!studs.length){
-    document.getElementById('tech-table').innerHTML = head+`<tbody><tr><td colspan="6" class="note-row">No students on the Week ${esc(techWeek())} roster yet — add or import them in the <b>Students</b> tab.</td></tr></tbody>`;
+    document.getElementById('tech-table').innerHTML = head+`<tbody><tr><td colspan="7" class="note-row">No students on the Week ${esc(techWeek())} roster yet — add or import them in the <b>Students</b> tab.</td></tr></tbody>`;
     renderTechStats(); return;
   }
   const body = studs.map(s=>{
     const r = d[s.id]||{}; const dev = r.device||'Laptop';
     return `<tr data-id="${escAttr(s.id)}">
-      <td class="role-cell">${esc(studentLabel(s))}</td><td>${esc(s.grade)}</td>
+      <td class="role-cell">${esc(studentLabel(s))}</td>
+      <td style="white-space:nowrap"><a href="mailto:${escAttr(studentEmail(s))}">${esc(studentEmail(s))}</a></td>
+      <td>${esc(s.grade)}</td>
       <td><select class="cell-select" data-f="device">
         <option ${dev==='Laptop'?'selected':''}>Laptop</option>
         <option ${dev==='iPad'?'selected':''}>iPad</option></select></td>

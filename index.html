@@ -884,7 +884,7 @@
       </div>
 
       <div class="subpanel" id="sub-weekaccess">
-        <p class="page-lead">Assign which guides can see each week's <b>student data</b> (Student Roster, Attendance, Dismissal, Tech). Leadership and admins always see every week. Everyone else sees counts but not names.</p>
+        <p class="page-lead">Assign which guides can see each week's <b>student data</b> (Student Roster, Attendance, Dismissal, Tech). Leadership and admins always see every week. Everyone else sees counts but not names. Guides named on a week's <b>Weekly Roster</b> are added here automatically — the list below just adds anyone extra.</p>
         <div class="att-bar"><div class="field" style="max-width:240px"><label for="wg-week">Week</label><select id="wg-week"></select></div>
           <button class="btn ghost" id="wg-pull" style="align-self:flex-end" title="Tick this week's guides from the Weekly Roster (Lead Guide + Guides), matched to their sign-in accounts">↳ Fill from Weekly Roster</button></div>
         <div id="wg-list"></div>
@@ -5155,6 +5155,35 @@ async function wgSave(){
   if(typeof renderAtt==='function') renderAtt();
   if(typeof renderTech==='function') renderTech();
 }
+/* Standing auto-grant: every guide named on a week's Weekly Roster (Lead Guide,
+   Guide N, Campus Coordinator) gets that week's student-data access — Dismissal,
+   Roster, Attendance, Tech — without a manual tick. Runs on admin sign-in, using
+   the same name→account matching as "Fill from Weekly Roster". Additive only:
+   it never removes anyone, so admins can still add extras or untick a bad match. */
+async function autoSyncWeekAccess(){
+  if(!SUPA || !SESSION || !SESSION.admin) return;
+  try{
+    const staff=await dbGetAllow();
+    const roleRe=/^(lead guide|guide\s*\d|campus coordinator)/i;
+    const roleRows=(CONTENT.roster||[]).filter(r=>roleRe.test(r.role));
+    if(!roleRows.length) return;
+    const toInsert=[];
+    WEEKS.forEach(w=>{
+      const week=w.n;
+      const have=new Set((WEEK_STAFF[week]||[]).map(e=>e.toLowerCase()));
+      roleRows.forEach(r=>rosterCell(r.role, week)
+        .split(/\s+(?:and|&)\s+|\s*,\s*|\s*\/\s*/i)
+        .forEach(t=>{ t=t.trim(); if(!t || /^tbd$/i.test(t)) return;
+          const p=resolveStaffName(t, staff);
+          if(p&&p.email){ const em=p.email.toLowerCase(); if(!have.has(em)){ have.add(em); toInsert.push({week, email:em}); } }
+        }));
+    });
+    if(!toInsert.length) return;
+    const { error } = await SB.from('week_staff').insert(toInsert);
+    if(error){ console.warn('auto week-access sync failed', error); return; }
+    await loadWeekStaff();
+  }catch(e){ console.warn('auto week-access sync error', e); }
+}
 /* Is this email explicitly on the access list (used to allow non-domain exceptions)? */
 async function dbIsListed(email){
   email=(email||'').toLowerCase();
@@ -5176,7 +5205,7 @@ function enterHub(sess){
   if(typeof renderRoster==='function') renderRoster();   // re-render editable now admin state is known
   if(typeof renderStaff==='function') renderStaff();
   if(typeof renderHousingRoster==='function') renderHousingRoster();
-  Promise.all([loadWeekStaff(), hydrateRoster(), hydrateState(), ((sess.contacts||sess.owner)?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
+  Promise.all([loadWeekStaff().then(autoSyncWeekAccess), hydrateRoster(), hydrateState(), ((sess.contacts||sess.owner)?loadEmergency():Promise.resolve())]).then(()=>{ if(typeof renderAtt==='function') renderAtt(); if(typeof renderTech==='function') renderTech(); if(typeof renderRosterTab==='function') renderRosterTab(); if(typeof renderSup==='function') renderSup(); if(typeof refreshDismissal==='function') refreshDismissal(); if(typeof renderEmergency==='function') renderEmergency(); });
   if(typeof buildAllEditors==='function') buildAllEditors();
   if(!routeHash()) showTab('dashboard');  // honor a deep link like #games / #tech, else Home
 }

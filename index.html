@@ -1149,6 +1149,7 @@
       <div class="tablewrap"><table id="tech-table"></table></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+        <button class="btn" id="tech-print">🖨️ Print device list (PDF)</button>
         <button class="btn ghost" id="tech-export">Export CSV</button>
         <span class="saved-note" id="tech-saved"></span>
       </div>
@@ -3538,10 +3539,43 @@ function techExport(){
   });
   csvDownload(`tech-onboarding-w${techWeek()}.csv`, rows);
 }
+// Clean one-page printable device-assignment sheet → browser print dialog → Save as PDF.
+function techPrint(){
+  const d=loadTech(); const wk=techWeek();
+  const studs=studentsForWeek(wk).slice().sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  const rows=studs.map((s,i)=>{ const r=d[s.id]||{};
+    return `<tr><td class="num">${i+1}</td><td class="nm">${esc(studentFullName(s))}</td><td>${esc(s.grade||'')}</td><td>${esc(r.device||'Laptop')}</td><td class="tag">${esc(r.tag||'')}</td><td>${esc(r.notes||'')}</td></tr>`;
+  }).join('') || `<tr><td colspan="6" style="text-align:center;color:#5d6b78">No students on the Week ${esc(wk)} roster.</td></tr>`;
+  const today=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Device Assignments — Week ${esc(wk)}</title>
+  <style>
+    @page{size:letter portrait;margin:14mm}
+    *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#14202b;margin:0}
+    h1{font-size:19px;margin:0 0 2px} .sub{color:#5d6b78;font-size:12px;margin-bottom:14px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{border:1px solid #cdd5dd;padding:6px 8px;text-align:left;vertical-align:top}
+    th{background:#0e2233;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    td.num{width:26px;color:#5d6b78;text-align:center} td.tag{font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+    tbody tr:nth-child(even){background:#f6f8fa}
+    .foot{margin-top:12px;color:#5d6b78;font-size:11px}
+    @media print{ .foot{position:fixed;bottom:0} }
+  </style></head>
+  <body>
+    <h1>Device Assignments — Week ${esc(wk)}</h1>
+    <div class="sub">Alpha Summer · East Hampton · ${esc(today)} · ${studs.length} student${studs.length===1?'':'s'}</div>
+    <table><thead><tr><th>#</th><th>Student</th><th>Grade</th><th>Device</th><th>Asset&nbsp;tag</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="foot">Printed from Hamptons Hub · Tech Onboarding.</div>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){ const m=document.getElementById('tech-saved'); if(m){ m.textContent='Allow pop-ups to print the list.'; } return; }
+  w.document.write(html); w.document.close(); w.focus();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 350);
+}
 function techInit(){
   fillWeekSelect(document.getElementById('tech-week'));
   document.getElementById('tech-week').addEventListener('change',async ()=>{ if(SUPA){ await hydrateRoster(); await refreshStateKey(techKey()); } renderTech(); });
   document.getElementById('tech-export').addEventListener('click',techExport);
+  document.getElementById('tech-print').addEventListener('click',techPrint);
   renderTech();
 }
 

@@ -3544,8 +3544,8 @@ function techPrint(){
   const d=loadTech(); const wk=techWeek();
   const studs=studentsForWeek(wk).slice().sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
   const rows=studs.map((s,i)=>{ const r=d[s.id]||{};
-    return `<tr><td class="num">${i+1}</td><td class="nm">${esc(studentFullName(s))}</td><td>${esc(s.grade||'')}</td><td>${esc(r.device||'Laptop')}</td><td class="tag">${esc(r.tag||'')}</td><td>${esc(r.notes||'')}</td></tr>`;
-  }).join('') || `<tr><td colspan="6" style="text-align:center;color:#5d6b78">No students on the Week ${esc(wk)} roster.</td></tr>`;
+    return `<tr><td class="num">${i+1}</td><td class="nm">${esc(studentFullName(s))}</td><td>${esc(s.grade||'')}</td><td>${esc(r.device||'Laptop')}</td><td>${esc(r.notes||'')}</td></tr>`;
+  }).join('') || `<tr><td colspan="5" style="text-align:center;color:#5d6b78">No students on the Week ${esc(wk)} roster.</td></tr>`;
   const today=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
   const html=`<!doctype html><html><head><meta charset="utf-8"><title>Device Assignments — Week ${esc(wk)}</title>
   <style>
@@ -3563,7 +3563,7 @@ function techPrint(){
   <body>
     <h1>Device Assignments — Week ${esc(wk)}</h1>
     <div class="sub">Alpha Summer · East Hampton · ${esc(today)} · ${studs.length} student${studs.length===1?'':'s'}</div>
-    <table><thead><tr><th>#</th><th>Student</th><th>Grade</th><th>Device</th><th>Asset&nbsp;tag</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>
+    <table><thead><tr><th>#</th><th>Student</th><th>Grade</th><th>Device</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="foot">Printed from Hamptons Hub · Tech Onboarding.</div>
   </body></html>`;
   const w=window.open('','_blank');

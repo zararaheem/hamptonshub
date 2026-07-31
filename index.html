@@ -481,6 +481,11 @@
   .slr-reason{flex:1;min-width:120px;color:var(--oyster)}
   .slr-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
   .slr-rm{background:none;border:0;color:var(--coral);cursor:pointer;font-family:var(--mono);font-size:11px}
+  .hl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+  .hl-tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .hl-label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
+  .hl-big{font-family:var(--display,inherit);font-weight:700;font-size:19px;color:var(--oyster);line-height:1.15;word-break:break-word}
+  .hl-sub{font-size:12px;color:var(--muted);margin-top:3px}
   .tr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
   .tr-col{border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-top-width:3px}
   .tr-col.helios{border-top-color:#E8B84B} .tr-col.poseidon{border-top-color:#5AA0F0}
@@ -1328,7 +1333,15 @@
       <div id="tribe-rosters" style="margin-top:8px"></div>
       <div id="tribe-assign" style="display:none;margin-top:12px"></div>
 
-      <div class="eyebrow" style="margin:22px 0 0">Latest points earned · live</div>
+      <div id="tribe-highlights" style="margin-top:24px"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 0;gap:10px;flex-wrap:wrap">
+        <div class="eyebrow" style="margin:0">Points earned · <span id="score-log-count">live</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="score-showall" style="padding:6px 12px;display:none">Show full list</button>
+          <button class="btn ghost" id="score-export" style="padding:6px 12px">Export CSV</button>
+        </div>
+      </div>
       <div id="tribe-log" style="margin-top:8px"></div>
     </section>
 
@@ -3340,13 +3353,60 @@ function renderScore(){
       ${lead===k?`<div class="tribe-lead-tag">LEADING</div>`:(lead===''&&total>0?`<div class="tribe-pts" style="margin-top:8px">tied</div>`:'<div style="height:22px"></div>')}
       <div class="tribe-bar"><span style="width:${Math.round(t[k]/max*100)}%"></span></div>
     </div>`; }).join('');
+  renderHighlights();
   renderScoreLog();
+}
+// Standout insights for the active week, computed from the award feed.
+function renderHighlights(){
+  const el=document.getElementById('tribe-highlights'); if(!el) return;
+  const rows=SCORE_ROWS;
+  if(!rows.length){ el.innerHTML=''; return; }
+  const t=scoreTotals();
+  const leadK = t.helios===t.poseidon ? '' : (t.helios>t.poseidon?'helios':'poseidon');
+  const margin=Math.abs(t.helios-t.poseidon);
+  const awards=rows.length;
+  // biggest single positive award
+  let big=null; rows.forEach(r=>{ if(+r.points>0 && (!big || +r.points>+big.points)) big=r; });
+  // best day by net points
+  const byDay={}; rows.forEach(r=>{ const d=(r.created_at||'').slice(0,10); if(d) byDay[d]=(byDay[d]||0)+(+r.points||0); });
+  let bestDay=null; Object.keys(byDay).forEach(d=>{ if(!bestDay||byDay[d]>bestDay.p) bestDay={d,p:byDay[d]}; });
+  // top reason by total points earned
+  const byReason={}; rows.forEach(r=>{ const rs=(r.reason||'').trim(); if(rs&&+r.points>0) byReason[rs]=(byReason[rs]||0)+(+r.points); });
+  let topReason=null; Object.keys(byReason).forEach(rs=>{ if(!topReason||byReason[rs]>topReason.p) topReason={rs,p:byReason[rs]}; });
+  // most active scorekeeper by number of awards
+  const byWho={}; rows.forEach(r=>{ const w=whoShort(r.awarded_by)||'—'; byWho[w]=(byWho[w]||0)+1; });
+  let topWho=null; Object.keys(byWho).forEach(w=>{ if(!topWho||byWho[w]>topWho.c) topWho={w,c:byWho[w]}; });
+  const dayLabel=iso=>{ const d=new Date(iso+'T12:00:00'); return isNaN(d)?iso:d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); };
+  const tile=(label,big,sub)=>`<div class="hl-tile"><div class="hl-label">${label}</div><div class="hl-big">${big}</div>${sub?`<div class="hl-sub">${sub}</div>`:''}</div>`;
+  el.innerHTML=`<div class="eyebrow" style="margin:0 0 8px">Highlights · Week ${SCORE_WK}</div><div class="hl-grid">`
+    + tile('Leader', leadK?`${TRIBES[leadK].emoji} ${esc(TRIBES[leadK].name)}`:'Tied', leadK?`ahead by ${margin} point${margin===1?'':'s'}`:`${t.helios}–${t.poseidon}, all square`)
+    + tile('Points in play', String(t.helios+t.poseidon), `across ${awards} award${awards===1?'':'s'}`)
+    + (big?tile('Biggest single award', `${TRIBES[big.tribe]?TRIBES[big.tribe].emoji:''} +${esc(String(big.points))}`, esc(big.reason||(TRIBES[big.tribe]?TRIBES[big.tribe].name:''))):'')
+    + (bestDay?tile('Best day', esc(dayLabel(bestDay.d)), `${bestDay.p>0?'+':''}${bestDay.p} point${Math.abs(bestDay.p)===1?'':'s'} awarded`):'')
+    + (topReason?tile('Top reason', esc(topReason.rs), `${topReason.p} point${topReason.p===1?'':'s'} earned`):'')
+    + (topWho?tile('Most active', esc(topWho.w), `${topWho.c} award${topWho.c===1?'':'s'} logged`):'')
+    + `</div>`;
+}
+let SCORE_SHOWALL=false;
+function scoreExport(){
+  const rows=SCORE_ROWS; if(!rows.length) return;
+  const cell=v=>{ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const lines=[['When','Tribe','Points','Reason','Awarded by'].join(',')].concat(
+    rows.map(r=>[ r.created_at?new Date(r.created_at).toLocaleString():'',
+      TRIBES[r.tribe]?TRIBES[r.tribe].name:r.tribe, r.points, r.reason||'', r.awarded_by||'' ].map(cell).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`tribe-points-week${SCORE_WK}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 function renderScoreLog(){
   const el=document.getElementById('tribe-log'); if(!el) return;
+  const cnt=document.getElementById('score-log-count'); if(cnt) cnt.textContent = SCORE_ROWS.length ? `${SCORE_ROWS.length} entr${SCORE_ROWS.length===1?'y':'ies'} · Week ${SCORE_WK}` : 'live';
+  const toggle=document.getElementById('score-showall');
+  if(toggle){ toggle.style.display = SCORE_ROWS.length>50?'':'none'; toggle.textContent = SCORE_SHOWALL?'Show recent':'Show full list'; }
   if(!SCORE_ROWS.length){ el.innerHTML=`<div class="callout">No points awarded yet. Use the buttons above to get the games started.</div>`; return; }
   const admin=isAdmin();
-  el.innerHTML=SCORE_ROWS.slice(0,50).map(r=>{ const T=TRIBES[r.tribe]||{name:r.tribe,emoji:''};
+  const shown = SCORE_SHOWALL ? SCORE_ROWS : SCORE_ROWS.slice(0,50);
+  el.innerHTML=shown.map(r=>{ const T=TRIBES[r.tribe]||{name:r.tribe,emoji:''};
     const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     return `<div class="score-logrow">
       <span class="slr-pts ${r.tribe}">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
@@ -3354,7 +3414,7 @@ function renderScoreLog(){
       <span class="slr-reason">${esc(r.reason||'—')}</span>
       <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
       ${admin?`<button class="slr-rm" data-delaward="${escAttr(r.id)}">remove</button>`:''}
-    </div>`; }).join('');
+    </div>`; }).join('') + (!SCORE_SHOWALL && SCORE_ROWS.length>50 ? `<div class="lc-desc" style="margin-top:8px;color:var(--muted)">Showing the latest 50 of ${SCORE_ROWS.length} — tap <b>Show full list</b> for every entry, or <b>Export CSV</b>.</div>` : '');
   el.querySelectorAll('[data-delaward]').forEach(b=>b.addEventListener('click',()=>scoreRemove(b.dataset.delaward)));
 }
 async function awardPoints(tribe, pts, reasonArg){
@@ -3445,6 +3505,10 @@ function scoreInit(){
   document.getElementById('award-pending-cancel').addEventListener('click', closePending);
   pbar.addEventListener('click', e=>{ if(e.target===pbar) closePending(); });
   [preason, ppts].forEach(el=>el.addEventListener('keydown',e=>{ if(e.key==='Enter') commitPending(); if(e.key==='Escape') closePending(); }));
+  const sa=document.getElementById('score-showall');
+  if(sa) sa.addEventListener('click',()=>{ SCORE_SHOWALL=!SCORE_SHOWALL; renderScoreLog(); });
+  const se=document.getElementById('score-export');
+  if(se) se.addEventListener('click',scoreExport);
   const tm=document.getElementById('tr-manage');
   if(tm) tm.addEventListener('click',()=>{ const a=document.getElementById('tribe-assign'); const open=a.style.display!=='none'; a.style.display=open?'none':'block'; tm.textContent=open?'Assign students':'Done'; if(!open) renderTribeAssign(); });
   scoreClockTick(); setInterval(scoreClockTick, 1000);

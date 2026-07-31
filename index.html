@@ -533,7 +533,8 @@
   .fh-shout .msg{font-size:14.5px;color:var(--oyster)}
   .fh-shout .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:7px}
   .gradein{max-width:74px}
-  .bday-in{min-width:122px} .shirt-in{min-width:142px;text-transform:uppercase}
+  .bday-in{min-width:104px} .shirt-in{min-width:142px;text-transform:uppercase}
+  .age-chip{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--brass-bright);background:rgba(200,146,74,.12);border:1px solid var(--line);border-radius:6px;padding:2px 6px;white-space:nowrap;vertical-align:middle}
   /* roster admin-only controls (self-contained so layout is preserved) */
   #ros-addrow{display:none}
   body.is-admin #ros-addrow{display:flex}
@@ -1281,10 +1282,13 @@
       <h1 class="page-title">Alpha Survivor · <span id="score-week">Week 1</span></h1>
       <p class="page-lead">Helios vs Poseidon — points for this week update live for everyone the moment they're awarded.</p>
 
-      <div style="display:flex;justify-content:flex-end;margin:-4px 0 4px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin:-4px 0 4px">
+        <button class="btn ghost" id="score-fullscreen" title="Fill the whole screen — great for projecting">⛶ Fullscreen</button>
         <a class="btn ghost" href="board/" target="_blank" rel="noopener" title="Full-screen live board for projecting on a TV/screen">📺 Open live board ↗</a>
       </div>
       <div id="tribe-board" class="tribe-board"></div>
+
+      <div id="tribe-highlights" style="margin-top:20px"></div>
 
       <div class="card" style="margin-top:18px">
         <div class="eyebrow" style="margin-bottom:10px">Award points</div>
@@ -1333,9 +1337,7 @@
       <div id="tribe-rosters" style="margin-top:8px"></div>
       <div id="tribe-assign" style="display:none;margin-top:12px"></div>
 
-      <div id="tribe-highlights" style="margin-top:24px"></div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 0;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:26px 0 0;gap:10px;flex-wrap:wrap">
         <div class="eyebrow" style="margin:0">Points earned · <span id="score-log-count">live</span></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn ghost" id="score-showall" style="padding:6px 12px;display:none">Show full list</button>
@@ -3509,6 +3511,16 @@ function scoreInit(){
   if(sa) sa.addEventListener('click',()=>{ SCORE_SHOWALL=!SCORE_SHOWALL; renderScoreLog(); });
   const se=document.getElementById('score-export');
   if(se) se.addEventListener('click',scoreExport);
+  const fs=document.getElementById('score-fullscreen');
+  if(fs) fs.addEventListener('click',()=>{
+    const doc=document, root=doc.documentElement;
+    const isFs=doc.fullscreenElement||doc.webkitFullscreenElement;
+    if(isFs){ (doc.exitFullscreen||doc.webkitExitFullscreen||function(){}).call(doc); }
+    else { (root.requestFullscreen||root.webkitRequestFullscreen||function(){}).call(root); }
+  });
+  const syncFs=()=>{ const f=document.getElementById('score-fullscreen'); if(f) f.textContent=(document.fullscreenElement||document.webkitFullscreenElement)?'⛶ Exit fullscreen':'⛶ Fullscreen'; };
+  document.addEventListener('fullscreenchange',syncFs);
+  document.addEventListener('webkitfullscreenchange',syncFs);
   const tm=document.getElementById('tr-manage');
   if(tm) tm.addEventListener('click',()=>{ const a=document.getElementById('tribe-assign'); const open=a.style.display!=='none'; a.style.display=open?'none':'block'; tm.textContent=open?'Assign students':'Done'; if(!open) renderTribeAssign(); });
   scoreClockTick(); setInterval(scoreClockTick, 1000);
@@ -4111,6 +4123,20 @@ function rosHealthCell(s){
   if(n) out+=`<div class="ros-health" title="Note: ${escAttr(n)}"><b>Note:</b> ${esc(n)}</div>`;
   return out;
 }
+// Age in whole years from a date of birth. Accepts YYYY-MM-DD or M/D/YYYY.
+// Returns null if there's no parseable year (e.g. a bare MM/DD birthday).
+function ageFromDob(v){
+  v=String(v||'').trim(); if(!v) return null;
+  let y,mo,da;
+  let m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){ y=+m[1]; mo=+m[2]; da=+m[3]; }
+  else { m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/); if(m){ mo=+m[1]; da=+m[2]; y=+m[3]; if(y<100) y+=(y>50?1900:2000); } }
+  if(!y) return null;
+  const t=new Date(); let a=t.getFullYear()-y;
+  if(t.getMonth()+1 < mo || (t.getMonth()+1===mo && t.getDate()<da)) a--;
+  return (a>=0 && a<120) ? a : null;
+}
+function ageChip(v){ const a=ageFromDob(v); return a!=null?` <span class="age-chip" title="Age (calculated)">${a}y</span>`:''; }
 async function refreshRoster(){ if(SUPA) await hydrateRoster(); renderRosterTab(); }
 function renderRosterTab(){
   if(!canSeeWeek(rosWeek())){ document.getElementById('ros-table').innerHTML=`<tbody><tr><td colspan="11">${accessBlockHTML(rosWeek())}</td></tr></tbody>`; return; }
@@ -4129,7 +4155,7 @@ function renderRosterTab(){
       <td><input class="cell-input" data-f="last" value="${escAttr(s.last)}" ${ed?'':'disabled'}></td>
       <td><input class="cell-input gradein" data-f="grade" value="${escAttr(s.grade)}" ${ed?'':'disabled'}></td>
       <td><span class="lvlbadge">${levelOf(s.grade)}</span></td>
-      <td><input class="cell-input bday-in" data-f="birthday" value="${escAttr(s.birthday||'')}" placeholder="MM/DD" ${ed?'':'disabled'}></td>
+      <td style="white-space:nowrap"><input class="cell-input bday-in" data-f="birthday" value="${escAttr(s.birthday||'')}" placeholder="MM/DD" ${ed?'':'disabled'}>${ageChip(s.birthday)}</td>
       <td><input class="cell-input shirt-in" list="shirt-sizes" data-f="shirt_size" value="${escAttr(s.shirt_size||'')}" placeholder="size" ${ed?'':'disabled'}></td>
       <td class="note-row hcell">${rosHealthCell(s)}</td>
       <td><select class="cell-select" data-consent style="${consentColor(s.media_consent)}">

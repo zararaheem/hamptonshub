@@ -486,6 +486,20 @@
   .hl-label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
   .hl-big{font-family:var(--display,inherit);font-weight:700;font-size:19px;color:var(--oyster);line-height:1.15;word-break:break-word}
   .hl-sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .hl-themes{margin-top:10px}
+  .hl-thlist{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .hl-throw{display:grid;grid-template-columns:minmax(120px,168px) 1fr auto;align-items:center;gap:12px;font-size:14px;color:var(--oyster)}
+  .hl-thtrack{height:9px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+  .hl-thbar{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#2E9BFF,#E8B84B)}
+  .hl-thpts{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+  @media(max-width:560px){ .hl-throw{grid-template-columns:104px 1fr auto;gap:9px;font-size:13px} }
+  .catchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .catchip{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600;color:var(--oyster);cursor:pointer;transition:border-color .15s,background .15s}
+  .catchip:hover{border-color:var(--brass-bright)}
+  .catchip.on{background:var(--brass-bright);border-color:var(--brass-bright);color:#0b1622}
+  .catchip .catn{font-family:var(--mono);font-size:11px;opacity:.7;margin-left:3px}
+  .catchip.on .catn{opacity:.85}
+  .slr-cat{font-family:var(--mono);font-size:10px;letter-spacing:.03em;color:var(--brass-bright);background:rgba(200,146,74,.12);border:1px solid var(--line);border-radius:5px;padding:1px 5px;margin-left:6px;white-space:nowrap;vertical-align:middle}
   .tr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
   .tr-col{border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-top-width:3px}
   .tr-col.helios{border-top-color:#E8B84B} .tr-col.poseidon{border-top-color:#5AA0F0}
@@ -1344,6 +1358,7 @@
           <button class="btn ghost" id="score-export" style="padding:6px 12px">Export CSV</button>
         </div>
       </div>
+      <div id="score-cats" class="catchips" style="display:none"></div>
       <div id="tribe-log" style="margin-top:8px"></div>
     </section>
 
@@ -3372,12 +3387,9 @@ function renderHighlights(){
   // best day by net points
   const byDay={}; rows.forEach(r=>{ const d=(r.created_at||'').slice(0,10); if(d) byDay[d]=(byDay[d]||0)+(+r.points||0); });
   let bestDay=null; Object.keys(byDay).forEach(d=>{ if(!bestDay||byDay[d]>bestDay.p) bestDay={d,p:byDay[d]}; });
-  // top reason by total points earned
-  const byReason={}; rows.forEach(r=>{ const rs=(r.reason||'').trim(); if(rs&&+r.points>0) byReason[rs]=(byReason[rs]||0)+(+r.points); });
-  let topReason=null; Object.keys(byReason).forEach(rs=>{ if(!topReason||byReason[rs]>topReason.p) topReason={rs,p:byReason[rs]}; });
-  // most active scorekeeper by number of awards
-  const byWho={}; rows.forEach(r=>{ const w=whoShort(r.awarded_by)||'—'; byWho[w]=(byWho[w]||0)+1; });
-  let topWho=null; Object.keys(byWho).forEach(w=>{ if(!topWho||byWho[w]>topWho.c) topWho={w,c:byWho[w]}; });
+  // themed breakdown of what earned points (variety of behaviors/activities)
+  const byTheme={}; rows.forEach(r=>{ if(+r.points<=0) return; const label=classifyReason(r.reason); if(!label) return; (byTheme[label]=byTheme[label]||{p:0,a:0}); byTheme[label].p+=(+r.points); byTheme[label].a+=1; });
+  const themes=Object.keys(byTheme).map(l=>({label:l,p:byTheme[l].p,a:byTheme[l].a})).sort((x,y)=>y.p-x.p||y.a-x.a).slice(0,6);
   const dayLabel=iso=>{ const d=new Date(iso+'T12:00:00'); return isNaN(d)?iso:d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); };
   const tile=(label,big,sub)=>`<div class="hl-tile"><div class="hl-label">${label}</div><div class="hl-big">${big}</div>${sub?`<div class="hl-sub">${sub}</div>`:''}</div>`;
   el.innerHTML=`<div class="eyebrow" style="margin:0 0 8px">Highlights · Week ${SCORE_WK}</div><div class="hl-grid">`
@@ -3385,9 +3397,31 @@ function renderHighlights(){
     + tile('Points in play', String(t.helios+t.poseidon), `across ${awards} award${awards===1?'':'s'}`)
     + (big?tile('Biggest single award', `${TRIBES[big.tribe]?TRIBES[big.tribe].emoji:''} +${esc(String(big.points))}`, esc(big.reason||(TRIBES[big.tribe]?TRIBES[big.tribe].name:''))):'')
     + (bestDay?tile('Best day', esc(dayLabel(bestDay.d)), `${bestDay.p>0?'+':''}${bestDay.p} point${Math.abs(bestDay.p)===1?'':'s'} awarded`):'')
-    + (topReason?tile('Top reason', esc(topReason.rs), `${topReason.p} point${topReason.p===1?'':'s'} earned`):'')
-    + (topWho?tile('Most active', esc(topWho.w), `${topWho.c} award${topWho.c===1?'':'s'} logged`):'')
-    + `</div>`;
+    + `</div>`
+    + (themes.length ? (()=>{ const max=Math.max.apply(null, themes.map(t=>t.p).concat([1]));
+        return `<div class="hl-tile hl-themes"><div class="hl-label">What earned points</div><div class="hl-thlist">`
+          + themes.map(t=>`<div class="hl-throw"><span class="hl-thname">${esc(t.label)}</span><span class="hl-thtrack"><span class="hl-thbar" style="width:${Math.max(6,Math.round(t.p/max*100))}%"></span></span><span class="hl-thpts">${t.p} pt${t.p===1?'':'s'} · ${t.a}×</span></div>`).join('')
+          + `</div></div>`; })() : '');
+}
+// Group a free-form award reason into a behavior theme (mirrors the tribe-board
+// edge function) so Highlights can show the variety of what earned points.
+function classifyReason(reason){
+  const s=String(reason||'');
+  const T=[
+    ['Uplifting others', /uplift/i],
+    ['Helping & kindness', /help|assist|side quest|door|hold|offer|grab|support/i],
+    ['Cleaning up', /clean|tidy/i],
+    ['Grit & courage', /grit|persever|courage|courgae|lock(?:ing)? ?in/i],
+    ['Independence', /independ/i],
+    ['Community standards', /uphold|standard|communit/i],
+    ['Leadership & teamwork', /leader|teammate|teamwork/i],
+    ['Public speaking', /interview|speaking|present/i],
+    ['Launch wins', /launch/i],
+    ['Creativity', /innov|creativ|trick|rubix|rubik|goldberg|cube/i],
+    ['Focus & readiness', /ready|listen|instruction|no question|timeback|coreskill|core skill|fastmath|fast math|focus/i],
+  ];
+  for(const [label,re] of T){ if(re.test(s)) return label; }
+  return null;
 }
 let SCORE_SHOWALL=false;
 function scoreExport(){
@@ -3400,23 +3434,41 @@ function scoreExport(){
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
   a.href=url; a.download=`tribe-points-week${SCORE_WK}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
+let SCORE_CAT=''; // '' = all categories
 function renderScoreLog(){
   const el=document.getElementById('tribe-log'); if(!el) return;
-  const cnt=document.getElementById('score-log-count'); if(cnt) cnt.textContent = SCORE_ROWS.length ? `${SCORE_ROWS.length} entr${SCORE_ROWS.length===1?'y':'ies'} · Week ${SCORE_WK}` : 'live';
+  // Category chips from the themed positive awards present this week.
+  const cats={}; SCORE_ROWS.forEach(r=>{ if(+r.points>0){ const c=classifyReason(r.reason); if(c) cats[c]=(cats[c]||0)+1; } });
+  const catKeys=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]||a.localeCompare(b));
+  if(SCORE_CAT && !cats[SCORE_CAT]) SCORE_CAT='';   // active filter no longer present
+  const chips=document.getElementById('score-cats');
+  if(chips){
+    if(catKeys.length){ chips.style.display='';
+      chips.innerHTML=`<button class="catchip ${SCORE_CAT===''?'on':''}" data-cat="">All</button>`
+        + catKeys.map(c=>`<button class="catchip ${SCORE_CAT===c?'on':''}" data-cat="${escAttr(c)}">${esc(c)}<span class="catn">${cats[c]}</span></button>`).join('');
+      chips.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click',()=>{ SCORE_CAT=b.dataset.cat; SCORE_SHOWALL=false; renderScoreLog(); }));
+    } else { chips.style.display='none'; chips.innerHTML=''; }
+  }
+  const base = SCORE_CAT ? SCORE_ROWS.filter(r=>+r.points>0 && classifyReason(r.reason)===SCORE_CAT) : SCORE_ROWS;
+  const cnt=document.getElementById('score-log-count');
+  if(cnt) cnt.textContent = !SCORE_ROWS.length ? 'live'
+    : (SCORE_CAT ? `${base.length} in ${SCORE_CAT} · Week ${SCORE_WK}` : `${SCORE_ROWS.length} entr${SCORE_ROWS.length===1?'y':'ies'} · Week ${SCORE_WK}`);
   const toggle=document.getElementById('score-showall');
-  if(toggle){ toggle.style.display = SCORE_ROWS.length>50?'':'none'; toggle.textContent = SCORE_SHOWALL?'Show recent':'Show full list'; }
+  if(toggle){ toggle.style.display = base.length>50?'':'none'; toggle.textContent = SCORE_SHOWALL?'Show recent':'Show full list'; }
   if(!SCORE_ROWS.length){ el.innerHTML=`<div class="callout">No points awarded yet. Use the buttons above to get the games started.</div>`; return; }
+  if(!base.length){ el.innerHTML=`<div class="callout">No entries in ${esc(SCORE_CAT)} yet.</div>`; return; }
   const admin=isAdmin();
-  const shown = SCORE_SHOWALL ? SCORE_ROWS : SCORE_ROWS.slice(0,50);
+  const shown = SCORE_SHOWALL ? base : base.slice(0,50);
   el.innerHTML=shown.map(r=>{ const T=TRIBES[r.tribe]||{name:r.tribe,emoji:''};
     const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const cat=+r.points>0?classifyReason(r.reason):null;
     return `<div class="score-logrow">
       <span class="slr-pts ${r.tribe}">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
       <span class="slr-tribe ${r.tribe}">${T.emoji} ${esc(T.name)}</span>
-      <span class="slr-reason">${esc(r.reason||'—')}</span>
+      <span class="slr-reason">${esc(r.reason||'—')}${cat?`<span class="slr-cat">${esc(cat)}</span>`:''}</span>
       <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
       ${admin?`<button class="slr-rm" data-delaward="${escAttr(r.id)}">remove</button>`:''}
-    </div>`; }).join('') + (!SCORE_SHOWALL && SCORE_ROWS.length>50 ? `<div class="lc-desc" style="margin-top:8px;color:var(--muted)">Showing the latest 50 of ${SCORE_ROWS.length} — tap <b>Show full list</b> for every entry, or <b>Export CSV</b>.</div>` : '');
+    </div>`; }).join('') + (!SCORE_SHOWALL && base.length>50 ? `<div class="lc-desc" style="margin-top:8px;color:var(--muted)">Showing the latest 50 of ${base.length}${SCORE_CAT?` in ${esc(SCORE_CAT)}`:''} — tap <b>Show full list</b> for every entry, or <b>Export CSV</b>.</div>` : '');
   el.querySelectorAll('[data-delaward]').forEach(b=>b.addEventListener('click',()=>scoreRemove(b.dataset.delaward)));
 }
 async function awardPoints(tribe, pts, reasonArg){

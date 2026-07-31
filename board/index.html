@@ -59,6 +59,19 @@
   .empty{color:#6b8298;padding:16px 0}
   .foot{text-align:center;margin-top:18px;font-family:ui-monospace,monospace;font-size:11px;color:#43596f}
   @media (max-width:560px){ .drow{grid-template-columns:1fr auto;gap:5px} .dwho,.dtime{display:none} }
+
+  .hl{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
+  .hltile{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px}
+  .hltile.themes{grid-column:1/-1}
+  .hll{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#8ea4ba;margin-bottom:6px}
+  .hlb{font-size:22px;font-weight:900;color:#fff;line-height:1.12;word-break:break-word}
+  .hls{font-size:12.5px;color:#9fb4c9;margin-top:4px}
+  .thlist{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .throw{display:grid;grid-template-columns:minmax(120px,170px) 1fr auto;align-items:center;gap:12px;font-size:14.5px;color:#dbe6f1}
+  .thtrack{height:9px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+  .thbar{height:100%;border-radius:6px;background:linear-gradient(90deg,#2E9BFF,#E8B84B)}
+  .thpts{font-family:ui-monospace,monospace;color:#9fb4c9;font-size:12.5px;white-space:nowrap}
+  @media (max-width:560px){ .throw{grid-template-columns:110px 1fr auto;gap:9px;font-size:13.5px} }
 </style>
 </head>
 <body>
@@ -88,6 +101,11 @@
       </div>
     </div>
 
+    <div class="details" id="hlsec" style="display:none">
+      <h2>This week's highlights</h2>
+      <div class="hl" id="hl"></div>
+    </div>
+
     <div class="details">
       <h2>Score details — latest points earned</h2>
       <div class="drows" id="drows"><div class="empty">Waiting for the games to begin…</div></div>
@@ -100,8 +118,28 @@
     const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
     const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const nice={helios:'☀️ Helios',poseidon:'🔱 Poseidon'};
+    const emo={helios:'☀️',poseidon:'🔱'};
     const whoShort=w=>{ w=(w||'').replace(' (Slack)','').trim(); return w; };
     let last={helios:null,poseidon:null};
+
+    function paintHighlights(hl){
+      const sec=document.getElementById('hlsec'), box=document.getElementById('hl');
+      if(!sec||!box) return;
+      if(!hl || !hl.awards){ sec.style.display='none'; return; }
+      sec.style.display='';
+      const dayLabel=iso=>{ const d=new Date(iso+'T12:00:00'); return isNaN(d)?iso:d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}); };
+      const tile=(l,b,sub,extra)=>`<div class="hltile ${extra||''}"><div class="hll">${l}</div>${b?`<div class="hlb">${b}</div>`:''}${sub||''}</div>`;
+      let h='';
+      h+=tile('Points in play', String(hl.pointsInPlay), `<div class="hls">across ${hl.awards} award${hl.awards===1?'':'s'}</div>`);
+      if(hl.biggest) h+=tile('Biggest single award', `${emo[hl.biggest.tribe]||''} +${hl.biggest.points}`, `<div class="hls">${esc(hl.biggest.reason||'')}</div>`);
+      if(hl.bestDay) h+=tile('Best day', dayLabel(hl.bestDay.date), `<div class="hls">${hl.bestDay.points>0?'+':''}${hl.bestDay.points} points awarded</div>`);
+      if(hl.themes && hl.themes.length){
+        const max=Math.max.apply(null, hl.themes.map(t=>t.points).concat([1]));
+        const list=hl.themes.map(t=>`<div class="throw"><span>${esc(t.label)}</span><span class="thtrack"><span class="thbar" style="width:${Math.max(6,Math.round(t.points/max*100))}%"></span></span><span class="thpts">${t.points} pt${t.points===1?'':'s'} · ${t.awards}×</span></div>`).join('');
+        h+=tile('What earned points', '', `<div class="thlist">${list}</div>`, 'themes');
+      }
+      box.innerHTML=h;
+    }
 
     function clockTick(){
       const d=new Date();
@@ -144,7 +182,9 @@
       try{
         const res=await fetch(FN,{method:'POST',headers:{'Authorization':'Bearer '+ANON,'Content-Type':'application/json'},body:'{}'});
         const j=await res.json();
-        if(j&&j.ok){ window.__ros=j.rosters||{}; paint(j.totals,j.recent); document.getElementById('foot').textContent='live · updates every 5s'; }
+        if(j&&j.ok){ window.__ros=j.rosters||{}; paint(j.totals,j.recent); paintHighlights(j.highlights);
+          if(j.week){ const hh=document.querySelector('h1'); if(hh) hh.textContent='Alpha Survivor · Week '+j.week; }
+          document.getElementById('foot').textContent='live · updates every 5s'; }
       }catch(e){ document.getElementById('foot').textContent='reconnecting…'; }
     }
     tick(); setInterval(tick, 5000);

@@ -1384,8 +1384,9 @@
             <textarea class="cell-input" id="add-email" rows="2" placeholder="name@alpha.school — paste several, separated by commas, spaces, or new lines" style="flex:1;min-width:180px;resize:vertical"></textarea>
             <button class="btn" id="add-email-btn">Add</button>
           </div>
-          <div style="margin-top:9px"><button class="btn ghost" id="add-from-roster" title="Suggest accounts for everyone on the Weekly/Staff rosters who isn't in the access list yet">↳ Suggest from rosters</button></div>
+          <div style="margin-top:9px"><button class="btn ghost" id="add-from-roster" title="List everyone on the Weekly Roster who isn't in the access list yet — add them with access limited to only the weeks they're on">↳ Suggest from rosters</button></div>
           <p class="gate-msg" id="add-msg" style="margin-top:9px"></p>
+          <div id="roster-suggest" style="margin-top:6px"></div>
         </div>
       </div>
 
@@ -5251,6 +5252,16 @@ function guardStudentTab(container, week){
   const el=document.getElementById(container); if(el) el.innerHTML=accessBlockHTML(week);
   return true;
 }
+// Additive: grant one email access to one week's student data, skipping if it's
+// already granted. Used when adding a rostered guide with week-scoped access.
+async function dbAddWeekStaff(week, email){
+  if(!SUPA) return null;
+  email=(email||'').toLowerCase(); week=+week;
+  if((WEEK_STAFF[week]||[]).includes(email)) return null;   // already has it
+  const { error } = await SB.from('week_staff').insert({week, email});
+  if(error && !/duplicate|unique/i.test(error.message||'')) return error;
+  return null;
+}
 async function dbSetWeekStaff(week, emails){
   if(!SUPA) return null;
   const del=await SB.from('week_staff').delete().eq('week', week); if(del.error) return del.error;
@@ -5523,30 +5534,74 @@ async function addEmailHandler(){
 }
 // Suggest access accounts for everyone on the Weekly + Staff rosters who isn't
 // already listed. Generates first.last@alpha.school and drops them in the box
-// for review; flags first-name-only entries that need a full name first.
+// for review; each gets access limited to only the weeks they're on the roster.
+function cleanRosterToken(t){
+  // "Quinn - MS - 8/14" → "Quinn"; drop parentheticals and trailing notes.
+  return String(t||'').split(/\s+[-–]\s+/)[0].replace(/\([^)]*\)/g,'').trim();
+}
+function nameFromEmail(email, fallback){
+  const lp=String(email||'').split('@')[0];
+  const parts=lp.split(/[._-]+/).filter(Boolean).map(p=>p.charAt(0).toUpperCase()+p.slice(1));
+  return parts.length>=2 ? parts.join(' ') : (fallback||parts.join(' '));
+}
+// Gather everyone named on the Weekly Roster who has no sign-in account yet,
+// with the exact weeks they're assigned — so they can be added with access
+// scoped to only those weeks (their week + any week they lead).
 async function accPullRoster(){
   const staff=await dbGetAllow();
-  const tokens=[];
-  (CONTENT.staff||[]).forEach(r=>{ if(r[0]) tokens.push(r[0]); });
-  (CONTENT.roster||[]).forEach(r=>{ if(/^(lead guide|guide\s*\d|campus coordinator)/i.test(r.role)) (r.cells||[]).forEach(c=>String(c||'').split(/\s+(?:and|&)\s+|\s*,\s*|\s*\/\s*/i).forEach(t=>tokens.push(t))); });
-  const seen=new Set(), suggest=[], needName=[];
-  tokens.map(t=>String(t||'').trim()).filter(t=>t && !/^tbd$/i.test(t)).forEach(t=>{
-    const key=t.toLowerCase(); if(seen.has(key)) return; seen.add(key);
-    if(resolveStaffName(t, staff)) return;   // already has an account
-    const parts=t.split(/\s+/);
-    if(parts.length>=2){
-      const email=(parts[0]+'.'+parts.slice(1).join('-')).toLowerCase().replace(/[^a-z0-9.\-]/g,'')+'@alpha.school';
-      suggest.push(email);
-    } else needName.push(t);
+  const people=new Map();  // key → {name, weeks:Set, roles:Set}
+  const roleLabel=role=>String(role||'').replace(/^guide\s*\d+$/i,'Guide');
+  (CONTENT.roster||[]).forEach(r=>{
+    (r.cells||[]).forEach((c,i)=>{
+      String(c||'').split(/\s+(?:and|&)\s+|\s*,\s*|\s*\/\s*/i).forEach(raw=>{
+        const t=cleanRosterToken(raw);
+        if(!t || /^tbd$/i.test(t) || !/[a-z]/i.test(t)) return;   // skip blanks, TBD, stray dates ("8/14")
+        const key=t.toLowerCase();
+        let p=people.get(key); if(!p){ p={name:t, weeks:new Set(), roles:new Set()}; people.set(key,p); }
+        if(WEEKS[i]) p.weeks.add(WEEKS[i].n);
+        if(r.role) p.roles.add(roleLabel(r.role));
+      });
+    });
   });
-  const ta=document.getElementById('add-email'); const m=document.getElementById('add-msg');
-  const uniq=[...new Set(suggest)];
-  ta.value=uniq.join('\n');
+  // Keep only people with no matching account yet.
+  const pending=[...people.values()].filter(p=>!resolveStaffName(p.name, staff))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  const box=document.getElementById('roster-suggest');
+  const m=document.getElementById('add-msg');
+  if(!pending.length){ if(box) box.innerHTML=''; m.className='gate-msg ok'; m.textContent='Everyone on the Weekly Roster already has an account ✓'; return; }
   m.className='gate-msg';
-  m.innerHTML = uniq.length
-    ? `Suggested <b>${uniq.length}</b> account${uniq.length===1?'':'s'} — check the emails are right, then click <b>Add</b>.`
-      + (needName.length?`<br>First-name only (need a full name in the roster first): <b>${esc([...new Set(needName)].join(', '))}</b>.`:'')
-    : (needName.length?`Everyone with a full name is already listed. Still first-name only: <b>${esc([...new Set(needName)].join(', '))}</b> — add last names in the roster to pull them.`:'Everyone on the rosters is already in the access list ✓');
+  m.innerHTML=`<b>${pending.length}</b> ${pending.length===1?'person is':'people are'} on the roster without an account. Confirm each email, then add — they'll be able to see <b>only the weeks they're on</b>.`;
+  const rowStyle="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)";
+  box.innerHTML=pending.map((p,i)=>{
+    const first=p.name.split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g,'');
+    const parts=p.name.split(/\s+/).map(s=>s.toLowerCase().replace(/[^a-z0-9]/g,'')).filter(Boolean);
+    const guess=parts.length>=2 ? parts.join('.')+'@alpha.school' : '';
+    const weeks=[...p.weeks].sort((a,b)=>a-b);
+    return `<div style="${rowStyle}" data-rs="${i}">
+      <div style="min-width:150px"><b>${esc(p.name)}</b><div style="color:var(--muted);font-size:12px">${esc([...p.roles].join(', '))} · W${weeks.join(', W')}</div></div>
+      <input class="cell-input rs-email" data-i="${i}" value="${escAttr(guess)}" placeholder="${escAttr(first)}.lastname@alpha.school" style="flex:1;min-width:200px">
+      <button class="btn ghost rs-add" data-i="${i}" style="padding:6px 12px">Add + limit to weeks</button>
+      <span class="gate-msg rs-msg" data-i="${i}" style="margin:0;flex-basis:100%"></span>
+    </div>`;
+  }).join('');
+  const WEEKMAP=pending.map(p=>({name:p.name, weeks:[...p.weeks].sort((a,b)=>a-b)}));
+  box.querySelectorAll('.rs-add').forEach(btn=>btn.addEventListener('click',async()=>{
+    const i=+btn.dataset.i;
+    const inp=box.querySelector(`.rs-email[data-i="${i}"]`);
+    const msg=box.querySelector(`.rs-msg[data-i="${i}"]`);
+    const email=(inp.value||'').trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className='gate-msg err rs-msg'; msg.textContent='Enter a valid email first.'; return; }
+    btn.disabled=true; msg.className='gate-msg rs-msg'; msg.textContent='Adding…';
+    const addErr=await dbAddAllow(email);
+    if(addErr && !/duplicate|unique|exists/i.test(addErr.message||'')){ btn.disabled=false; msg.className='gate-msg err rs-msg'; msg.textContent=addErr.message||'Add failed.'; return; }
+    await dbSetName(email, nameFromEmail(email, WEEKMAP[i].name));
+    await loadWeekStaff();
+    for(const w of WEEKMAP[i].weeks){ await dbAddWeekStaff(w, email); }
+    await loadWeekStaff();
+    msg.className='gate-msg ok rs-msg';
+    msg.textContent=`Added — can see Week${WEEKMAP[i].weeks.length===1?'':'s'} ${WEEKMAP[i].weeks.join(', ')} only ✓`;
+    renderAccess();
+  }));
 }
 async function googleSignIn(){
   const msg=document.getElementById('gate-msg');

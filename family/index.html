@@ -251,7 +251,8 @@
       const contacts=[
         {desc:'Logistics — bussing, lunch, attendance', title:'Campus Coordinator', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent, inline:true},
         {desc:'Questions about admissions or Alpha', title:'Director of Admissions', people:[{name:'Nancy Torvund', email:'nancy.torvund@alpha.school'}]},
-        {desc:'Academic &amp; life-skills questions', title:'Head Guide', people:[{name:hgName, email:hgEmail}]},
+        // Only show the Head Guide / academics contact once a lead guide is set for the week.
+        ...(headGuide ? [{desc:'Academic &amp; life-skills questions', title:'Head Guide', people:[{name:hgName, email:hgEmail}]}] : []),
         {desc:'Anything else', title:'Head of Schools', people:[{name:'Dr. Tasha Arnold', email:'tasha.arnold@alpha.school'}]}
       ];
       const contactHtml = contacts.map(c=>`<div class="qa">

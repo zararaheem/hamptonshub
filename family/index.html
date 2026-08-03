@@ -136,8 +136,9 @@
       .map(e=>`<a href="mailto:${esc(e)}">${esc(e)}</a>`).join(' · ');
 
     function renderGuide(w){
+      const theme = (w.theme||'').trim();
       document.getElementById('hero-wk').innerHTML =
-        `<span class="wk">Week ${esc(w.week)} · ${esc(w.dates)}</span>`;
+        `<span class="wk">Week ${esc(w.week)} · ${esc(w.dates)}${theme?` · ${esc(theme)}`:''}</span>`;
       const coord = esc((w.coordinators||'your campus coordinator').replace(/\s*(&|and)\s*/ig,' or '));
       const nameFromEmail = e => e.split('@')[0].split(/[._]/).filter(Boolean).map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');
       const coordNames = esc(String(w.coord_emails||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean).map(nameFromEmail).join(' & ') || (w.coordinators||''));

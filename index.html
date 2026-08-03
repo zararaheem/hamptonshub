@@ -3677,7 +3677,7 @@ function techExport(){
 // Clean one-page printable device-assignment sheet → browser print dialog → Save as PDF.
 function techPrint(){
   const d=loadTech(); const wk=techWeek();
-  const studs=studentsForWeek(wk).slice().sort((a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
+  const studs=studentsForWeek(wk).slice().sort((a,b)=>gradeNum(a.grade)-gradeNum(b.grade)||(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||''));
   const rows=studs.map((s,i)=>{ const r=d[s.id]||{};
     return `<tr><td class="num">${i+1}</td><td class="nm">${esc(studentFullName(s))}</td><td>${esc(s.grade||'')}</td><td>${esc(r.device||'Laptop')}</td><td>${esc(r.notes||'')}</td></tr>`;
   }).join('') || `<tr><td colspan="5" style="text-align:center;color:#5d6b78">No students on the Week ${esc(wk)} roster.</td></tr>`;

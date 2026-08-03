@@ -25,9 +25,15 @@ Deno.serve(async (req) => {
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
     let week = null;
     if (code) {
-      // A specific week link: case-insensitive code match (published only).
+      // A specific week link: case-insensitive match (published only). Accept the
+      // full code (hamptonswk7) or the short form (wk7 / 7) that parents often type.
+      const raw = code.toLowerCase().replace(/^hamptons/, "");
+      const cands = [...new Set([code, raw, "hamptons" + raw, "hamptonswk" + raw.replace(/^wk/, "")])]
+        .filter(Boolean);
       const { data } = await sb
-        .from("family_weeks").select("*").ilike("access_code", code).eq("published", true).maybeSingle();
+        .from("family_weeks").select("*")
+        .or(cands.map((c) => `access_code.ilike.${c}`).join(","))
+        .eq("published", true).order("week").limit(1).maybeSingle();
       week = data;
     } else {
       // Bare URL: show the current published week (by date), else next upcoming, else latest.

@@ -52,7 +52,7 @@
       <input id="pw" type="password" placeholder="Password" autocomplete="off">
       <div style="margin-top:12px"><button class="btn big" id="unlock">Unlock editor</button></div>
       <div class="msg err" id="gate-msg"></div>
-      <a class="toplink" href="../">← Back to the festival page</a>
+      <a class="toplink" href="/showcase/week6/">← Back to the festival page</a>
     </div>
     <div id="editor" hidden></div>
   </div>
@@ -146,7 +146,7 @@
       <div class="bar">
         <button class="btn big" id="save">Save changes</button>
         <div class="msg" id="save-msg"></div>
-        <div class="hint" style="margin-top:8px">Uploads save on upload; click <b>Save changes</b> to publish titles &amp; order. <a href="../" style="color:var(--teal)">View page →</a></div>
+        <div class="hint" style="margin-top:8px">Uploads save on upload; click <b>Save changes</b> to publish titles &amp; order. <a href="/showcase/week6/" style="color:var(--teal)">View page →</a></div>
       </div>`;
     document.getElementById('save').addEventListener('click',save);
     EPOSTERS=(Array.isArray(CFG.posters)?CFG.posters:[]).map(p=>({title:p.title||'', name:p.name||'', url:p.url||''}));

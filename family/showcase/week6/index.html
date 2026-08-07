@@ -77,11 +77,11 @@
   /* poster ribbon */
   .ribbon{overflow-x:auto;overflow-y:hidden;margin-top:4px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);scrollbar-width:none}
   .ribbon::-webkit-scrollbar{display:none}
-  .ribbon-track{display:flex;gap:16px;width:max-content;animation:ribbon 46s linear infinite;padding:6px 0}
-  .ribbon:hover .ribbon-track,.ribbon:active .ribbon-track{animation-play-state:paused}
-  @keyframes ribbon{to{transform:translateX(-50%)}}
-  .poster{flex:none;width:150px;text-decoration:none;display:block}
-  .poster-img{width:150px;height:225px;border-radius:12px;background-size:cover;background-position:center;border:1px solid var(--line);background-color:var(--panel2);box-shadow:0 10px 22px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .ribbon-track{display:flex;gap:16px;width:max-content;padding:6px 2px}
+  .poster{flex:none;width:150px;text-decoration:none;display:block;-webkit-tap-highlight-color:transparent;outline:none}
+  .poster-img{position:relative;width:150px;height:225px;border-radius:12px;background-size:cover;background-position:center;border:1px solid var(--line);background-color:var(--panel2);box-shadow:0 10px 22px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .poster-name{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;text-align:center;padding:12px;background:linear-gradient(180deg,rgba(11,22,34,0) 45%,rgba(11,22,34,.9));color:var(--gold-soft);font-family:var(--display);font-weight:600;font-size:15px;opacity:0;transition:opacity .18s}
+  .poster:hover .poster-name,.poster:focus-within .poster-name,.poster:active .poster-name{opacity:1}
   .poster-img.ph{background:linear-gradient(160deg,#1c3d63,#101f31)}
   .poster-img.ph span{color:var(--gold-soft);font-family:var(--display);font-weight:600;font-size:14px;text-align:center;padding:12px;line-height:1.25}
   .poster-cap{color:var(--soft);font-size:12px;margin-top:7px;text-align:center;max-width:150px;line-height:1.25}
@@ -193,13 +193,14 @@
     const host=document.getElementById('posters'); if(!host) return;
     const list=(POSTERS||[]).filter(p=>p && (p.title || p.url));
     if(!list.length){ host.innerHTML=''; return; }
-    const card=p=>{ const has=p.url && String(p.url).trim();
-      return `<a class="poster" ${has?`href="${escAttr(p.url)}" target="_blank" rel="noopener"`:''}>
-        <div class="poster-img${has?'':' ph'}" ${has?`style="background-image:url('${escAttr(p.url)}')"`:''}>${has?'':`<span>${esc(p.title||'Poster')}</span>`}</div>
+    const initLast=n=>{ const p=String(n||'').trim().split(/\s+/).filter(Boolean); if(!p.length) return ''; if(p.length===1) return p[0]; return p[0][0].toUpperCase()+'. '+p[p.length-1]; };
+    const card=p=>{ const has=p.url && String(p.url).trim(); const nm=initLast(p.name);
+      return `<a class="poster" ${has?`href="${escAttr(p.url)}" target="_blank" rel="noopener"`:'tabindex="0"'}>
+        <div class="poster-img${has?'':' ph'}" ${has?`style="background-image:url('${escAttr(p.url)}')"`:''}>${has?'':`<span>${esc(p.title||'Poster')}</span>`}${nm?`<div class="poster-name">${esc(nm)}</div>`:''}</div>
         ${p.title?`<div class="poster-cap">${esc(p.title)}</div>`:''}</a>`; };
     const cards=list.map(card).join('');
-    host.innerHTML=`<div class="group-label"><div class="kick">Upcoming Movies</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers this week</div></div>
-      <div class="ribbon"><div class="ribbon-track">${cards}${list.length>1?cards:''}</div></div>`;
+    host.innerHTML=`<div class="group-label"><div class="kick">Upcoming Movies</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers · scroll to browse</div></div>
+      <div class="ribbon"><div class="ribbon-track">${cards}</div></div>`;
   }
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const escAttr=s=>String(s==null?'':s).replace(/"/g,'&quot;');

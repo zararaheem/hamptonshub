@@ -74,6 +74,17 @@
   .scene .sc-n{font-family:var(--display);font-weight:700;color:var(--gold-soft);font-size:16px;min-width:18px}
   .scene .sc-t{font-weight:600;font-size:15px;color:var(--ink)}
   .scene .sc-d{color:var(--muted);font-size:13px;margin-top:1px}
+  /* poster ribbon */
+  .ribbon{overflow-x:auto;overflow-y:hidden;margin-top:4px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);scrollbar-width:none}
+  .ribbon::-webkit-scrollbar{display:none}
+  .ribbon-track{display:flex;gap:16px;width:max-content;animation:ribbon 46s linear infinite;padding:6px 0}
+  .ribbon:hover .ribbon-track,.ribbon:active .ribbon-track{animation-play-state:paused}
+  @keyframes ribbon{to{transform:translateX(-50%)}}
+  .poster{flex:none;width:150px;text-decoration:none;display:block}
+  .poster-img{width:150px;height:225px;border-radius:12px;background-size:cover;background-position:center;border:1px solid var(--line);background-color:var(--panel2);box-shadow:0 10px 22px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .poster-img.ph{background:linear-gradient(160deg,#1c3d63,#101f31)}
+  .poster-img.ph span{color:var(--gold-soft);font-family:var(--display);font-weight:600;font-size:14px;text-align:center;padding:12px;line-height:1.25}
+  .poster-cap{color:var(--soft);font-size:12px;margin-top:7px;text-align:center;max-width:150px;line-height:1.25}
   /* modal */
   .backdrop{position:fixed;inset:0;background:rgba(4,10,18,.72);display:none;align-items:flex-end;justify-content:center;z-index:30}
   .backdrop.open{display:flex}
@@ -134,6 +145,7 @@
     <div id="groups">
       <div class="empty" style="text-align:center;padding:26px">Loading the festival…</div>
     </div>
+    <div id="posters"></div>
     <div class="foot">Tap any performance to rate it · one review each per device · results update live<br>
       <a href="edit/">Edit this page</a> · <a href="results/">Live results ↗</a></div>
   </div>
@@ -158,6 +170,7 @@
     {id:'puppet',   label:'Puppet Show',      sub:'LL & L1'},
     {id:'trailers', label:'Young Filmmakers', sub:'L2 & MS · Movie Trailers'},
   ];
+  let POSTERS=[];
   const KICK={puppet:'On Stage', trailers:'On Screen'};
   const kickOf=it=>KICK[it.group] || 'Performance';
   const setText=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&String(v).trim()) el.textContent=v; };
@@ -171,8 +184,22 @@
         if(c.title) document.title = c.title + ' — Rate & Review';
         if(Array.isArray(c.items) && c.items.length) ITEMS = c.items;
         if(Array.isArray(c.groups) && c.groups.length) GROUPS = c.groups;
+        if(Array.isArray(c.posters)) POSTERS = c.posters;
       }
     }catch(e){ /* fall back to defaults */ }
+    renderPosters();
+  }
+  function renderPosters(){
+    const host=document.getElementById('posters'); if(!host) return;
+    const list=(POSTERS||[]).filter(p=>p && (p.title || p.url));
+    if(!list.length){ host.innerHTML=''; return; }
+    const card=p=>{ const has=p.url && String(p.url).trim();
+      return `<a class="poster" ${has?`href="${escAttr(p.url)}" target="_blank" rel="noopener"`:''}>
+        <div class="poster-img${has?'':' ph'}" ${has?`style="background-image:url('${escAttr(p.url)}')"`:''}>${has?'':`<span>${esc(p.title||'Poster')}</span>`}</div>
+        ${p.title?`<div class="poster-cap">${esc(p.title)}</div>`:''}</a>`; };
+    const cards=list.map(card).join('');
+    host.innerHTML=`<div class="group-label"><div class="kick">Gallery</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers this week</div></div>
+      <div class="ribbon"><div class="ribbon-track">${cards}${list.length>1?cards:''}</div></div>`;
   }
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const escAttr=s=>String(s==null?'':s).replace(/"/g,'&quot;');

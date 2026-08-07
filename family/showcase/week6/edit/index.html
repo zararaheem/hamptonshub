@@ -137,12 +137,60 @@
       </div>
       ${groupCards}
       ${itemCards}
+      <div class="card">
+        <h3>Movie posters</h3>
+        <div class="cs">Shown as a scrolling ribbon at the bottom of the festival page. Add a title and upload each poster image (JPG/PNG).</div>
+        <div id="posters-editor"></div>
+        <button class="btn" id="add-poster" style="margin-top:10px;background:transparent;color:var(--teal);border:1px solid var(--line)">+ Add poster</button>
+      </div>
       <div class="bar">
         <button class="btn big" id="save">Save changes</button>
         <div class="msg" id="save-msg"></div>
-        <div class="hint" style="margin-top:8px">Changes go live on the festival page immediately. <a href="../" style="color:var(--teal)">View page →</a></div>
+        <div class="hint" style="margin-top:8px">Uploads save on upload; click <b>Save changes</b> to publish titles &amp; order. <a href="../" style="color:var(--teal)">View page →</a></div>
       </div>`;
     document.getElementById('save').addEventListener('click',save);
+    EPOSTERS=(Array.isArray(CFG.posters)?CFG.posters:[]).map(p=>({title:p.title||'', url:p.url||''}));
+    renderPostersEditor();
+    document.getElementById('add-poster').addEventListener('click',()=>{ EPOSTERS.push({title:'',url:''}); renderPostersEditor(); });
+  }
+
+  let EPOSTERS=[];
+  function renderPostersEditor(){
+    const host=document.getElementById('posters-editor'); if(!host) return;
+    host.innerHTML=EPOSTERS.map((p,i)=>`<div class="card" style="margin:8px 0;background:#faf6ee" data-pi="${i}">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="width:62px;height:93px;border-radius:8px;flex:none;border:1px solid var(--line);background:#e9e2d3 ${p.url?`center/cover no-repeat url('${esc(p.url)}')`:''}"></div>
+        <div style="flex:1">
+          ${field('Title','p'+i+'_title',p.title)}
+          <label style="margin-top:8px">Poster image</label>
+          <input type="file" accept="image/*" data-pfile="${i}">
+          <div class="msg" data-pmsg="${i}" style="font-size:12.5px"></div>
+        </div>
+        <button class="btn" data-premove="${i}" style="background:transparent;color:#b3402f;border:1px solid var(--line);padding:6px 10px">Remove</button>
+      </div>
+    </div>`).join('') || '<div class="cs">No posters yet — add one below.</div>';
+    host.querySelectorAll('[data-pi]').forEach(row=>{
+      const i=+row.dataset.pi;
+      const t=row.querySelector('#p'+i+'_title'); if(t) t.addEventListener('input',()=>{ EPOSTERS[i].title=t.value; });
+      const f=row.querySelector('[data-pfile]'); if(f) f.addEventListener('change',()=>uploadPoster(f.files[0], i));
+      const rm=row.querySelector('[data-premove]'); if(rm) rm.addEventListener('click',()=>{ EPOSTERS.splice(i,1); renderPostersEditor(); });
+    });
+  }
+  async function uploadPoster(file, i){
+    if(!file) return;
+    const msg=document.querySelector(`[data-pmsg="${i}"]`);
+    if(file.size>12*1024*1024){ if(msg){ msg.className='msg err'; msg.textContent='Image is over 12MB — please use a smaller file.'; } return; }
+    if(msg){ msg.className='msg'; msg.textContent='Uploading…'; }
+    const ext=((file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg');
+    const rand=Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');
+    const path=`wk${WEEK}/poster-${i}-${rand}.${ext}`;
+    const up=await sb.storage.from('posters').upload(path, file, {upsert:true, contentType:file.type||'image/jpeg'});
+    if(up.error){ if(msg){ msg.className='msg err'; msg.textContent='Upload failed — '+(up.error.message||'try again'); } return; }
+    const { data }=sb.storage.from('posters').getPublicUrl(path);
+    EPOSTERS[i].url=data.publicUrl;
+    if(!EPOSTERS[i].title){ EPOSTERS[i].title=(file.name.replace(/\.[^.]+$/,'')||'Poster'); }
+    if(msg){ msg.className='msg ok'; msg.textContent='Uploaded ✓ — remember to Save changes.'; }
+    renderPostersEditor();
   }
 
   function collect(){
@@ -157,6 +205,7 @@
       }
       return o;
     });
+    out.posters=EPOSTERS.map((p,i)=>({title:(document.getElementById('p'+i+'_title')||{}).value?.trim()||p.title||'', url:p.url||''})).filter(p=>p.title||p.url);
     return out;
   }
   async function save(){

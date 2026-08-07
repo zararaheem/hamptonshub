@@ -830,6 +830,7 @@
       <button class="nav-item admin-only cat-comms" data-tab="slack">Weekly Slack</button>
       <div class="nav-label">Parent Comms</div>
       <button class="nav-item admin-only cat-comms" data-tab="famguide">Family Guide</button>
+      <button class="nav-item admin-only cat-comms" data-tab="showcase">Showcase Reviews</button>
       <button class="nav-item admin-only cat-comms" data-tab="reports">Weekly Reports</button>
       <div class="nav-label admin-only">Admin</div>
       <button class="nav-item admin-only cat-admin" data-tab="access">Access</button>
@@ -1449,6 +1450,22 @@
       <p class="page-lead">Configure each week's parent guide — coordinator, drop-off/pickup, lunch menu, Monday &amp; Friday events — then <b>publish</b> it. Families open it on the parent guide site using that week's access code (use <b>Copy family link</b> below). Static sections (packing, safety, swimming, etc.) are built in.</p>
       <div class="field" style="max-width:300px"><label for="fg-week">Week</label><select id="fg-week"></select></div>
       <div id="fg-editor"></div>
+    </section>
+
+    <!-- ===== SHOWCASE REVIEWS (admin) ===== -->
+    <section class="view" id="view-showcase" hidden>
+      <div class="eyebrow admin-only">Families · Showcase feedback</div>
+      <h1 class="page-title">Showcase Reviews</h1>
+      <p class="page-lead">Live audience ratings &amp; comments from the public showcase review page. Share the parent page or the big-screen results below, moderate comments, or reset before an event.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <a class="btn ghost" id="sc-open" href="https://hamptonsfamilyguide.vercel.app/showcase/week6" target="_blank" rel="noopener">Open parent review page ↗</a>
+        <a class="btn ghost" id="sc-results" href="https://hamptonsfamilyguide.vercel.app/showcase/week6/results" target="_blank" rel="noopener">Open live results (big screen) ↗</a>
+        <button class="btn ghost" id="sc-refresh">Refresh</button>
+        <button class="btn ghost" id="sc-reset" style="color:var(--coral);border-color:var(--coral)">Reset all Week 6 reviews</button>
+      </div>
+      <div id="sc-summary" class="grid g2" style="margin-bottom:8px"></div>
+      <div class="section-title"><span class="num">#</span>Comments</div>
+      <div id="sc-comments"></div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -4931,6 +4948,7 @@ function renderFamGuideForm(){
         ${fgField('Friday Showcase time','friday_showcase_time',w.friday_showcase_time)}
         ${fgField('Friday Showcase location','friday_showcase_loc',w.friday_showcase_loc)}
         ${fgField('Showcase location map URL','friday_showcase_loc_url',w.friday_showcase_loc_url)}
+        ${fgField('Showcase review page URL (shows a Rate button)','showcase_review_url',w.showcase_review_url,'https://hamptonsfamilyguide.vercel.app/showcase/week6')}
       </div>
       <div class="field"><label>Custom note (optional — shows at the top)</label><textarea class="cell-input" data-fg="custom_note" rows="2" style="resize:vertical">${esc(w.custom_note||'')}</textarea></div>
       <details style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 14px">
@@ -4961,6 +4979,66 @@ function renderFamGuideForm(){
     const opt=[...sel.options].find(o=>o.value===String(w.week)); if(opt) opt.textContent=`Week ${w.week} · ${w.dates}`;
     m.className='gate-msg ok'; m.textContent='Saved ✓'; renderFamGuideForm();
   });
+}
+
+/* =================== SHOWCASE REVIEWS (admin moderation) =================== */
+const SC_WEEK=6;
+const SC_ITEMS=[
+  {key:'puppet',label:'Puppet Show · LL & L1'},
+  {key:'trailer1',label:'Trailer 1 · Team 1'},
+  {key:'trailer2',label:'Trailer 2 · Team 2'},
+  {key:'trailer3',label:'Trailer 3 · Team 3'},
+  {key:'trailer4',label:'Trailer 4 · Team 4'},
+];
+let SC_ROWS=[];
+async function loadShowcaseAdmin(){
+  const cwrap=document.getElementById('sc-comments'); if(!cwrap) return;
+  const rf=document.getElementById('sc-refresh'); if(rf) rf.onclick=loadShowcaseAdmin;
+  const rs=document.getElementById('sc-reset'); if(rs) rs.onclick=scReset;
+  if(!SUPA){ cwrap.innerHTML='<div class="callout">Connect Supabase to view showcase reviews.</div>'; return; }
+  cwrap.innerHTML='<div class="callout">Loading…</div>';
+  const { data, error } = await SB.from('showcase_reviews').select('id,item,rating,comment,created_at').eq('week',SC_WEEK).order('created_at',{ascending:false});
+  SC_ROWS = error ? [] : (data||[]);
+  if(error){ cwrap.innerHTML='<div class="callout">Could not load reviews — '+esc(error.message||'')+'</div>'; return; }
+  renderShowcaseAdmin();
+}
+function renderShowcaseAdmin(){
+  const label=k=>{ const it=SC_ITEMS.find(x=>x.key===k); return it?it.label:k; };
+  const agg={}; SC_ITEMS.forEach(it=>agg[it.key]={sum:0,count:0});
+  SC_ROWS.forEach(r=>{ const a=agg[r.item]; if(a){ a.sum+=r.rating; a.count++; } });
+  const sum=document.getElementById('sc-summary');
+  if(sum) sum.innerHTML=SC_ITEMS.map(it=>{ const a=agg[it.key]; const avg=a.count?a.sum/a.count:0;
+    return `<div class="card" style="padding:12px 14px;margin:0">
+      <div style="font-weight:700;font-size:14px">${esc(it.label)}</div>
+      <div style="margin-top:4px"><span style="font-size:22px;font-weight:800">${a.count?avg.toFixed(1):'—'}</span>
+        <span style="color:var(--brass-bright)">★</span>
+        <span style="color:var(--muted);font-size:12.5px">· ${a.count} rating${a.count===1?'':'s'}</span></div></div>`; }).join('');
+  const withC=SC_ROWS.filter(r=>r.comment&&r.comment.trim());
+  const cwrap=document.getElementById('sc-comments');
+  if(!SC_ROWS.length){ cwrap.innerHTML='<div class="callout">No reviews yet.</div>'; return; }
+  if(!withC.length){ cwrap.innerHTML=`<div class="callout">${SC_ROWS.length} rating${SC_ROWS.length===1?'':'s'} so far, no written comments yet.</div>`; return; }
+  const rows=withC.map(r=>`<tr>
+    <td style="white-space:nowrap">${esc(label(r.item))}</td>
+    <td style="white-space:nowrap;color:var(--brass-bright)">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
+    <td>${esc(r.comment)}</td>
+    <td style="white-space:nowrap;color:var(--muted);font-size:12px">${esc(new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</td>
+    <td><button class="del" data-scdel="${escAttr(r.id)}" title="Delete this comment">×</button></td>
+  </tr>`).join('');
+  cwrap.innerHTML=`<div class="lc-desc" style="margin:0 0 8px;color:var(--muted)">${withC.length} comment${withC.length===1?'':'s'} · ${SC_ROWS.length} total rating${SC_ROWS.length===1?'':'s'}</div>
+    <div class="tablewrap"><table><thead><tr><th>Performance</th><th>Rating</th><th>Comment</th><th>When</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  cwrap.querySelectorAll('[data-scdel]').forEach(b=>b.addEventListener('click',()=>scDelete(b.dataset.scdel)));
+}
+async function scDelete(id){
+  if(!confirm('Delete this review (rating + comment)? This cannot be undone.')) return;
+  const { error } = await SB.from('showcase_reviews').delete().eq('id', id);
+  if(error){ alert('Delete failed — '+(error.message||'try again')); return; }
+  SC_ROWS=SC_ROWS.filter(r=>r.id!==id); renderShowcaseAdmin();
+}
+async function scReset(){
+  if(!confirm(`Reset ALL Week ${SC_WEEK} showcase reviews?\nThis permanently deletes every rating and comment. Use this before the event to start clean.`)) return;
+  const { error } = await SB.from('showcase_reviews').delete().eq('week', SC_WEEK);
+  if(error){ alert('Reset failed — '+(error.message||'try again')); return; }
+  SC_ROWS=[]; renderShowcaseAdmin();
 }
 
 /* =================== FAMILY HUB (admin) =================== */
@@ -5074,8 +5152,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','reports','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',access:'Access'};
+const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
@@ -5086,6 +5164,7 @@ function showTab(t){
   if(t==='supplies'){ if(SUPA) refreshStateKey(supKey()).then(renderSup); else renderSup(); }
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   if(t==='famguide') loadFamGuide();
+  if(t==='showcase') loadShowcaseAdmin();
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();

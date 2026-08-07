@@ -43,6 +43,13 @@
   .qa li{font-size:15.5px;color:#33414e;margin:3px 0}
   .pill{display:inline-block;background:#eef6f5;color:var(--teal);border:1px solid #cfe6e3;border-radius:8px;padding:3px 9px;font-size:14px;font-weight:600;margin:2px 4px 2px 0}
   .note{background:#fcefcf;border:1px solid #e6c375;border-left:4px solid #c8924a;border-radius:10px;padding:12px 16px;font-size:15px;line-height:1.5;color:#4a3410;margin:8px 0}
+  .showcase-cta{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff;background:linear-gradient(135deg,#14304a,#1f7a73);border-radius:14px;padding:16px 18px;margin:12px 0;box-shadow:var(--shadow);transition:transform .12s}
+  .showcase-cta:hover{transform:translateY(-2px)}
+  .showcase-cta .sc-emoji{font-size:30px;flex:none}
+  .showcase-cta .sc-text{display:flex;flex-direction:column;gap:2px;flex:1}
+  .showcase-cta .sc-text b{font-family:var(--display);font-weight:600;font-size:19px}
+  .showcase-cta .sc-text span{font-size:13.5px;color:#dbeae7}
+  .showcase-cta .sc-go{font-size:28px;font-weight:700;flex:none;opacity:.8}
   .guide-bio{margin:0 0 15px;padding-bottom:13px;border-bottom:1px solid #eee}
   .guide-bio:last-child{margin-bottom:0;padding-bottom:0;border-bottom:0}
   .gb-name{font-weight:700;color:var(--teal);font-size:15.5px;margin-bottom:3px}
@@ -231,6 +238,12 @@
 
       let h='';
       if((w.custom_note||'').trim()){ h+=`<div class="note">${esc(w.custom_note)}</div>`; }
+
+      const reviewUrl=(w.showcase_review_url||'').trim();
+      if(reviewUrl){ h+=`<a class="showcase-cta" href="${esc(reviewUrl)}" target="_blank" rel="noopener">
+        <span class="sc-emoji">🎬</span>
+        <span class="sc-text"><b>Rate this week's Showcase</b><span>Tap to give a quick star rating &amp; comment — anonymous, film-festival style.</span></span>
+        <span class="sc-go">›</span></a>`; }
 
       h+=`<div class="sec-head"><h2>Overview</h2></div><div class="card">
         <div class="qa">${SEC('overview_intro', `<p>This guide highlights everything you need to know for this week — logistics, packing, health &amp; safety, and what to expect each day. Keep it handy.</p>`)}</div>

@@ -153,6 +153,11 @@
           <span class="msg" id="bulk-msg" style="margin:0;font-size:12.5px"></span>
         </div>
       </div>
+      <div class="card">
+        <h3>Movie trailers</h3>
+        <div class="cs">Upload each team's trailer MP4 (or paste a link). Parents enter a code (<b>lastname-trailerN</b>) on the festival page to watch — add the students' last names below, one per line. Turn on <b>Published</b> when it's ready.</div>
+        <div id="films-editor"><div class="cs">Loading trailers…</div></div>
+      </div>
       <div class="bar">
         <button class="btn big" id="save">Save changes</button>
         <div class="msg" id="save-msg"></div>
@@ -163,6 +168,66 @@
     renderPostersEditor();
     document.getElementById('add-poster').addEventListener('click',()=>{ EPOSTERS.push({title:'',name:'',url:''}); renderPostersEditor(); });
     document.getElementById('bulk-posters').addEventListener('change', bulkUpload);
+    loadFilms();
+  }
+
+  const TRAILERS=['trailer1','trailer2','trailer3','trailer4'];
+  let EFILMS=[];
+  async function loadFilms(){
+    const host=document.getElementById('films-editor');
+    let films=[];
+    try{
+      const r=await sb.functions.invoke('showcase-save',{body:{getFilms:true,password:PW,week:WEEK}});
+      if(r.data&&r.data.ok&&Array.isArray(r.data.films)) films=r.data.films;
+    }catch(e){}
+    const byItem={}; films.forEach(f=>{ byItem[f.item]=f; });
+    EFILMS=TRAILERS.map(item=>{
+      const f=byItem[item]||{};
+      const cfgItem=(CFG.items||[]).find(it=>it.key===item)||{};
+      return {
+        item,
+        label:cfgItem.title||item.replace('trailer','Trailer '),
+        video_url:f.video_url||'',
+        published:!!f.published,
+        names:Array.isArray(f.names)?f.names.join('\n'):''
+      };
+    });
+    renderFilmsEditor();
+  }
+  function renderFilmsEditor(){
+    const host=document.getElementById('films-editor'); if(!host) return;
+    host.innerHTML=EFILMS.map((f,i)=>`<div class="card" style="margin:8px 0;background:#faf6ee" data-fi="${i}">
+      <h3 style="font-size:16px;margin-bottom:6px">${esc(f.label)}</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:2px">
+        <label class="btn" style="background:transparent;color:var(--teal);border:1px solid var(--line);cursor:pointer;margin:0;font-size:14px;padding:8px 14px">Upload MP4 from device<input type="file" accept="video/*" data-ffile="${i}" style="display:none"></label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;font-size:14px;cursor:pointer"><input type="checkbox" data-fpub="${i}" ${f.published?'checked':''} style="width:auto"> Published</label>
+        <span class="msg" data-fmsg="${i}" style="margin:0;font-size:12.5px"></span>
+      </div>
+      ${field('Trailer link (MP4 URL)','f'+i+'_url',f.video_url,'Uploads fill this in automatically')}
+      ${area('Student last names (one per line — sets the watch code lastname-'+f.item+')','f'+i+'_names',f.names,'Smith\nJohnson')}
+    </div>`).join('');
+    host.querySelectorAll('[data-fi]').forEach(row=>{
+      const i=+row.dataset.fi;
+      const u=row.querySelector('#f'+i+'_url'); if(u) u.addEventListener('input',()=>{ EFILMS[i].video_url=u.value; });
+      const nm=row.querySelector('#f'+i+'_names'); if(nm) nm.addEventListener('input',()=>{ EFILMS[i].names=nm.value; });
+      const pb=row.querySelector('[data-fpub]'); if(pb) pb.addEventListener('change',()=>{ EFILMS[i].published=pb.checked; });
+      const f=row.querySelector('[data-ffile]'); if(f) f.addEventListener('change',()=>uploadTrailerFile(f.files[0], i));
+    });
+  }
+  async function uploadTrailerFile(file, i){
+    if(!file) return;
+    const msg=document.querySelector(`[data-fmsg="${i}"]`);
+    if(file.size>200*1024*1024){ if(msg){ msg.className='msg err'; msg.textContent='Video is over 200MB — please compress it first.'; } return; }
+    if(msg){ msg.className='msg'; msg.textContent='Uploading… (large files take a moment)'; }
+    const ext=((file.name.split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'')||'mp4');
+    const rand=Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');
+    const path=`wk${WEEK}/${EFILMS[i].item}-${rand}.${ext}`;
+    const up=await sb.storage.from('trailers').upload(path, file, {upsert:true, contentType:file.type||'video/mp4'});
+    if(up.error){ if(msg){ msg.className='msg err'; msg.textContent='Upload failed — '+(up.error.message||'try again'); } return; }
+    const { data }=sb.storage.from('trailers').getPublicUrl(path);
+    EFILMS[i].video_url=data.publicUrl;
+    const u=document.querySelector('#f'+i+'_url'); if(u) u.value=data.publicUrl;
+    if(msg){ msg.className='msg ok'; msg.textContent='Uploaded ✓ — remember to Save changes.'; }
   }
   async function bulkUpload(e){
     const files=[...(e.target.files||[])]; e.target.value='';
@@ -236,13 +301,21 @@
     out.posters=EPOSTERS.map((p,i)=>({title:(document.getElementById('p'+i+'_title')||{}).value?.trim()||p.title||'', name:(document.getElementById('p'+i+'_name')||{}).value?.trim()||p.name||'', url:p.url||''})).filter(p=>p.title||p.url||p.name);
     return out;
   }
+  function collectFilms(){
+    return EFILMS.map(f=>({
+      item:f.item,
+      video_url:(f.video_url||'').trim(),
+      published:!!f.published,
+      names:(f.names||'').split('\n').map(s=>s.trim()).filter(Boolean)
+    }));
+  }
   async function save(){
     const btn=document.getElementById('save'); const msg=document.getElementById('save-msg');
     const data=collect();
     if(!data.title){ msg.className='msg err'; msg.textContent='A festival title is required.'; return; }
     btn.disabled=true; msg.className='msg'; msg.textContent='Saving…';
     let res;
-    try{ res=await sb.functions.invoke('showcase-save', { body:{ week:WEEK, password:PW, data } }); }
+    try{ res=await sb.functions.invoke('showcase-save', { body:{ week:WEEK, password:PW, data, films:collectFilms() } }); }
     catch(e){ res=null; }
     const p=res&&res.data;
     if(p&&p.ok){ CFG=data; msg.className='msg ok'; msg.textContent='Saved ✓ — live on the festival page.'; btn.disabled=false; return; }

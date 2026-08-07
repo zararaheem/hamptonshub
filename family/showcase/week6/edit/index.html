@@ -113,12 +113,20 @@
       <h3>${esc(gr.emoji||'')} Section: ${esc(gr.label||gr.id)}</h3>
       <div class="row2">${field('Heading','g'+i+'_label',gr.label)}${field('Sub-label','g'+i+'_sub',gr.sub)}</div>
     </div>`).join('');
-    const itemCards=it.map((item,i)=>`<div class="card">
-      <h3>${esc(item.emoji||'')} ${esc(item.title||item.key)}</h3>
-      <div class="cs">${item.film?'Trailer — filmable':'Puppet show'}</div>
-      <div class="row2">${field('Title','i'+i+'_title',item.title)}${field('Sub (team / level)','i'+i+'_sub',item.sub)}</div>
-      ${area('Description','i'+i+'_desc',item.desc)}
-    </div>`).join('');
+    const itemCards=it.map((item,i)=>{
+      const scenes=Array.isArray(item.scenes)?item.scenes:[];
+      const sceneFields=scenes.length? `<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+        <label style="margin:0 0 4px">Scenes (from the Odyssey)</label>
+        ${scenes.map((sc,j)=>`<div class="row2" style="margin-top:6px">${field('Scene '+(j+1)+' title','i'+i+'_sc'+j+'_t',sc.title)}${field('Scene '+(j+1)+' note (optional)','i'+i+'_sc'+j+'_d',sc.desc)}</div>`).join('')}
+      </div>` : '';
+      return `<div class="card">
+        <h3>${esc(item.title||item.key)}</h3>
+        <div class="cs">${item.film?'Movie trailer — has a film link':'Puppet show'}</div>
+        <div class="row2">${field('Title','i'+i+'_title',item.title)}${field('Sub (team / level)','i'+i+'_sub',item.sub)}</div>
+        ${area('Description','i'+i+'_desc',item.desc)}
+        ${sceneFields}
+      </div>`;
+    }).join('');
     document.getElementById('editor').innerHTML=`
       <div class="card">
         <h3>Festival header</h3>
@@ -142,7 +150,13 @@
     const out=JSON.parse(JSON.stringify(CFG));
     out.eyebrow=v('f_eyebrow'); out.title=v('f_title'); out.tagline=v('f_tagline'); out.lead=v('f_lead');
     out.groups=out.groups.map((gr,i)=>({...gr, label:v('g'+i+'_label'), sub:v('g'+i+'_sub')}));
-    out.items=out.items.map((item,i)=>({...item, title:v('i'+i+'_title'), sub:v('i'+i+'_sub'), desc:v('i'+i+'_desc')}));
+    out.items=out.items.map((item,i)=>{
+      const o={...item, title:v('i'+i+'_title'), sub:v('i'+i+'_sub'), desc:v('i'+i+'_desc')};
+      if(Array.isArray(item.scenes) && item.scenes.length){
+        o.scenes=item.scenes.map((sc,j)=>({title:v('i'+i+'_sc'+j+'_t'), desc:v('i'+i+'_sc'+j+'_d')}));
+      }
+      return o;
+    });
     return out;
   }
   async function save(){

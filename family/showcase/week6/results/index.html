@@ -128,8 +128,7 @@
       const top = i===0 && r.count>0;
       return `<div class="rank ${top?'top':''}">
         <div class="pos">${r.count? (i+1):'–'}</div>
-        <div class="emoji">${r.emoji}</div>
-        <div class="who"><div class="t">${esc(r.title)}${top?'<span class="badge">🏆 Audience Favorite</span>':''}</div>
+        <div class="who"><div class="t">${esc(r.title)}${top?'<span class="badge">Audience Favorite</span>':''}</div>
           <div class="s">${esc(r.sub)}</div></div>
         <div class="score"><div class="n">${r.count? r.avg.toFixed(1):'—'}</div>
           <div class="stars">${starBar(r.avg)}</div>

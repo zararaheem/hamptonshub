@@ -262,11 +262,17 @@
         <div class="qa"><h3>What should my child wear?</h3>${SEC('wear', `<p>Comfortable clothes and closed-toe shoes such as sneakers — best for sports and our ninja-warrior course. Flip-flops are welcome for changing at the pool and beach wear but not for the general day.</p>`)}</div>
       </div>`;
 
+      // Optional per-week "Dean of Parents" contact — stored as "Name <email>".
+      const dean=(w.dean_of_parents||'').trim();
+      const deanM=dean.match(/^(.*?)\s*<([^>]+)>\s*$/);
+      const deanName=(deanM?deanM[1]:dean).trim();
+      const deanEmail=deanM?deanM[2].trim():(deanName?deanName.toLowerCase().split(/\s+/).join('.')+'@alpha.school':'');
       const contacts=[
         {desc:'Logistics — bussing, lunch, attendance', title:'Campus Coordinator', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent, inline:true},
         {desc:'Questions about admissions or Alpha', title:'Director of Admissions', people:[{name:'Nancy Torvund', email:'nancy.torvund@alpha.school'}]},
-        // Only show the Head Guide / academics contact once a lead guide is set for the week.
-        ...(headGuide ? [{desc:'Academic &amp; life-skills questions', title:'Head Guide', people:[{name:hgName, email:hgEmail}]}] : []),
+        ...(dean ? [{desc:'Questions about Alpha, your child or any concerns', title:'Dean of Parents', people:[{name:deanName, email:deanEmail}]}] : []),
+        // Only show the Lead Guide / academics contact once a lead guide is set for the week.
+        ...(headGuide ? [{desc:'Academic &amp; life-skills questions', title:'Lead Guide', people:[{name:hgName, email:hgEmail}]}] : []),
         {desc:'Anything else', title:'Head of Schools', people:[{name:'Dr. Tasha Arnold', email:'tasha.arnold@alpha.school'}]}
       ];
       const contactHtml = contacts.map(c=>`<div class="qa">

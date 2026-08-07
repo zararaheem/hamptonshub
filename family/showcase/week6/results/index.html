@@ -58,8 +58,8 @@
 </head>
 <body>
   <header>
-    <div class="eyebrow">Alpha Summer · East Hampton</div>
-    <h1>Week 6 Showcase — Live Results</h1>
+    <div class="eyebrow" id="r-eyebrow">Showcase Alpha · East Hampton</div>
+    <h1 id="r-title">Theatre &amp; Cinema Festival — Live Results</h1>
     <div class="sub">Puppet Show (LL &amp; L1) · Young Filmmakers (L2 &amp; MS) · audience choice</div>
     <div class="live"><span class="dot"></span> Live — updates automatically</div>
   </header>
@@ -81,13 +81,22 @@
   const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
   const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const WEEK=6;
-  const ITEMS={
+  let ITEMS={
     puppet:{emoji:'🎭', title:'Puppet Show', sub:'LL & L1'},
     trailer1:{emoji:'🎬', title:'Trailer 1', sub:'Team 1'},
     trailer2:{emoji:'🎬', title:'Trailer 2', sub:'Team 2'},
     trailer3:{emoji:'🎬', title:'Trailer 3', sub:'Team 3'},
     trailer4:{emoji:'🎬', title:'Trailer 4', sub:'Team 4'},
   };
+  async function loadConfig(){
+    try{
+      const { data } = await sb.from('showcase_config').select('data').eq('week',WEEK).maybeSingle();
+      const c = data && data.data; if(!c) return;
+      if(c.eyebrow){ const e=document.getElementById('r-eyebrow'); if(e) e.textContent=c.eyebrow; }
+      if(c.title){ const t=document.getElementById('r-title'); if(t) t.textContent=c.title+' — Live Results'; document.title=c.title+' — Live Results'; }
+      if(Array.isArray(c.items)&&c.items.length){ const m={}; c.items.forEach(it=>{ m[it.key]={emoji:it.emoji||'🎬', title:it.title||it.key, sub:it.sub||''}; }); ITEMS=m; }
+    }catch(e){}
+  }
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const starBar=n=>{ const r=Math.round(n); let h=''; for(let i=1;i<=5;i++) h+=`<span class="${i<=r?'':'off'}">${i<=r?'★':'☆'}</span>`; return h; };
   function timeAgo(iso){ const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
@@ -139,7 +148,7 @@
     }).join('');
   }
 
-  load();
+  loadConfig().then(load);
   setInterval(load, 8000);   // refresh for the big screen
 </script>
 </body>

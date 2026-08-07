@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
+<title>Edit — Theatre &amp; Cinema Festival</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{--navy:#0e2233;--panel:#fff;--line:#e6e0d4;--ink:#1f2d3a;--muted:#5d6b78;--teal:#1f7a73;--teal-bright:#2aa39a;--sand:#f6f1e7;--gold:#e6a935;--shadow:0 8px 30px rgba(20,40,60,.10);--display:'Fraunces',Georgia,serif;--body:'Inter',system-ui,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.5}
+  .hero{background:linear-gradient(160deg,#0e2233,#14304a);color:#fff;text-align:center;padding:26px 20px}
+  .hero .eyebrow{color:var(--teal-bright);letter-spacing:.18em;text-transform:uppercase;font-size:12px;font-weight:700}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,6vw,34px);margin:6px 0 2px}
+  .hero p{color:#c3d0d9;font-size:14px;margin:0}
+  .wrap{max-width:680px;margin:0 auto;padding:20px 16px 60px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 16px;margin:14px 0}
+  .card h3{font-family:var(--display);font-weight:600;font-size:18px;margin:0 0 4px}
+  .card .cs{color:var(--muted);font-size:13px;margin:0 0 10px}
+  label{display:block;font-weight:600;font-size:13px;margin:10px 0 3px;color:var(--ink)}
+  input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-family:var(--body);font-size:15px;background:#fffdf9}
+  input:focus,textarea:focus{outline:none;border-color:var(--teal-bright)}
+  textarea{resize:vertical}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:600;font-size:15px;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.big{width:100%;padding:13px;font-size:16px}
+  .msg{font-size:14px;margin-top:10px}
+  .msg.ok{color:var(--teal)}
+  .msg.err{color:#b3402f}
+  .gate{max-width:380px;margin:40px auto;text-align:center}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:480px){ .row2{grid-template-columns:1fr} }
+  .bar{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(246,241,231,0),var(--sand) 40%);padding:14px 0 6px;margin-top:6px}
+  .hint{color:var(--muted);font-size:12.5px}
+  .toplink{display:inline-block;margin-top:8px;color:var(--teal);font-size:13px;text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">Showcase editor</div>
+    <h1>Edit the festival page</h1>
+    <p>Change titles, the tagline, and each performance's name &amp; blurb.</p>
+  </div>
+  <div class="wrap">
+    <div id="gate" class="gate card">
+      <h3>Enter the edit password</h3>
+      <p class="cs">Ask a coordinator if you don't have it.</p>
+      <input id="pw" type="password" placeholder="Password" autocomplete="off">
+      <div style="margin-top:12px"><button class="btn big" id="unlock">Unlock editor</button></div>
+      <div class="msg err" id="gate-msg"></div>
+      <a class="toplink" href="../">← Back to the festival page</a>
+    </div>
+    <div id="editor" hidden></div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
+  const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+  const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const WEEK=6;
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const DEFAULT={
+    eyebrow:'Showcase Alpha · East Hampton',
+    title:'Theatre & Cinema Festival',
+    tagline:'Every story ever told is a journey — the Odyssey did it first, and our puppeteers and filmmakers are doing it today.',
+    lead:"Tap a performance to give it a star rating and a comment. It's completely anonymous — a bit of fun to celebrate our storytellers.",
+    groups:[
+      {id:'puppet',emoji:'🎭',label:'Puppet Show',sub:'LL & L1'},
+      {id:'trailers',emoji:'🎬',label:'Young Filmmakers',sub:'L2 & MS · Movie Trailers'}
+    ],
+    items:[
+      {key:'puppet',emoji:'🎭',title:'Puppet Show',sub:'LL & L1',group:'puppet',film:false,desc:''},
+      {key:'trailer1',emoji:'🎬',title:'Trailer 1',sub:'Team 1',group:'trailers',film:true,desc:''},
+      {key:'trailer2',emoji:'🎬',title:'Trailer 2',sub:'Team 2',group:'trailers',film:true,desc:''},
+      {key:'trailer3',emoji:'🎬',title:'Trailer 3',sub:'Team 3',group:'trailers',film:true,desc:''},
+      {key:'trailer4',emoji:'🎬',title:'Trailer 4',sub:'Team 4',group:'trailers',film:true,desc:''}
+    ]
+  };
+  let CFG=JSON.parse(JSON.stringify(DEFAULT));
+  let PW='';
+
+  async function loadConfig(){
+    try{ const { data } = await sb.from('showcase_config').select('data').eq('week',WEEK).maybeSingle();
+      if(data && data.data){ CFG=Object.assign(JSON.parse(JSON.stringify(DEFAULT)), data.data);
+        if(!Array.isArray(CFG.items)||!CFG.items.length) CFG.items=DEFAULT.items;
+        if(!Array.isArray(CFG.groups)||!CFG.groups.length) CFG.groups=DEFAULT.groups; }
+    }catch(e){}
+  }
+
+  document.getElementById('unlock').addEventListener('click',unlock);
+  document.getElementById('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') unlock(); });
+  async function unlock(){
+    PW=(document.getElementById('pw').value||'').trim();
+    if(!PW){ gateErr('Enter the password.'); return; }
+    await loadConfig();
+    document.getElementById('gate').hidden=true;
+    document.getElementById('editor').hidden=false;
+    renderEditor();
+  }
+  function gateErr(t){ document.getElementById('gate-msg').textContent=t; }
+
+  function field(label,id,val,ph){ return `<label>${esc(label)}</label><input id="${id}" value="${esc(val||'')}" placeholder="${esc(ph||'')}">`; }
+  function area(label,id,val,ph){ return `<label>${esc(label)}</label><textarea id="${id}" rows="2" placeholder="${esc(ph||'')}">${esc(val||'')}</textarea>`; }
+
+  function renderEditor(){
+    const g=CFG.groups; const it=CFG.items;
+    const groupCards=g.map((gr,i)=>`<div class="card">
+      <h3>${esc(gr.emoji||'')} Section: ${esc(gr.label||gr.id)}</h3>
+      <div class="row2">${field('Heading','g'+i+'_label',gr.label)}${field('Sub-label','g'+i+'_sub',gr.sub)}</div>
+    </div>`).join('');
+    const itemCards=it.map((item,i)=>`<div class="card">
+      <h3>${esc(item.emoji||'')} ${esc(item.title||item.key)}</h3>
+      <div class="cs">${item.film?'Trailer — filmable':'Puppet show'}</div>
+      <div class="row2">${field('Title','i'+i+'_title',item.title)}${field('Sub (team / level)','i'+i+'_sub',item.sub)}</div>
+      ${area('Description','i'+i+'_desc',item.desc)}
+    </div>`).join('');
+    document.getElementById('editor').innerHTML=`
+      <div class="card">
+        <h3>Festival header</h3>
+        ${field('Eyebrow (small caps line)','f_eyebrow',CFG.eyebrow)}
+        ${field('Title','f_title',CFG.title)}
+        ${area('Tagline (italic theme line)','f_tagline',CFG.tagline)}
+        ${area('Intro line','f_lead',CFG.lead)}
+      </div>
+      ${groupCards}
+      ${itemCards}
+      <div class="bar">
+        <button class="btn big" id="save">Save changes</button>
+        <div class="msg" id="save-msg"></div>
+        <div class="hint" style="margin-top:8px">Changes go live on the festival page immediately. <a href="../" style="color:var(--teal)">View page →</a></div>
+      </div>`;
+    document.getElementById('save').addEventListener('click',save);
+  }
+
+  function collect(){
+    const v=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+    const out=JSON.parse(JSON.stringify(CFG));
+    out.eyebrow=v('f_eyebrow'); out.title=v('f_title'); out.tagline=v('f_tagline'); out.lead=v('f_lead');
+    out.groups=out.groups.map((gr,i)=>({...gr, label:v('g'+i+'_label'), sub:v('g'+i+'_sub')}));
+    out.items=out.items.map((item,i)=>({...item, title:v('i'+i+'_title'), sub:v('i'+i+'_sub'), desc:v('i'+i+'_desc')}));
+    return out;
+  }
+  async function save(){
+    const btn=document.getElementById('save'); const msg=document.getElementById('save-msg');
+    const data=collect();
+    if(!data.title){ msg.className='msg err'; msg.textContent='A festival title is required.'; return; }
+    btn.disabled=true; msg.className='msg'; msg.textContent='Saving…';
+    let res;
+    try{ res=await sb.functions.invoke('showcase-save', { body:{ week:WEEK, password:PW, data } }); }
+    catch(e){ res=null; }
+    const p=res&&res.data;
+    if(p&&p.ok){ CFG=data; msg.className='msg ok'; msg.textContent='Saved ✓ — live on the festival page.'; btn.disabled=false; return; }
+    btn.disabled=false;
+    if(p&&p.status==='bad_password'){ msg.className='msg err'; msg.textContent='Wrong password — refresh and re-enter to save.'; }
+    else { msg.className='msg err'; msg.textContent='Could not save — please try again.'; }
+  }
+</script>
+</body>
+</html>

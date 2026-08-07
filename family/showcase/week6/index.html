@@ -85,6 +85,15 @@
   .poster-img.ph{background:linear-gradient(160deg,#1c3d63,#101f31)}
   .poster-img.ph span{color:var(--gold-soft);font-family:var(--display);font-weight:600;font-size:14px;text-align:center;padding:12px;line-height:1.25}
   .poster-cap{color:var(--soft);font-size:12px;margin-top:7px;text-align:center;max-width:150px;line-height:1.25}
+  /* poster lightbox */
+  .pbackdrop{position:fixed;inset:0;background:rgba(4,10,18,.88);display:none;align-items:center;justify-content:center;z-index:60;padding:24px}
+  .pbackdrop.open{display:flex}
+  .plight{max-width:400px;width:100%;text-align:center}
+  .plight img{width:100%;max-height:72vh;object-fit:contain;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);background:var(--panel2)}
+  .plight .pl-ph{width:100%;aspect-ratio:2/3;max-height:72vh;border-radius:14px;background:linear-gradient(160deg,#1c3d63,#101f31);display:flex;align-items:center;justify-content:center;color:var(--gold-soft);font-family:var(--display);font-weight:600;font-size:22px;padding:24px}
+  .plight .pl-cap{color:#fff;font-family:var(--display);font-weight:600;font-size:20px;margin-top:14px}
+  .plight .pl-name{color:var(--gold-soft);font-size:14px;margin-top:2px;letter-spacing:.02em}
+  .plight .pl-x{position:fixed;top:14px;right:18px;background:none;border:none;color:#fff;font-size:36px;line-height:1;cursor:pointer}
   /* modal */
   .backdrop{position:fixed;inset:0;background:rgba(4,10,18,.72);display:none;align-items:flex-end;justify-content:center;z-index:30}
   .backdrop.open{display:flex}
@@ -151,6 +160,7 @@
   </div>
 
   <div class="backdrop" id="backdrop"><div class="sheet" id="sheet"></div></div>
+  <div class="pbackdrop" id="pbackdrop"><div class="plight" id="plight"></div></div>
   <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
@@ -189,19 +199,34 @@
     }catch(e){ /* fall back to defaults */ }
     renderPosters();
   }
+  const initLast=n=>{ const p=String(n||'').trim().split(/\s+/).filter(Boolean); if(!p.length) return ''; if(p.length===1) return p[0]; return p[0][0].toUpperCase()+'. '+p[p.length-1]; };
+  let PLIST=[];
   function renderPosters(){
     const host=document.getElementById('posters'); if(!host) return;
     const list=(POSTERS||[]).filter(p=>p && (p.title || p.url));
+    PLIST=list;
     if(!list.length){ host.innerHTML=''; return; }
-    const initLast=n=>{ const p=String(n||'').trim().split(/\s+/).filter(Boolean); if(!p.length) return ''; if(p.length===1) return p[0]; return p[0][0].toUpperCase()+'. '+p[p.length-1]; };
-    const card=p=>{ const has=p.url && String(p.url).trim(); const nm=initLast(p.name);
-      return `<a class="poster" ${has?`href="${escAttr(p.url)}" target="_blank" rel="noopener"`:'tabindex="0"'}>
+    const card=(p,i)=>{ const has=p.url && String(p.url).trim(); const nm=initLast(p.name);
+      return `<a class="poster" tabindex="0" role="button" data-pv="${i}">
         <div class="poster-img${has?'':' ph'}" ${has?`style="background-image:url('${escAttr(p.url)}')"`:''}>${has?'':`<span>${esc(p.title||'Poster')}</span>`}${nm?`<div class="poster-name">${esc(nm)}</div>`:''}</div>
         ${p.title?`<div class="poster-cap">${esc(p.title)}</div>`:''}</a>`; };
     const cards=list.map(card).join('');
-    host.innerHTML=`<div class="group-label"><div class="kick">Upcoming Movies</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers · scroll to browse</div></div>
+    host.innerHTML=`<div class="group-label"><div class="kick">Upcoming Movies</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers · tap a poster to view</div></div>
       <div class="ribbon"><div class="ribbon-track">${cards}</div></div>`;
+    host.querySelectorAll('[data-pv]').forEach(a=>{
+      a.addEventListener('click',e=>{ e.preventDefault(); openPoster(+a.dataset.pv); });
+      a.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openPoster(+a.dataset.pv); } });
+    });
   }
+  function openPoster(i){
+    const p=PLIST[i]; if(!p) return; const has=p.url && String(p.url).trim(); const nm=initLast(p.name);
+    document.getElementById('plight').innerHTML=`<button class="pl-x" data-pclose aria-label="Close">×</button>
+      ${has?`<img src="${escAttr(p.url)}" alt="${escAttr(p.title||'Poster')}">`:`<div class="pl-ph">${esc(p.title||'Poster')}</div>`}
+      ${p.title?`<div class="pl-cap">${esc(p.title)}</div>`:''}${nm?`<div class="pl-name">${esc(nm)}</div>`:''}`;
+    document.getElementById('pbackdrop').classList.add('open'); document.body.style.overflow='hidden';
+    document.querySelector('[data-pclose]').addEventListener('click',closePoster);
+  }
+  function closePoster(){ document.getElementById('pbackdrop').classList.remove('open'); document.body.style.overflow=''; }
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const escAttr=s=>String(s==null?'':s).replace(/"/g,'&quot;');
   const reviewedKey=k=>'showcase_w6_'+k;
@@ -339,7 +364,8 @@
   }
 
   document.getElementById('backdrop').addEventListener('click',e=>{ if(e.target.id==='backdrop') closeSheet(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openKey) closeSheet(); });
+  document.getElementById('pbackdrop').addEventListener('click',e=>{ if(e.target.id==='pbackdrop') closePoster(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(openKey) closeSheet(); closePoster(); } });
   loadConfig().then(load);
   setInterval(load, 20000);
 </script>

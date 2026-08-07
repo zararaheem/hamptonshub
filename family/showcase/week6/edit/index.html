@@ -96,13 +96,19 @@
   document.getElementById('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') unlock(); });
   async function unlock(){
     PW=(document.getElementById('pw').value||'').trim();
+    const m=document.getElementById('gate-msg');
     if(!PW){ gateErr('Enter the password.'); return; }
+    const btn=document.getElementById('unlock'); btn.disabled=true; m.className='msg'; m.textContent='Checking…';
+    let ok=false;
+    try{ const r=await sb.functions.invoke('showcase-save',{body:{verify:true,password:PW}}); ok=!!(r.data&&r.data.ok&&r.data.valid); }catch(e){ ok=false; }
+    btn.disabled=false;
+    if(!ok){ gateErr('Wrong password — try again.'); return; }
     await loadConfig();
     document.getElementById('gate').hidden=true;
     document.getElementById('editor').hidden=false;
     renderEditor();
   }
-  function gateErr(t){ document.getElementById('gate-msg').textContent=t; }
+  function gateErr(t){ const m=document.getElementById('gate-msg'); m.className='msg err'; m.textContent=t; }
 
   function field(label,id,val,ph){ return `<label>${esc(label)}</label><input id="${id}" value="${esc(val||'')}" placeholder="${esc(ph||'')}">`; }
   function area(label,id,val,ph){ return `<label>${esc(label)}</label><textarea id="${id}" rows="2" placeholder="${esc(ph||'')}">${esc(val||'')}</textarea>`; }
@@ -139,9 +145,13 @@
       ${itemCards}
       <div class="card">
         <h3>Movie posters</h3>
-        <div class="cs">Shown as a scrolling ribbon at the bottom of the festival page. Add a title and upload each poster image (JPG/PNG).</div>
+        <div class="cs">Shown as a ribbon at the bottom of the festival page — tap a poster there to view it larger. Add a title (and optional student name), then upload the image.</div>
         <div id="posters-editor"></div>
-        <button class="btn" id="add-poster" style="margin-top:10px;background:transparent;color:var(--teal);border:1px solid var(--line)">+ Add poster</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+          <button class="btn" id="add-poster" style="background:transparent;color:var(--teal);border:1px solid var(--line)">+ Add one</button>
+          <label class="btn" id="bulk-label" style="background:transparent;color:var(--teal);border:1px solid var(--line);cursor:pointer;margin:0">Bulk upload images<input type="file" accept="image/*" multiple id="bulk-posters" style="display:none"></label>
+          <span class="msg" id="bulk-msg" style="margin:0;font-size:12.5px"></span>
+        </div>
       </div>
       <div class="bar">
         <button class="btn big" id="save">Save changes</button>
@@ -151,7 +161,23 @@
     document.getElementById('save').addEventListener('click',save);
     EPOSTERS=(Array.isArray(CFG.posters)?CFG.posters:[]).map(p=>({title:p.title||'', name:p.name||'', url:p.url||''}));
     renderPostersEditor();
-    document.getElementById('add-poster').addEventListener('click',()=>{ EPOSTERS.push({title:'',url:''}); renderPostersEditor(); });
+    document.getElementById('add-poster').addEventListener('click',()=>{ EPOSTERS.push({title:'',name:'',url:''}); renderPostersEditor(); });
+    document.getElementById('bulk-posters').addEventListener('change', bulkUpload);
+  }
+  async function bulkUpload(e){
+    const files=[...(e.target.files||[])]; e.target.value='';
+    if(!files.length) return;
+    const msg=document.getElementById('bulk-msg');
+    let done=0;
+    for(const file of files){
+      if(msg){ msg.className='msg'; msg.textContent=`Uploading ${done+1} of ${files.length}…`; }
+      const i=EPOSTERS.length;
+      EPOSTERS.push({title:(file.name.replace(/\.[^.]+$/,'')||'Poster'), name:'', url:''});
+      renderPostersEditor();
+      await uploadPoster(file, i);
+      done++;
+    }
+    if(msg){ msg.className='msg ok'; msg.textContent=`Added ${done} poster${done===1?'':'s'} — set names, then Save changes.`; }
   }
 
   let EPOSTERS=[];
@@ -221,7 +247,7 @@
     const p=res&&res.data;
     if(p&&p.ok){ CFG=data; msg.className='msg ok'; msg.textContent='Saved ✓ — live on the festival page.'; btn.disabled=false; return; }
     btn.disabled=false;
-    if(p&&p.status==='bad_password'){ msg.className='msg err'; msg.textContent='Wrong password — refresh and re-enter to save.'; }
+    if(p&&p.status==='bad_password'){ const npw=prompt('Re-enter the edit password to save (your changes are kept):',''); if(npw){ PW=npw.trim(); return save(); } msg.className='msg err'; msg.textContent='Not saved — password needed.'; }
     else { msg.className='msg err'; msg.textContent='Could not save — please try again.'; }
   }
 </script>

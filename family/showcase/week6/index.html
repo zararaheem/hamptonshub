@@ -198,7 +198,7 @@
         <div class="poster-img${has?'':' ph'}" ${has?`style="background-image:url('${escAttr(p.url)}')"`:''}>${has?'':`<span>${esc(p.title||'Poster')}</span>`}</div>
         ${p.title?`<div class="poster-cap">${esc(p.title)}</div>`:''}</a>`; };
     const cards=list.map(card).join('');
-    host.innerHTML=`<div class="group-label"><div class="kick">Gallery</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers this week</div></div>
+    host.innerHTML=`<div class="group-label"><div class="kick">Upcoming Movies</div><h2>Movie Posters</h2><div class="gl-sub">Designed by our young filmmakers this week</div></div>
       <div class="ribbon"><div class="ribbon-track">${cards}${list.length>1?cards:''}</div></div>`;
   }
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

@@ -65,6 +65,7 @@
   .film .flinks{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
   .film .flink{display:inline-block;background:var(--gold);color:#241a02;text-decoration:none;border-radius:9px;padding:9px 16px;font-weight:700;font-size:14px}
   .film .flink.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .film iframe,.film video{width:100%;aspect-ratio:16/9;border:none;border-radius:10px;margin-top:10px;background:#000;display:block}
   .film .fmsg{font-size:13px;margin-top:8px;color:var(--gold-soft)}
   /* scenes (puppet) */
   .scenes{margin:14px 0 2px;border-top:1px solid var(--line);padding-top:12px}
@@ -318,6 +319,18 @@
     if(it.film) loadFilm(it.key, '');
   }
 
+  // Turn a video link (YouTube / Vimeo / Google Drive / direct file) into an inline player.
+  function embedHtml(u){
+    u=String(u||'').trim(); if(!u) return '';
+    let m=u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/);
+    if(m) return `<iframe src="https://www.youtube.com/embed/${m[1]}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    m=u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if(m) return `<iframe src="https://player.vimeo.com/video/${m[1]}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+    if(/drive\.google\.com/.test(u)){ m=u.match(/\/file\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);
+      if(m) return `<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allow="autoplay" allowfullscreen></iframe>`; }
+    if(/\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(u)) return `<video src="${escAttr(u)}" controls playsinline preload="metadata"></video>`;
+    return '';  // unknown host → caller falls back to a Watch link
+  }
   async function loadFilm(item, code){
     const box=document.getElementById('filmbox'); if(!box || openKey!==item) return;
     let res;
@@ -331,13 +344,12 @@
       return;
     }
     if(status==='ready'){
-      const v=p.video_url||''; const dl=p.download_url||'';
+      const v=p.video_url||''; const dl=p.download_url||''; const emb=embedHtml(v);
+      const player = emb || (v?`<div class="flinks"><a class="flink" href="${esc(v)}" target="_blank" rel="noopener">Watch ↗</a></div>`:'');
       box.innerHTML=`<h4>Your film is ready</h4>
-        <div class="flinks">
-          ${v?`<a class="flink" href="${esc(v)}" target="_blank" rel="noopener">Watch ↗</a>`:''}
-          ${dl?`<a class="flink ghost" href="${esc(dl)}" target="_blank" rel="noopener">Download</a>`:''}
-          ${(!v&&!dl)?`<p>The link will appear here shortly.</p>`:''}
-        </div>`;
+        ${player}
+        ${dl?`<div class="flinks"><a class="flink ghost" href="${esc(dl)}" target="_blank" rel="noopener">⬇ Download</a></div>`:''}
+        ${(!v&&!dl)?`<p>The link will appear here shortly.</p>`:''}`;
       return;
     }
     const bad = status==='bad_code';

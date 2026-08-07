@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Showcase Keepsake Card</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#0b1622;--ink:#f3f6fa;--muted:#95aabf;--soft:#c3d0d9;--gold:#e6b23a;--gold-soft:#f0cd7e;--teal:#38c3b8;
+        --display:'Fraunces',Georgia,serif;--body:'Inter',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0}
+  html,body{background:#3a4657;display:flex;align-items:center;justify-content:center;min-height:100vh}
+  @media print{ html,body{background:#fff} @page{size:2.125in 3.375in;margin:0} }
+  .card{width:2.125in;height:3.375in;background:var(--bg);color:var(--ink);font-family:var(--body);
+        position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .strip{height:6px;flex:none;background:repeating-linear-gradient(90deg,#0b1622 0 6px,var(--gold) 6px 12px);opacity:.6}
+  .top{padding:11px 12px 9px;text-align:center;background:radial-gradient(300px 170px at 50% -25%,#1c3d63,#0e2233 72%)}
+  .marquee{color:var(--gold);letter-spacing:.34em;font-size:8px}
+  .eyebrow{color:var(--teal);letter-spacing:.14em;text-transform:uppercase;font-size:6.5px;font-weight:700;margin-top:4px}
+  .title{font-family:var(--display);font-weight:700;font-size:18px;line-height:1.02;margin:4px 2px 3px}
+  .laurels{color:var(--gold);font-size:7px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+  .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 10px}
+  .scan{font-family:var(--display);font-weight:600;font-size:13px;color:var(--gold-soft);margin-bottom:7px}
+  .qrtile{background:#fff;border-radius:11px;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  .qr{width:1.25in;height:1.25in;display:block;image-rendering:pixelated}
+  .cap{color:var(--soft);font-size:8px;margin-top:9px;text-align:center;line-height:1.35}
+  .foot{text-align:center;padding:6px 8px 9px;color:var(--muted);font-size:6.5px;letter-spacing:.03em;text-transform:uppercase}
+  .hint{position:fixed;bottom:14px;left:0;right:0;text-align:center;color:#cdd6e0;font-family:var(--body);font-size:12px}
+  @media print{ .hint{display:none} }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="strip"></div>
+    <div class="top">
+      <div class="marquee">&#9733; &#9733; &#9733;</div>
+      <div class="eyebrow">Showcase Alpha &middot; Week 6</div>
+      <div class="title">Theatre &amp; Cinema Festival</div>
+      <div class="laurels">&#10086; Audience Reviews &#10086;</div>
+    </div>
+    <div class="mid">
+      <div class="scan">Scan to rate &amp; review</div>
+      <div class="qrtile"><img class="qr" alt="Scan for the reviews page" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA4QAAAOEAQMAAADDgG14AAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAEYElEQVR4nO3dQXLqOBQFUP1iwDBLYCleGl6al8ISGDJIRZ3Eaj3JVkj1pKGbcycfFEnnMXxlyT/lcd7Td46fH1PNlPNt/fSW88f66RBrPr+dupWjXBORSCQSiUQikUh8uHhJm8S6PlOzLv35/Gepf3qrpX2VMG9rLSESiUQikUgkEolPIw67h6kOhNj3HdM68VwXR/HHulXJjUgkEolEIpFIJP5XxO9p7UajXNf9Ltu+g0gkEolEIpFIJBL/UadTcq7PO0rmdXz90p+XIhKJRCKRSCQSiU8q9gnxtv1T9B39847oO5qJu1qJRCKRSCQSiUTic4ijNGKubcaybjQPTj0Nnz6MQiQSiUQikUgkEh8t3sm0zknta4+O23WHWkKT+d62RCKRSCQSiUQi8dXEXNuTLu/djJ+yVDG2Sl1pkRuRSCQSiUQikUh8NnGu03brRs879kn1vFRqtzqEmOOcFZFIJBKJRCKRSHyg+FOWde365aNW0dyAXtqBkqaFiRKmOvBbH0MkEolEIpFIJBL/f+Iuue10IsPbFpHS+lwGYu4GiEQikUgkEolE4qPFbuTWDRRgXNh3pnXi3NZ6+G0rIpFIJBKJRCKR+CziPACOXUFLO/ARYq5PH071VUwlpYRYeSUSiUQikUgkEomPFy/r7HO9pXzqbkCn9qrDrY7tzyB1W4WYorTvz0QikUgkEolEIvHVxDX9UaVIaX12Yn/q6VxXngadThFv3cZEIpFIJBKJRCLxkWJM+xrN24zE1PUdJQF0W713M65EIpFIJBKJRCLx8WKq0wqQukZkl7kVdxMLUA45XbaXIYhEIpFIJBKJROLziKk+bDjV5dE99FcdSpau1lz7jpIoYWp/DZFIJBKJRCKRSHwxMUbvJA45Hbfo8JDTeTsrciUSiUQikUgkEolPIZZEm1GahVtF/8SMdb9SwtfTjLnOOnUHqFJtYZamfCKRSCQSiUQikfhw8bJdFyltxrWKuQ6ktH0cEWJqX+V6CDHH+1eJRCKRSCQSiUTii4rHbodlIO46nbQObC5RtLctmoG/WSKRSCQSiUQikfhw8Ze81bsPtxFwbutsDlDFr8n1WcqVSCQSiUQikUgkPo14Z92u77j+8P7VUbaPI4hEIpFIJBKJROJjxTuZtncflnXd3DYiJdGIDC9DTE3fQSQSiUQikUgkEl9NzOP0nU7Jsg6cKzCtE8tATJxrYxNizt37V4lEIpFIJBKJROIDxUvapJ+W267iWMc+uiXxv0QXMbYquXvOikgkEolEIpFIJP7b4iFmd+Lw6UOUMG0blH6ryJLuTCMSiUQikUgkEolPJEY+tgNloyGQa627rX7rO4hEIpFIJBKJROKriV/rvqe1d64j0zrxXE89Xerdh9ISxd51JZFIJBKJRCKRSHwGsc9p+xjjun3R0ls99dTXGjnW4jORSCQSiUQikUh8NnGUpu/YbTR/f7r3/tW5/TWHXM9LEYlEIpFIJBKJxFcU/wKTuzg7E3JM3AAAAABJRU5ErkJggg=="></div>
+      <div class="cap">Rate the performances and share your<br>feedback with our puppeteers &amp;<br>young filmmakers.</div>
+    </div>
+    <div class="foot">East Hampton &middot; Summer 2026</div>
+    <div class="strip"></div>
+  </div>
+  <div class="hint">Print at CR80 card size (2.125&Prime; &times; 3.375&Prime;) on the Magicard Pronto.</div>
+</body>
+</html>

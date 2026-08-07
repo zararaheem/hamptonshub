@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
+<title>Week 6 Showcase — Rate &amp; Review · Alpha Summer</title>
+<meta name="description" content="Rate and review the Week 6 puppet show and movie trailers — anonymous, like a film festival." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0e2233; --navy-2:#14304a; --panel:#fff; --line:#e6e0d4; --ink:#1f2d3a; --muted:#5d6b78;
+    --brass:#b07a2c; --brass-bright:#c8924a; --teal:#1f7a73; --teal-bright:#2aa39a;
+    --sand:#f6f1e7; --gold:#e6a935; --shadow:0 8px 30px rgba(20,40,60,.10);
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.55}
+  .hero{background:linear-gradient(160deg,#0e2233,#14304a);color:#fff;text-align:center;padding:38px 20px 30px}
+  .hero .eyebrow{color:var(--teal-bright);letter-spacing:.18em;text-transform:uppercase;font-size:12.5px;font-weight:600}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,7vw,46px);margin:6px 0 4px}
+  .hero .theme{font-size:15px;color:#d6e2ea;margin:0 0 12px}
+  .hero .lead{font-size:15px;color:#c3d0d9;max-width:560px;margin:0 auto}
+  .pill{display:inline-block;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 14px;font-size:13px;margin-top:12px}
+  .wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px 18px 16px;margin:16px 0}
+  .card-head{display:flex;gap:12px;align-items:flex-start}
+  .emoji{font-size:30px;line-height:1;flex:none}
+  .card-title{font-family:var(--display);font-weight:600;font-size:22px;margin:0}
+  .card-sub{color:var(--muted);font-size:13.5px;margin:2px 0 0}
+  .card-desc{color:var(--muted);font-size:13.5px;margin:8px 0 0}
+  .agg{display:flex;align-items:center;gap:8px;margin:12px 0 4px;flex-wrap:wrap}
+  .agg .avg{font-family:var(--display);font-weight:700;font-size:26px;color:var(--ink)}
+  .stars{display:inline-flex;gap:2px;font-size:24px;line-height:1;color:#d8cfbe}
+  .stars .on{color:var(--gold)}
+  .agg .cnt{color:var(--muted);font-size:13px}
+  .rate-label{font-weight:600;font-size:14px;margin:14px 0 4px}
+  .rater{display:inline-flex;gap:4px;font-size:34px;line-height:1;cursor:pointer;color:#d8cfbe;-webkit-tap-highlight-color:transparent;user-select:none}
+  .rater span{transition:transform .08s}
+  .rater span:active{transform:scale(1.2)}
+  .rater span.on{color:var(--gold)}
+  textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--body);font-size:15px;resize:vertical;margin-top:10px;background:#fffdf9}
+  textarea:focus{outline:none;border-color:var(--teal-bright)}
+  .row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-family:var(--body);font-weight:600;font-size:15px;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:default}
+  .msg{font-size:13.5px;color:var(--teal)}
+  .msg.err{color:#b3402f}
+  .thanks{background:#eef6ef;border:1px solid #cfe6d2;color:#1f6b3a;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600;margin-top:12px}
+  .comments{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .comments h4{margin:0 0 8px;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .cfeed{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+  .cmt{background:var(--sand);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+  .cmt .cs{font-size:13px;color:var(--gold);letter-spacing:1px}
+  .cmt .ct{font-size:14.5px;color:var(--ink);margin-top:2px;white-space:pre-wrap;word-break:break-word}
+  .cmt .cd{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .empty{color:var(--muted);font-size:13.5px;font-style:italic}
+  .foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:30px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:12px;font-size:14px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="eyebrow">Alpha Summer · East Hampton</div>
+    <h1>Week 6 Showcase</h1>
+    <p class="theme">Puppets + Movie Trailer — rate &amp; review, film-festival style</p>
+    <p class="lead">Tap the stars and leave a comment for each performance. It's completely anonymous — just a bit of fun to celebrate our storytellers.</p>
+    <div class="pill">🎬 5 performances · ⭐ anonymous voting</div>
+  </div>
+  <div class="wrap" id="wrap">
+    <div class="empty" id="loading" style="text-align:center;padding:30px">Loading the showcase…</div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
+  const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+  const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const WEEK=6;
+  const ITEMS=[
+    {key:'puppet',   emoji:'🎭', title:'Puppet Show',  sub:'LL & L1',  desc:'Our youngest students perform the puppet show they imagined, built, and rehearsed themselves.'},
+    {key:'trailer1', emoji:'🎬', title:'Trailer 1',    sub:'Team 1',   desc:'Movie trailer created by Team 1 (3 students).'},
+    {key:'trailer2', emoji:'🎬', title:'Trailer 2',    sub:'Team 2',   desc:'Movie trailer created by Team 2 (3 students).'},
+    {key:'trailer3', emoji:'🎬', title:'Trailer 3',    sub:'Team 3',   desc:'Movie trailer created by Team 3 (3 students).'},
+    {key:'trailer4', emoji:'🎬', title:'Trailer 4',    sub:'Team 4',   desc:'Movie trailer created by Team 4 (3 students).'},
+  ];
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const reviewedKey=k=>'showcase_w6_'+k;
+  const hasReviewed=k=>{ try{ return !!localStorage.getItem(reviewedKey(k)); }catch(e){ return false; } };
+  const markReviewed=(k,r)=>{ try{ localStorage.setItem(reviewedKey(k), String(r)); }catch(e){} };
+  const starRow=n=>{ let h=''; for(let i=1;i<=5;i++) h+=`<span class="${i<=Math.round(n)?'on':''}">★</span>`; return h; };
+  function timeAgo(iso){ const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+    if(s<60) return 'just now'; const m=Math.floor(s/60); if(m<60) return m+'m ago';
+    const h=Math.floor(m/60); if(h<24) return h+'h ago'; const d=Math.floor(h/24); return d+'d ago'; }
+  let DATA={};   // key -> {sum,count,comments:[]}
+  let PICK={};   // key -> current star pick (pre-submit)
+
+  function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2200); }
+
+  async function load(){
+    const { data, error } = await sb.from('showcase_reviews')
+      .select('item,rating,comment,created_at').eq('week',WEEK).order('created_at',{ascending:false});
+    DATA={}; ITEMS.forEach(it=>DATA[it.key]={sum:0,count:0,comments:[]});
+    if(!error && data){ data.forEach(r=>{ const d=DATA[r.item]; if(!d) return; d.sum+=r.rating; d.count++;
+      if(r.comment && r.comment.trim()) d.comments.push(r); }); }
+    render();
+  }
+
+  function render(){
+    const wrap=document.getElementById('wrap');
+    wrap.innerHTML=ITEMS.map(it=>{
+      const d=DATA[it.key]||{sum:0,count:0,comments:[]};
+      const avg=d.count? d.sum/d.count : 0;
+      const done=hasReviewed(it.key);
+      const myPick=PICK[it.key]||0;
+      const raterStars=[1,2,3,4,5].map(i=>`<span class="${i<=myPick?'on':''}" data-star="${i}">★</span>`).join('');
+      const comments=d.comments.length? d.comments.map(c=>`
+        <div class="cmt"><div class="cs">${'★'.repeat(c.rating)}${'☆'.repeat(5-c.rating)}</div>
+          <div class="ct">${esc(c.comment)}</div><div class="cd">${timeAgo(c.created_at)}</div></div>`).join('')
+        : `<div class="empty">No comments yet — be the first!</div>`;
+      return `<div class="card" data-key="${it.key}">
+        <div class="card-head">
+          <div class="emoji">${it.emoji}</div>
+          <div style="flex:1">
+            <h3 class="card-title">${esc(it.title)}</h3>
+            <div class="card-sub">${esc(it.sub)}</div>
+            <div class="card-desc">${esc(it.desc)}</div>
+          </div>
+        </div>
+        <div class="agg">
+          <span class="avg">${d.count? avg.toFixed(1):'—'}</span>
+          <span class="stars">${starRow(avg)}</span>
+          <span class="cnt">${d.count? d.count+' rating'+(d.count===1?'':'s') : 'No ratings yet'}</span>
+        </div>
+        ${done ? `<div class="thanks">✓ Thanks for your review!</div>` : `
+          <div class="rate-label">Your rating</div>
+          <div class="rater" data-rater="${it.key}">${raterStars}</div>
+          <textarea data-cmt="${it.key}" rows="2" placeholder="Add a comment (optional) — what did you love?"></textarea>
+          <div class="row">
+            <button class="btn" data-submit="${it.key}" ${myPick?'':'disabled'}>Submit review</button>
+            <span class="msg" data-msg="${it.key}"></span>
+          </div>`}
+        <div class="comments"><h4>Comments</h4><div class="cfeed">${comments}</div></div>
+      </div>`;
+    }).join('') + `<div class="foot">One review per performance from this device · Results update live · Alpha Summer 2026</div>`;
+
+    // wire raters
+    wrap.querySelectorAll('[data-rater]').forEach(r=>{
+      const key=r.dataset.rater;
+      r.querySelectorAll('[data-star]').forEach(s=>s.addEventListener('click',()=>{
+        PICK[key]=+s.dataset.star;
+        r.querySelectorAll('[data-star]').forEach(x=>x.classList.toggle('on', +x.dataset.star<=PICK[key]));
+        const btn=wrap.querySelector(`[data-submit="${key}"]`); if(btn) btn.disabled=false;
+      }));
+    });
+    // wire submit
+    wrap.querySelectorAll('[data-submit]').forEach(b=>b.addEventListener('click',()=>submitReview(b.dataset.submit)));
+  }
+
+  async function submitReview(key){
+    const rating=PICK[key];
+    const msg=document.querySelector(`[data-msg="${key}"]`);
+    if(!rating){ if(msg){ msg.className='msg err'; msg.textContent='Tap the stars to rate first.'; } return; }
+    const ta=document.querySelector(`[data-cmt="${key}"]`);
+    const comment=(ta&&ta.value||'').trim().slice(0,2000);
+    const btn=document.querySelector(`[data-submit="${key}"]`); if(btn) btn.disabled=true;
+    if(msg){ msg.className='msg'; msg.textContent='Sending…'; }
+    const { error } = await sb.from('showcase_reviews').insert({week:WEEK, item:key, rating, comment: comment||null});
+    if(error){ if(msg){ msg.className='msg err'; msg.textContent='Could not submit — please try again.'; } if(btn) btn.disabled=false; return; }
+    markReviewed(key, rating);
+    toast('Thanks for your review! 🎬');
+    await load();
+  }
+
+  load();
+  setInterval(load, 20000);   // keep results live
+</script>
+</body>
+</html>

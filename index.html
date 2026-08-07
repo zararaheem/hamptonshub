@@ -5034,14 +5034,37 @@ async function loadShowcaseFilms(){
         <span class="lc-desc" style="margin:0;color:var(--muted)">${cs.length} code${cs.length===1?'':'s'}</span>
       </div>
       <div class="grid g2">
-        <div class="field"><label>Video link (Watch ↗)</label><input class="cell-input" data-fvid value="${escAttr(f.video_url||'')}" placeholder="https://… (Drive, YouTube, etc.)"></div>
-        <div class="field"><label>Download link</label><input class="cell-input" data-fdl value="${escAttr(f.download_url||'')}" placeholder="https://…"></div>
+        <div class="field"><label>Video link (Watch ↗)</label><input class="cell-input" data-fvid value="${escAttr(f.video_url||'')}" placeholder="https://… (paste a link, or upload below)">
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label class="btn ghost" style="cursor:pointer;padding:6px 12px;margin:0">⬆ Upload MP4 from device<input type="file" accept="video/*" data-fupload="${t.key}" style="display:none"></label>
+            <span class="gate-msg" data-fupmsg="${t.key}" style="margin:0;font-size:12px"></span>
+          </div>
+        </div>
+        <div class="field"><label>Download link</label><input class="cell-input" data-fdl value="${escAttr(f.download_url||'')}" placeholder="https://… (auto-filled when you upload)"></div>
       </div>
       <div class="field"><label>Student last names — one per line (each becomes <code>lastname-${esc(t.key)}</code>)</label><textarea class="cell-input" data-fnames rows="3" style="resize:vertical" placeholder="Smith&#10;O'Brien&#10;Garcia">${esc(names)}</textarea></div>
       <div style="margin-top:8px"><button class="btn" data-fsave="${t.key}">Save ${esc(t.label.split(' · ')[0])}</button> <span class="gate-msg" data-fmsg="${t.key}" style="margin-left:8px"></span></div>
     </div>`;
   }).join('');
   host.querySelectorAll('[data-fsave]').forEach(b=>b.addEventListener('click',()=>saveShowcaseFilm(b.dataset.fsave)));
+  host.querySelectorAll('[data-fupload]').forEach(inp=>inp.addEventListener('change',()=>uploadTrailerVideo(inp.files[0], inp.dataset.fupload)));
+}
+async function uploadTrailerVideo(file, item){
+  if(!file) return;
+  const card=document.querySelector(`[data-film="${item}"]`); if(!card) return;
+  const msg=card.querySelector('[data-fupmsg]');
+  const setMsg=(t,cls)=>{ if(msg){ msg.className='gate-msg '+(cls||''); msg.textContent=t; } };
+  const mb=file.size/1048576;
+  setMsg(`Uploading ${mb.toFixed(mb<10?1:0)} MB…`);
+  const ext=((file.name.split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'')||'mp4');
+  const rand=Array.from({length:6},()=>'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random()*36)]).join('');
+  const path=`wk${SC_WEEK}/${item}-${rand}.${ext}`;
+  const up=await SB.storage.from('trailers').upload(path, file, {upsert:true, contentType:file.type||'video/mp4'});
+  if(up.error){ setMsg('Upload failed — '+(up.error.message||'try again')+(mb>50?' · the file may be over the size limit; a Drive/YouTube link is a good fallback.':''),'err'); return; }
+  const { data }=SB.storage.from('trailers').getPublicUrl(path);
+  const vin=card.querySelector('[data-fvid]'); if(vin) vin.value=data.publicUrl;
+  const din=card.querySelector('[data-fdl]'); if(din && !din.value.trim()) din.value=data.publicUrl;
+  setMsg('Uploaded ✓ — tick Published, then Save.','ok');
 }
 async function saveShowcaseFilm(item){
   const card=document.querySelector(`[data-film="${item}"]`); if(!card) return;

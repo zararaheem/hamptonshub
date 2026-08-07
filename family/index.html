@@ -269,8 +269,8 @@
       const deanEmail=deanM?deanM[2].trim():(deanName?deanName.toLowerCase().split(/\s+/).join('.')+'@alpha.school':'');
       const contacts=[
         {desc:'Logistics — bussing, lunch, attendance', title:'Campus Coordinator', people: coordEmails.map(e=>({name:nameFromEmail(e), email:e})), note: urgent, inline:true},
-        {desc:'Questions about admissions or Alpha', title:'Director of Admissions', people:[{name:'Nancy Torvund', email:'nancy.torvund@alpha.school'}]},
         ...(dean ? [{desc:'Questions about Alpha, your child or any concerns', title:'Dean of Parents', people:[{name:deanName, email:deanEmail}]}] : []),
+        {desc:'Questions about admissions or Alpha', title:'Director of Admissions', people:[{name:'Nancy Torvund', email:'nancy.torvund@alpha.school'}]},
         // Only show the Lead Guide / academics contact once a lead guide is set for the week.
         ...(headGuide ? [{desc:'Academic &amp; life-skills questions', title:'Lead Guide', people:[{name:hgName, email:hgEmail}]}] : []),
         {desc:'Anything else', title:'Head of Schools', people:[{name:'Dr. Tasha Arnold', email:'tasha.arnold@alpha.school'}]}

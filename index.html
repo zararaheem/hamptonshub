@@ -1466,6 +1466,9 @@
       <div id="sc-summary" class="grid g2" style="margin-bottom:8px"></div>
       <div class="section-title"><span class="num">#</span>Comments</div>
       <div id="sc-comments"></div>
+      <div class="section-title" style="margin-top:26px"><span class="num">🎬</span>Trailer films &amp; access codes</div>
+      <p class="page-lead" style="margin-top:0">Upload each trailer's <b>video</b> and <b>download</b> links, and paste the students' <b>last names</b> (one per line) — each becomes a code <code>lastname-trailerN</code> that the family enters on the review page to watch. Nothing is visible to parents until you tick <b>Published</b>. Links stay private until a valid code is entered.</p>
+      <div id="sc-films"></div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -5001,6 +5004,60 @@ async function loadShowcaseAdmin(){
   SC_ROWS = error ? [] : (data||[]);
   if(error){ cwrap.innerHTML='<div class="callout">Could not load reviews — '+esc(error.message||'')+'</div>'; return; }
   renderShowcaseAdmin();
+  loadShowcaseFilms();
+}
+const SC_TRAILERS=[
+  {key:'trailer1',label:'Trailer 1 · Team 1'},
+  {key:'trailer2',label:'Trailer 2 · Team 2'},
+  {key:'trailer3',label:'Trailer 3 · Team 3'},
+  {key:'trailer4',label:'Trailer 4 · Team 4'},
+];
+const codeSlug=n=>String(n||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
+async function loadShowcaseFilms(){
+  const host=document.getElementById('sc-films'); if(!host) return;
+  if(!SUPA){ host.innerHTML='<div class="callout">Connect Supabase to manage trailer films.</div>'; return; }
+  const [fr, cr] = await Promise.all([
+    SB.from('showcase_films').select('item,video_url,download_url,published').eq('week',SC_WEEK),
+    SB.from('showcase_film_codes').select('item,code,label').eq('week',SC_WEEK)
+  ]);
+  const fmap={}; (fr.data||[]).forEach(f=>fmap[f.item]=f);
+  const cmap={}; (cr.data||[]).forEach(c=>{ (cmap[c.item]=cmap[c.item]||[]).push(c); });
+  host.innerHTML=SC_TRAILERS.map(t=>{ const f=fmap[t.key]||{}; const cs=cmap[t.key]||[];
+    const names=cs.map(c=>c.label||c.code).join('\n');
+    return `<div class="card" style="margin:0 0 12px" data-film="${t.key}">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <b style="font-size:15px">${esc(t.label)}</b>
+        <label style="display:flex;gap:6px;align-items:center;font-weight:600;cursor:pointer"><input type="checkbox" data-fpub ${f.published?'checked':''}> Published</label>
+        <span class="pill ${f.published?'ok':''}">${f.published?'Visible to parents':'Hidden'}</span>
+        <span class="lc-desc" style="margin:0;color:var(--muted)">${cs.length} code${cs.length===1?'':'s'}</span>
+      </div>
+      <div class="grid g2">
+        <div class="field"><label>Video link (Watch ↗)</label><input class="cell-input" data-fvid value="${escAttr(f.video_url||'')}" placeholder="https://… (Drive, YouTube, etc.)"></div>
+        <div class="field"><label>Download link</label><input class="cell-input" data-fdl value="${escAttr(f.download_url||'')}" placeholder="https://…"></div>
+      </div>
+      <div class="field"><label>Student last names — one per line (each becomes <code>lastname-${esc(t.key)}</code>)</label><textarea class="cell-input" data-fnames rows="3" style="resize:vertical" placeholder="Smith&#10;O'Brien&#10;Garcia">${esc(names)}</textarea></div>
+      <div style="margin-top:8px"><button class="btn" data-fsave="${t.key}">Save ${esc(t.label.split(' · ')[0])}</button> <span class="gate-msg" data-fmsg="${t.key}" style="margin-left:8px"></span></div>
+    </div>`;
+  }).join('');
+  host.querySelectorAll('[data-fsave]').forEach(b=>b.addEventListener('click',()=>saveShowcaseFilm(b.dataset.fsave)));
+}
+async function saveShowcaseFilm(item){
+  const card=document.querySelector(`[data-film="${item}"]`); if(!card) return;
+  const msg=card.querySelector('[data-fmsg]');
+  const video=card.querySelector('[data-fvid]').value.trim();
+  const download=card.querySelector('[data-fdl]').value.trim();
+  const published=card.querySelector('[data-fpub]').checked;
+  const names=[...new Set(card.querySelector('[data-fnames]').value.split(/\n+/).map(s=>s.trim()).filter(Boolean))];
+  msg.className='gate-msg'; msg.textContent='Saving…';
+  const e1=await SB.from('showcase_films').upsert({week:SC_WEEK, item, video_url:video||null, download_url:download||null, published, updated_at:new Date().toISOString()});
+  if(e1.error){ msg.className='gate-msg err'; msg.textContent='Save failed — '+(e1.error.message||''); return; }
+  // Rebuild the code list for this trailer from the last names.
+  await SB.from('showcase_film_codes').delete().eq('week',SC_WEEK).eq('item',item);
+  const rows=[]; const seen=new Set();
+  names.forEach(n=>{ const slug=codeSlug(n); if(!slug) return; const code=`${slug}-${item}`; if(seen.has(code)) return; seen.add(code); rows.push({week:SC_WEEK, item, code, label:n}); });
+  if(rows.length){ const e2=await SB.from('showcase_film_codes').insert(rows); if(e2.error){ msg.className='gate-msg err'; msg.textContent='Links saved, but codes failed — '+(e2.error.message||''); return; } }
+  msg.className='gate-msg ok'; msg.textContent=`Saved ✓ ${rows.length} code${rows.length===1?'':'s'}${published?' · live':' · hidden'}`;
+  loadShowcaseFilms();
 }
 function renderShowcaseAdmin(){
   const label=k=>{ const it=SC_ITEMS.find(x=>x.key===k); return it?it.label:k; };

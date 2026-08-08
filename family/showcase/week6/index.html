@@ -328,6 +328,9 @@
     if(m) return `<iframe src="https://player.vimeo.com/video/${m[1]}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     if(/drive\.google\.com/.test(u)){ m=u.match(/\/file\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);
       if(m) return `<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allow="autoplay" allowfullscreen></iframe>`; }
+    // Frame.io review/share links (f.io/… or [app|next].frame.io/…) embed as-is,
+    // with an "open in a new tab" fallback under the player just in case.
+    if(/(?:\/\/|\.|^)f\.io\//i.test(u) || /frame\.io\//i.test(u)) return `<iframe src="${escAttr(u)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><div class="flinks"><a class="flink ghost" href="${esc(u)}" target="_blank" rel="noopener">Open in Frame.io ↗</a></div>`;
     if(/\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(u)) return `<video src="${escAttr(u)}" controls playsinline preload="metadata"></video>`;
     return '';  // unknown host → caller falls back to a Watch link
   }

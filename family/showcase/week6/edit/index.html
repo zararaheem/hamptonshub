@@ -155,7 +155,7 @@
       </div>
       <div class="card">
         <h3>Movie trailers</h3>
-        <div class="cs">Upload each team's trailer MP4 (or paste a link). Parents enter a code (<b>lastname-trailerN</b>) on the festival page to watch — add the students' last names below, one per line. Turn on <b>Published</b> when it's ready.</div>
+        <div class="cs">Paste each team's <b>Frame.io link</b> (or upload an MP4). Parents enter a code (<b>lastname-trailerN</b>) on the festival page to watch — add the students' last names below, one per line. Turn on <b>Published</b> when it's ready.</div>
         <div id="films-editor"><div class="cs">Loading trailers…</div></div>
       </div>
       <div class="bar">
@@ -203,7 +203,7 @@
         <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;font-size:14px;cursor:pointer"><input type="checkbox" data-fpub="${i}" ${f.published?'checked':''} style="width:auto"> Published</label>
         <span class="msg" data-fmsg="${i}" style="margin:0;font-size:12.5px"></span>
       </div>
-      ${field('Trailer link (MP4 URL)','f'+i+'_url',f.video_url,'Uploads fill this in automatically')}
+      ${field('Trailer link (MP4 or Frame.io link)','f'+i+'_url',f.video_url,'Paste a Frame.io link, or upload to fill this in')}
       ${area('Student last names (one per line — sets the watch code lastname-'+f.item+')','f'+i+'_names',f.names,'Smith\nJohnson')}
     </div>`).join('');
     host.querySelectorAll('[data-fi]').forEach(row=>{

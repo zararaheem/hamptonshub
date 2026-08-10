@@ -510,17 +510,28 @@
   .tr-btn{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 9px;cursor:pointer;margin-right:5px}
   .tr-btn.on-h{border-color:#E8B84B;color:#E8B84B;font-weight:700} .tr-btn.on-p{border-color:#5AA0F0;color:#5AA0F0;font-weight:700} .tr-btn.on-x{color:var(--oyster)}
   /* Real Estate Cup (week 7 · 3 named teams) */
-  .re-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .re-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   @media(max-width:720px){ .re-board{grid-template-columns:1fr} }
-  .re-panel{border-radius:16px;padding:22px 14px 18px;text-align:center;border:2px solid;position:relative;transition:box-shadow .3s}
-  .re-emoji{font-size:34px;line-height:1;min-height:44px;display:flex;align-items:center;justify-content:center}
-  .re-name{font-size:19px;font-weight:800;letter-spacing:.03em;margin-top:4px;text-transform:uppercase}
+  .re-panel{border-radius:20px;padding:26px 16px 20px;text-align:center;border:1.5px solid var(--tc,#888);position:relative;overflow:hidden;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--tc) 20%, transparent), color-mix(in srgb, var(--tc) 4%, rgba(10,20,40,.25)));
+    box-shadow:0 14px 40px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);transition:transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .5s}
+  .re-panel.leading{transform:translateY(-6px) scale(1.02);box-shadow:0 22px 60px color-mix(in srgb, var(--tc) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.1)}
+  .re-panel.leading::after{content:"";position:absolute;inset:-40% -40% auto -40%;height:80%;pointer-events:none;
+    background:radial-gradient(closest-side, color-mix(in srgb, var(--tc) 34%, transparent), transparent);opacity:.7;animation:re-sheen 5s ease-in-out infinite}
+  @keyframes re-sheen{0%,100%{transform:translateX(-12%)}50%{transform:translateX(12%)}}
+  .re-crown{position:absolute;top:12px;right:14px;font-size:22px;display:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+  .re-panel.leading .re-crown{display:block;animation:re-pop .55s ease}
+  @keyframes re-pop{0%{transform:scale(.4) rotate(-12deg);opacity:0}60%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+  .re-emoji{font-size:38px;line-height:1;min-height:46px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  .re-name{font-size:20px;font-weight:800;letter-spacing:.02em;margin-top:5px;color:#fff}
   .re-lead-by{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
-  .re-score{font-size:clamp(42px,10vw,66px);font-weight:900;line-height:1.05;margin-top:6px}
+  .re-score{font-size:clamp(46px,10vw,72px);font-weight:900;line-height:1.02;margin-top:8px;text-shadow:0 6px 26px color-mix(in srgb, var(--tc) 38%, transparent)}
+  .re-score.re-bump{animation:re-bumpk .55s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes re-bumpk{0%{transform:scale(1)}38%{transform:scale(1.15)}100%{transform:scale(1)}}
   .re-pts{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.16em}
-  .re-badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:#0b1622;border-radius:10px;padding:2px 8px;margin-top:8px;font-weight:700}
-  .re-bar{height:8px;border-radius:6px;background:var(--navy-2);margin-top:14px;overflow:hidden}
-  .re-bar span{display:block;height:100%;border-radius:6px;transition:width .5s}
+  .re-badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:#0b1622;border-radius:10px;padding:3px 10px;margin-top:8px;font-weight:800}
+  .re-bar{height:9px;border-radius:7px;background:rgba(255,255,255,.10);margin-top:15px;overflow:hidden}
+  .re-bar span{display:block;height:100%;border-radius:7px;transition:width .7s cubic-bezier(.2,.8,.2,1)}
   .re-award-rows{display:flex;flex-direction:column;gap:10px}
   .re-award-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .re-award-team{font-weight:800;font-size:15px;min-width:170px}
@@ -1399,6 +1410,7 @@
 
       <div style="display:flex;justify-content:flex-end;gap:8px;margin:-4px 0 4px">
         <button class="btn ghost" id="re-fullscreen" title="Fill the whole screen — great for projecting">⛶ Fullscreen</button>
+        <a class="btn ghost" href="cup/" target="_blank" rel="noopener" title="Hamptons-themed live board for projecting on a TV/screen">📺 Open live board ↗</a>
       </div>
       <div id="re-board" class="re-board"></div>
 
@@ -3691,8 +3703,8 @@ function scoreClockTick(){
 // scoped to week 7, so it never overlaps the Helios/Poseidon board.
 const RE_WK=7;
 const RE_TEAMS={
-  montauk:{name:'Team Montauk', lead:'Bethany', emoji:'🌅', color:'#F2A24B'},
-  amagansett:{name:'Team Amagansett', lead:'Chauncey', emoji:'🌾', color:'#4FB477'},
+  montauk:{name:'Team Montauk', lead:'Bethany', emoji:'🌅', color:'#FF8351'},
+  amagansett:{name:'Team Amagansett', lead:'Chauncey', emoji:'🌾', color:'#34C79A'},
   sagharbor:{name:'Team Sag Harbor', lead:'Asa', emoji:'⛵', color:'#4C8DF6'},
 };
 const RE_ORDER=['montauk','amagansett','sagharbor'];
@@ -3729,13 +3741,14 @@ function reRender(){
   const leaders=RE_ORDER.filter(k=>t[k]===top && top>0);
   const lead=leaders.length===1?leaders[0]:''; // glow only a sole leader
   board.innerHTML=RE_ORDER.map(k=>{ const T=RE_TEAMS[k]; const c=T.color; const leading=lead===k;
-    return `<div class="re-panel${leading?' leading':''}" style="border-color:${c};background:linear-gradient(165deg,${reHexA(c,.16)},${reHexA(c,.03)})${leading?`;box-shadow:0 0 26px ${reHexA(c,.4)}`:''}">
+    return `<div class="re-panel${leading?' leading':''}" style="--tc:${c}">
+      <span class="re-crown">👑</span>
       <div class="re-emoji">${T.emoji}</div>
-      <div class="re-name" style="color:${c}">${esc(T.name)}</div>
+      <div class="re-name">${esc(T.name)}</div>
       <div class="re-lead-by">Guide · ${esc(T.lead)}</div>
       <div class="re-score" style="color:${c}">${t[k]}</div>
       <div class="re-pts">points</div>
-      ${leading?`<div class="re-badge" style="background:${c}">LEADING</div>`:'<div style="height:22px"></div>'}
+      ${leading?`<div class="re-badge" style="background:${c}">LEADING</div>`:'<div style="height:24px"></div>'}
       <div class="re-bar"><span style="width:${Math.round(t[k]/max*100)}%;background:${c}"></span></div>
     </div>`; }).join('');
   reRenderSummary(t);

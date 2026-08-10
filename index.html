@@ -509,6 +509,32 @@
   .tr-names{font-size:14px;line-height:1.85}
   .tr-btn{font-family:var(--mono);font-size:12px;background:var(--navy-2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 9px;cursor:pointer;margin-right:5px}
   .tr-btn.on-h{border-color:#E8B84B;color:#E8B84B;font-weight:700} .tr-btn.on-p{border-color:#5AA0F0;color:#5AA0F0;font-weight:700} .tr-btn.on-x{color:var(--oyster)}
+  /* Real Estate Cup (week 7 · 3 named teams) */
+  .re-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  @media(max-width:720px){ .re-board{grid-template-columns:1fr} }
+  .re-panel{border-radius:16px;padding:22px 14px 18px;text-align:center;border:2px solid;position:relative;transition:box-shadow .3s}
+  .re-emoji{font-size:34px;line-height:1;min-height:44px;display:flex;align-items:center;justify-content:center}
+  .re-name{font-size:19px;font-weight:800;letter-spacing:.03em;margin-top:4px;text-transform:uppercase}
+  .re-lead-by{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .re-score{font-size:clamp(42px,10vw,66px);font-weight:900;line-height:1.05;margin-top:6px}
+  .re-pts{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.16em}
+  .re-badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:#0b1622;border-radius:10px;padding:2px 8px;margin-top:8px;font-weight:700}
+  .re-bar{height:8px;border-radius:6px;background:var(--navy-2);margin-top:14px;overflow:hidden}
+  .re-bar span{display:block;height:100%;border-radius:6px;transition:width .5s}
+  .re-award-rows{display:flex;flex-direction:column;gap:10px}
+  .re-award-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .re-award-team{font-weight:800;font-size:15px;min-width:170px}
+  .re-award-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .re-award-btn{font-family:var(--mono);font-size:14px;font-weight:700;background:var(--navy-2);border:1px solid var(--line);color:var(--oyster);border-radius:10px;padding:9px 15px;cursor:pointer}
+  .re-award-btn:hover{border-color:var(--brass);color:var(--brass-bright)}
+  .re-award-btn.deduct{color:var(--coral)} .re-award-btn.deduct:hover{border-color:var(--coral);color:var(--coral)}
+  .re-tr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+  @media(max-width:720px){ .re-tr-grid{grid-template-columns:1fr} }
+  .re-tr-col{border:1px solid var(--line);border-radius:12px;padding:12px 14px;border-top-width:3px}
+  .re-tr-head{font-weight:800;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .re-tr-head .rt-lead{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .re-tr-lvl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 1px}
+  .re-tr-names{font-size:13.5px;line-height:1.7}
   tr.ros-withdrawn{opacity:.5} tr.ros-withdrawn .cell-input{text-decoration:line-through;color:var(--muted)}
   .wd-chip{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);border:1px solid var(--line);border-radius:8px;padding:1px 6px;margin-top:4px;white-space:nowrap;text-decoration:none}
   .permit-box{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:5px 9px;cursor:pointer;user-select:none;white-space:nowrap}
@@ -809,6 +835,7 @@
       <button class="nav-item active" data-tab="dashboard">Dashboard</button>
       <div class="nav-label" id="nav-games-label">Camp Games</div>
       <button class="nav-item cat-games" id="nav-scoreboard" data-tab="scoreboard">Tribe Scoreboard<span class="ext">live</span></button>
+      <button class="nav-item cat-games" id="nav-realestate" data-tab="realestate">Real Estate Cup<span class="ext">live</span></button>
       <div class="nav-label">Rostering</div>
       <button class="nav-item cat-people" data-tab="staffing">Staff Roster</button>
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
@@ -1362,6 +1389,51 @@
       </div>
       <div id="score-cats" class="catchips" style="display:none"></div>
       <div id="tribe-log" style="margin-top:8px"></div>
+    </section>
+
+    <!-- ===== REAL ESTATE CUP (week 7 · 3 teams) ===== -->
+    <section class="view" id="view-realestate" hidden>
+      <div class="eyebrow" id="re-clock">—</div>
+      <h1 class="page-title">Real Estate Cup · <span id="re-week">Week 7</span></h1>
+      <p class="page-lead">Serhant Open House week — three teams, live points. <b>Montauk</b>, <b>Amagansett</b> &amp; <b>Sag Harbor</b> update live for everyone the moment they're awarded.</p>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin:-4px 0 4px">
+        <button class="btn ghost" id="re-fullscreen" title="Fill the whole screen — great for projecting">⛶ Fullscreen</button>
+      </div>
+      <div id="re-board" class="re-board"></div>
+
+      <div id="re-summary" class="callout" style="margin-top:16px;display:none"></div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="eyebrow" style="margin-bottom:10px">Award points</div>
+        <input class="cell-input" id="re-award-reason" placeholder="Default reason (optional) — you'll be asked to confirm/edit on each tap" style="width:100%;max-width:520px;margin-bottom:14px">
+        <div class="re-award-rows" id="re-award-rows"></div>
+        <div id="re-pending" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(6,12,20,.6);align-items:center;justify-content:center;padding:20px">
+          <div style="background:#0f1d2c;border:1px solid var(--brass);border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55)">
+            <div id="re-pending-label" style="font-weight:800;font-size:18px;margin-bottom:14px"></div>
+            <input class="cell-input" id="re-pending-pts" type="number" inputmode="numeric" placeholder="Points (– to deduct)" style="width:100%;margin-bottom:10px;display:none">
+            <input class="cell-input" id="re-pending-reason" placeholder="Quick reason (optional) — e.g. Best pitch" style="width:100%;margin-bottom:16px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn ghost" id="re-pending-cancel">Cancel</button>
+              <button class="btn" id="re-pending-go">Add point</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px"><span class="gate-msg" id="re-award-msg"></span></div>
+        <p class="lc-desc" style="margin:10px 0 0;color:var(--muted)">Tap a team's button, add a quick reason, then <b>Add point</b>. “Other…” lets you enter any amount (a negative number corrects a mistake). Admins can remove any entry in the feed below.</p>
+      </div>
+
+      <div class="eyebrow" style="margin:22px 0 0">Team rosters</div>
+      <div id="re-rosters" style="margin-top:8px"></div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:26px 0 0;gap:10px;flex-wrap:wrap">
+        <div class="eyebrow" style="margin:0">Points earned · <span id="re-log-count">live</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="re-showall" style="padding:6px 12px;display:none">Show full list</button>
+          <button class="btn ghost" id="re-export" style="padding:6px 12px">Export CSV</button>
+        </div>
+      </div>
+      <div id="re-log" style="margin-top:8px"></div>
     </section>
 
     <!-- ===== ACCESS MANAGEMENT ===== -->
@@ -3613,6 +3685,186 @@ function scoreClockTick(){
   el.textContent=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
 
+/* =================== REAL ESTATE CUP (week 7 · 3 named teams) =================== */
+// Self-contained scoreboard for the Serhant Open House week. Reuses the
+// tribe_awards table with distinct team keys (montauk/amagansett/sagharbor)
+// scoped to week 7, so it never overlaps the Helios/Poseidon board.
+const RE_WK=7;
+const RE_TEAMS={
+  montauk:{name:'Team Montauk', lead:'Bethany', emoji:'🌅', color:'#F2A24B'},
+  amagansett:{name:'Team Amagansett', lead:'Chauncey', emoji:'🌾', color:'#4FB477'},
+  sagharbor:{name:'Team Sag Harbor', lead:'Asa', emoji:'⛵', color:'#4C8DF6'},
+};
+const RE_ORDER=['montauk','amagansett','sagharbor'];
+const RE_ROSTERS={
+  montauk:[
+    {lvl:'WL', names:['Felix Barnett','Rose Liebman','Jack Stone','Sloane Thomas','Zen Ovitz']},
+    {lvl:'L2', names:['Eashan Birnbaum','Stefano Talve']},
+    {lvl:'MS', names:['Enzo Ciquera','Bella Radziwell','Phoebe Morse']},
+  ],
+  amagansett:[
+    {lvl:'LL', names:['Ayan Birnbuam','Raphael Liebman','Aston Politi','Louisa Romeo','Mason Tenet','Tomas Tyson','Irving Zuckerman']},
+    {lvl:'L2', names:['Pax Ovitz','Valentina Tyson']},
+    {lvl:'MS', names:['Mark Evans III','Caroline Romeo','Jack Hayes','Ati Radziwell']},
+  ],
+  sagharbor:[
+    {lvl:'L1', names:['Brennan Barnett','Aakash Birnbaum','Cecily Compton','Dria Evans','London Politi','Georgia Romeo','Gabriel Talve','Sofie Torvund','Zoey Zuckerman','Stash']},
+    {lvl:'L2', names:['Thea Romeo']},
+    {lvl:'MS', names:['Henry Gershuny','Emma Torvund','Oliver Hersch']},
+    {lvl:'HS', names:['Kaden Lapidus']},
+  ],
+};
+function reHexA(hex,a){ const h=hex.replace('#',''); const n=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+let RE_ROWS=[]; let RE_CHAN=null; let RE_SHOWALL=false; let RE_INIT=false;
+async function reFetch(){
+  if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').eq('week',RE_WK).order('created_at',{ascending:false}); RE_ROWS=(!error&&data)?data.filter(r=>RE_TEAMS[r.tribe]):[]; }
+  else { RE_ROWS=(store.get('tribe_awards')||[]).filter(r=>RE_TEAMS[r.tribe] && (r.week==null||r.week===RE_WK)); }
+}
+function reTotals(){ const t={}; RE_ORDER.forEach(k=>t[k]=0); RE_ROWS.forEach(r=>{ if(t[r.tribe]!=null) t[r.tribe]+=(+r.points||0); }); return t; }
+function reRender(){
+  const board=document.getElementById('re-board'); if(!board) return;
+  const t=reTotals();
+  const max=Math.max(1,...RE_ORDER.map(k=>t[k]));
+  const top=Math.max(...RE_ORDER.map(k=>t[k]));
+  const leaders=RE_ORDER.filter(k=>t[k]===top && top>0);
+  const lead=leaders.length===1?leaders[0]:''; // glow only a sole leader
+  board.innerHTML=RE_ORDER.map(k=>{ const T=RE_TEAMS[k]; const c=T.color; const leading=lead===k;
+    return `<div class="re-panel${leading?' leading':''}" style="border-color:${c};background:linear-gradient(165deg,${reHexA(c,.16)},${reHexA(c,.03)})${leading?`;box-shadow:0 0 26px ${reHexA(c,.4)}`:''}">
+      <div class="re-emoji">${T.emoji}</div>
+      <div class="re-name" style="color:${c}">${esc(T.name)}</div>
+      <div class="re-lead-by">Guide · ${esc(T.lead)}</div>
+      <div class="re-score" style="color:${c}">${t[k]}</div>
+      <div class="re-pts">points</div>
+      ${leading?`<div class="re-badge" style="background:${c}">LEADING</div>`:'<div style="height:22px"></div>'}
+      <div class="re-bar"><span style="width:${Math.round(t[k]/max*100)}%;background:${c}"></span></div>
+    </div>`; }).join('');
+  reRenderSummary(t);
+  reRenderLog();
+}
+function reRenderSummary(t){
+  const el=document.getElementById('re-summary'); if(!el) return;
+  if(!RE_ROWS.length){ el.style.display='none'; return; }
+  const sorted=RE_ORDER.slice().sort((a,b)=>t[b]-t[a]);
+  const top=t[sorted[0]], second=t[sorted[1]];
+  const total=RE_ORDER.reduce((s,k)=>s+t[k],0);
+  const leaders=RE_ORDER.filter(k=>t[k]===top);
+  const leadTxt = leaders.length>1 ? `${leaders.map(k=>RE_TEAMS[k].name).join(' & ')} tied at ${top}` : `${RE_TEAMS[sorted[0]].name} leads by ${top-second}`;
+  el.style.display=''; el.innerHTML=`<b>${esc(leadTxt)}</b> · ${total} point${total===1?'':'s'} in play across ${RE_ROWS.length} award${RE_ROWS.length===1?'':'s'}.`;
+}
+function reRenderLog(){
+  const el=document.getElementById('re-log'); if(!el) return;
+  const cnt=document.getElementById('re-log-count');
+  if(cnt) cnt.textContent = RE_ROWS.length?`${RE_ROWS.length} entr${RE_ROWS.length===1?'y':'ies'} · Week ${RE_WK}`:'live';
+  const toggle=document.getElementById('re-showall');
+  if(toggle){ toggle.style.display=RE_ROWS.length>50?'':'none'; toggle.textContent=RE_SHOWALL?'Show recent':'Show full list'; }
+  if(!RE_ROWS.length){ el.innerHTML=`<div class="callout">No points awarded yet. Use the buttons above to get the cup started.</div>`; return; }
+  const admin=isAdmin();
+  const shown=RE_SHOWALL?RE_ROWS:RE_ROWS.slice(0,50);
+  el.innerHTML=shown.map(r=>{ const T=RE_TEAMS[r.tribe]||{name:r.tribe,emoji:'',color:'#8ea4ba'};
+    const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div class="score-logrow">
+      <span class="slr-pts" style="color:${T.color}">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
+      <span class="slr-tribe" style="color:${T.color}">${T.emoji} ${esc(T.name)}</span>
+      <span class="slr-reason">${esc(r.reason||'—')}</span>
+      <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
+      ${admin?`<button class="slr-rm" data-re-del="${escAttr(r.id)}">remove</button>`:''}
+    </div>`; }).join('') + (!RE_SHOWALL && RE_ROWS.length>50?`<div class="lc-desc" style="margin-top:8px;color:var(--muted)">Showing the latest 50 of ${RE_ROWS.length} — tap <b>Show full list</b> for every entry, or <b>Export CSV</b>.</div>`:'');
+  el.querySelectorAll('[data-re-del]').forEach(b=>b.addEventListener('click',()=>reRemove(b.dataset.reDel)));
+}
+function reRenderRosters(){
+  const box=document.getElementById('re-rosters'); if(!box) return;
+  box.innerHTML=`<div class="re-tr-grid">`+RE_ORDER.map(k=>{ const T=RE_TEAMS[k]; const groups=RE_ROSTERS[k]||[];
+    const count=groups.reduce((s,g)=>s+g.names.length,0);
+    return `<div class="re-tr-col" style="border-top-color:${T.color}">
+      <div class="re-tr-head" style="color:${T.color}"><span>${T.emoji} ${esc(T.name)}</span><span class="rt-lead">${count} · ${esc(T.lead)}</span></div>
+      ${groups.map(g=>`<div class="re-tr-lvl">${esc(g.lvl)}</div><div class="re-tr-names">${g.names.map(esc).join(' · ')}</div>`).join('')}
+    </div>`; }).join('')+`</div>`;
+}
+function reRenderAwardUI(){
+  const host=document.getElementById('re-award-rows'); if(!host) return;
+  host.innerHTML=RE_ORDER.map(k=>{ const T=RE_TEAMS[k];
+    return `<div class="re-award-row">
+      <span class="re-award-team" style="color:${T.color}">${T.emoji} ${esc(T.name)}</span>
+      <div class="re-award-btns" data-team="${k}">
+        <button class="re-award-btn" data-pts="1">+1</button>
+        <button class="re-award-btn" data-pts="3">+3</button>
+        <button class="re-award-btn" data-pts="5">+5</button>
+        <button class="re-award-btn deduct" data-pts="-1">−1</button>
+        <button class="re-award-btn" data-pts="other">Other…</button>
+      </div>
+    </div>`; }).join('');
+  host.querySelectorAll('.re-award-btns').forEach(g=>{ const team=g.dataset.team;
+    g.querySelectorAll('.re-award-btn').forEach(b=>b.addEventListener('click',()=>reOpenPending(team,b.dataset.pts))); });
+}
+let RE_PENDING=null;
+function reOpenPending(team,ptsRaw){
+  const T=RE_TEAMS[team]; if(!T) return;
+  const other=ptsRaw==='other';
+  RE_PENDING={team, pts: other?null:ptsRaw};
+  const label=document.getElementById('re-pending-label');
+  label.textContent = other ? `${T.emoji} ${T.name} —` : `${T.emoji} ${T.name} ${(+ptsRaw>0?'+':'')}${ptsRaw}`;
+  label.style.color=T.color;
+  const ppts=document.getElementById('re-pending-pts'); ppts.style.display=other?'inline-block':'none'; ppts.value='';
+  const preason=document.getElementById('re-pending-reason'); preason.value=(document.getElementById('re-award-reason').value||'').trim();
+  document.getElementById('re-pending').style.display='flex';
+  (other?ppts:preason).focus();
+}
+function reClosePending(){ RE_PENDING=null; const p=document.getElementById('re-pending'); if(p) p.style.display='none'; }
+function reCommitPending(){
+  if(!RE_PENDING) return;
+  const ppts=document.getElementById('re-pending-pts');
+  const pts=RE_PENDING.pts!=null?RE_PENDING.pts:ppts.value;
+  if(!parseInt(pts,10)){ ppts.focus(); return; }
+  reAward(RE_PENDING.team, pts, document.getElementById('re-pending-reason').value);
+  const rf=document.getElementById('re-award-reason'); if(rf) rf.value='';
+  reClosePending();
+}
+async function reAward(team,pts,reasonArg){
+  pts=parseInt(pts,10); if(!pts || !RE_TEAMS[team]) return;
+  const reason=(reasonArg!==undefined?reasonArg:(document.getElementById('re-award-reason').value||'')).trim();
+  const by=(SESSION&&SESSION.email)||'';
+  const rec={tribe:team, points:pts, reason, awarded_by:by, week:RE_WK};
+  const msg=document.getElementById('re-award-msg');
+  if(SUPA){ const {error}=await SB.from('tribe_awards').insert(rec); if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not award — try again.';} return; } }
+  else { rec.id='loc-'+Date.now(); rec.created_at=new Date().toISOString(); const all=(store.get('tribe_awards')||[]); all.unshift(rec); store.set('tribe_awards',all); }
+  if(msg){ msg.className='gate-msg ok'; msg.textContent=`${pts>0?'+':''}${pts} to ${RE_TEAMS[team].name}${reason?` — ${reason}`:''} ✓`; }
+  await reFetch(); reRender();
+}
+async function reRemove(id){
+  if(!confirm('Remove this award from the tally?')) return;
+  if(SUPA){ await SB.from('tribe_awards').delete().eq('id',id); }
+  else { const all=(store.get('tribe_awards')||[]).filter(x=>x.id!==id); store.set('tribe_awards',all); }
+  await reFetch(); reRender();
+}
+function reSubscribe(){
+  if(!SUPA || RE_CHAN) return;
+  RE_CHAN=SB.channel('re-cup-live').on('postgres_changes',{event:'*',schema:'public',table:'tribe_awards'},async()=>{ await reFetch(); reRender(); }).subscribe();
+}
+function reExport(){
+  if(!RE_ROWS.length) return;
+  const cell=v=>{ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const lines=[['When','Team','Guide','Points','Reason','Awarded by'].join(',')].concat(
+    RE_ROWS.map(r=>[ r.created_at?new Date(r.created_at).toLocaleString():'', RE_TEAMS[r.tribe]?RE_TEAMS[r.tribe].name:r.tribe, RE_TEAMS[r.tribe]?RE_TEAMS[r.tribe].lead:'', r.points, r.reason||'', r.awarded_by||'' ].map(cell).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`real-estate-cup-week${RE_WK}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function reClockTick(){ const el=document.getElementById('re-clock'); if(!el) return; const d=new Date(); el.textContent=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function reInit(){
+  if(RE_INIT) return; RE_INIT=true;
+  reRenderAwardUI();
+  const go=document.getElementById('re-pending-go'); if(go) go.addEventListener('click',reCommitPending);
+  const cancel=document.getElementById('re-pending-cancel'); if(cancel) cancel.addEventListener('click',reClosePending);
+  const pbar=document.getElementById('re-pending'); if(pbar) pbar.addEventListener('click',e=>{ if(e.target===pbar) reClosePending(); });
+  ['re-pending-reason','re-pending-pts'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') reCommitPending(); if(e.key==='Escape') reClosePending(); }); });
+  const sa=document.getElementById('re-showall'); if(sa) sa.addEventListener('click',()=>{ RE_SHOWALL=!RE_SHOWALL; reRenderLog(); });
+  const se=document.getElementById('re-export'); if(se) se.addEventListener('click',reExport);
+  const fs=document.getElementById('re-fullscreen'); if(fs) fs.addEventListener('click',()=>{ const doc=document,root=doc.documentElement; const isFs=doc.fullscreenElement||doc.webkitFullscreenElement; if(isFs){(doc.exitFullscreen||doc.webkitExitFullscreen||function(){}).call(doc);} else {(root.requestFullscreen||root.webkitRequestFullscreen||function(){}).call(root);} });
+  reClockTick(); setInterval(reClockTick,1000);
+  reRenderRosters(); reRender();
+}
+async function reRefresh(){ reInit(); await reFetch(); reRender(); reRenderRosters(); reSubscribe(); }
+
 /* =================== REFERENCES =================== */
 function renderRefs(){
   document.getElementById('refs').innerHTML = CHECKLISTS.map(c=>`
@@ -5234,8 +5486,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
+const tabs=['dashboard','scoreboard','realestate','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
@@ -5256,6 +5508,7 @@ function showTab(t){
   if(t==='reports' && typeof renderReports==='function'){ if(SUPA) hydrateRoster().then(repLoad).then(renderReports); else renderReports(); }
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
+  if(t==='realestate' && typeof reRefresh==='function') reRefresh();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
   if(t==='attendance' && SUPA){ Promise.all([refreshStateKey(attKey()), refreshStateKey(permitKey())]).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }

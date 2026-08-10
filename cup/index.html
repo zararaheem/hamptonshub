@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Real Estate Cup — Live Scoreboard</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f3ef; --panel:#fffdfa;
+    --ink:#26364c; --ink-soft:#48586e; --muted:#98a2af; --hair:#e7e3db; --hair-cool:#e6eaef;
+    --montauk:#B9785B; --amagansett:#6E9483; --sagharbor:#5E7E9E;
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);color:var(--ink);background:var(--paper);min-height:100vh;position:relative;overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;font-feature-settings:"liga" 1,"kern" 1}
+  /* faint chart / coastline motif */
+  .chart{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.45}
+  .chart svg{width:100%;height:100%}
+  .wrap{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:48px 26px 60px}
+
+  header{text-align:center;margin-bottom:40px}
+  .clock{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-soft);margin-top:16px}
+  h1{font-family:var(--display);font-weight:300;font-size:clamp(36px,6.4vw,68px);line-height:1.02;margin:10px 0 8px;color:var(--ink);letter-spacing:.005em}
+  h1 em{font-style:italic;font-weight:400}
+  .rule{width:54px;height:1px;background:var(--ink);opacity:.35;margin:18px auto 0}
+  .tag{font-size:13.5px;color:var(--muted);margin-top:16px;letter-spacing:.02em}
+  .live-dot{display:inline-flex;align-items:center;gap:8px;margin-top:8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .live-dot i{width:7px;height:7px;border-radius:50%;background:#7fa38f;box-shadow:0 0 0 0 rgba(127,163,143,.5);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(127,163,143,.45)}70%{box-shadow:0 0 0 9px rgba(127,163,143,0)}100%{box-shadow:0 0 0 0 rgba(127,163,143,0)}}
+
+  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  @media(max-width:860px){ .board{grid-template-columns:1fr;gap:18px} }
+  .card{position:relative;background:var(--panel);border:1px solid var(--hair);border-radius:6px;padding:30px 26px 24px;
+    box-shadow:0 12px 40px rgba(38,54,76,.06);transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .5s}
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--tc);border-radius:6px 6px 0 0;opacity:.9}
+  .card.lead{transform:translateY(-6px);box-shadow:0 22px 54px color-mix(in srgb, var(--tc) 20%, rgba(38,54,76,.10))}
+  .idx{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+  .tname{font-family:var(--display);font-weight:400;font-size:25px;color:var(--ink);line-height:1.12;margin-top:6px;display:flex;align-items:center;gap:9px}
+  .tname .dot{width:9px;height:9px;border-radius:50%;background:var(--tc);flex:none}
+  .guide{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+  .scorewrap{display:flex;align-items:baseline;gap:9px;margin:20px 0 4px}
+  .score{font-family:var(--display);font-weight:300;font-size:clamp(58px,8.5vw,90px);line-height:.92;color:var(--tc);font-variant-numeric:lining-nums tabular-nums}
+  .score.bump{animation:bump .6s cubic-bezier(.2,1.35,.4,1)}
+  @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.1)}100%{transform:scale(1)}}
+  .plabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .bar{height:3px;border-radius:3px;background:var(--hair);overflow:hidden;margin-top:8px}
+  .bar span{display:block;height:100%;background:var(--tc);opacity:.8;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .rank{margin-top:14px;height:16px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--tc);font-weight:600}
+  .rank .lead-mark{border:1px solid color-mix(in srgb,var(--tc) 55%, transparent);border-radius:999px;padding:3px 10px}
+
+  .roster{margin-top:20px;border-top:1px solid var(--hair);padding-top:16px}
+  .roster-cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:12px}
+  .rgrp{margin-bottom:11px}
+  .rgrp:last-child{margin-bottom:0}
+  .rlvl{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--tc);opacity:.85;margin-bottom:4px}
+  .rnames{font-size:13.5px;color:var(--ink-soft);line-height:1.6;letter-spacing:.005em}
+
+  .feed{margin-top:46px;max-width:800px;margin-left:auto;margin-right:auto}
+  .feed h2{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;text-align:center}
+  .feed h2 span{display:block;width:38px;height:1px;background:var(--hair);margin:12px auto 0}
+  .rows{display:flex;flex-direction:column}
+  .row{display:grid;grid-template-columns:56px minmax(120px,168px) 1fr auto;align-items:center;gap:16px;
+    padding:13px 6px;border-bottom:1px solid var(--hair);font-size:14.5px;animation:fade .5s ease}
+  .row:last-child{border-bottom:0}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .rpts{font-family:var(--display);font-weight:400;font-size:19px;color:var(--tc);text-align:center;font-variant-numeric:tabular-nums}
+  .rteam{font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
+  .rteam .dot{width:7px;height:7px;border-radius:50%;background:var(--tc);flex:none}
+  .rreason{color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rmeta{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+  @media(max-width:600px){ .row{grid-template-columns:46px 1fr auto;gap:10px} .rreason{display:none} }
+  .empty{text-align:center;color:var(--muted);padding:22px;font-family:var(--display);font-style:italic;font-size:16px}
+  .foot{text-align:center;margin-top:34px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#b3bcc7}
+</style>
+</head>
+<body>
+  <div class="chart" aria-hidden="true">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none">
+      <g stroke="#d5dde6" stroke-width="1.2">
+        <path d="M-20 250 C 220 210 360 300 520 285 C 700 268 820 200 1010 235 C 1180 265 1300 230 1470 260" opacity=".9"/>
+        <path d="M-20 300 C 240 262 380 352 540 338 C 720 322 840 256 1030 290 C 1200 320 1320 288 1470 316" opacity=".7"/>
+        <path d="M-20 352 C 250 316 400 402 560 392 C 740 380 860 316 1050 348 C 1220 376 1340 348 1470 372" opacity=".5"/>
+        <path d="M420 420 C 470 470 470 540 430 600 C 400 645 420 700 470 740" opacity=".5"/>
+        <path d="M980 430 C 1030 486 1024 556 986 612 C 958 654 976 706 1020 744" opacity=".45"/>
+        <path d="M300 640 c 40 -26 96 -18 118 14 c 20 30 4 70 -36 82 c -46 14 -110 -6 -116 -46 c -4 -26 8 -38 34 -50 z" opacity=".45"/>
+        <path d="M1120 660 c 34 -22 82 -14 100 12 c 18 26 4 60 -30 70 c -40 12 -94 -6 -98 -40 c -3 -22 6 -32 28 -42 z" opacity=".4"/>
+      </g>
+      <g stroke="#dde4ec" stroke-width="1" stroke-dasharray="1.5 13" opacity=".7">
+        <line x1="0" y1="150" x2="1440" y2="150"/>
+        <line x1="0" y1="450" x2="1440" y2="450"/>
+        <line x1="0" y1="750" x2="1440" y2="750"/>
+        <line x1="360" y1="0" x2="360" y2="900"/>
+        <line x1="720" y1="0" x2="720" y2="900"/>
+        <line x1="1080" y1="0" x2="1080" y2="900"/>
+      </g>
+      <g stroke="#d5dde6" stroke-width="1" opacity=".55" fill="none">
+        <path d="M64 84 l0 46 M41 107 l46 0"/>
+        <circle cx="64" cy="107" r="30"/>
+        <path d="M64 84 l7 16 l-14 0 z" fill="#d5dde6" stroke="none"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div class="clock" id="clock">—</div>
+      <div class="eyebrow">Alpha Summer · Serhant Open House</div>
+      <h1>The <em>Real Estate</em> Cup</h1>
+      <div class="rule"></div>
+      <div class="tag">East Hampton · Week 7 · Montauk · Amagansett · Sag Harbor</div>
+      <div class="live-dot"><i></i> Live · updates every 5 seconds</div>
+    </header>
+
+    <div class="board" id="board"></div>
+
+    <div class="feed">
+      <h2>Latest Points Awarded<span></span></h2>
+      <div class="rows" id="rows"><div class="empty">Awaiting the first points…</div></div>
+    </div>
+
+    <div class="foot" id="foot">connecting…</div>
+  </div>
+
+<script>
+  const FN='https://qwmetffzspobjamwwhca.supabase.co/functions/v1/re-cup-board';
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+  const ORDER=['montauk','amagansett','sagharbor'];
+  const COLOR={ montauk:'var(--montauk)', amagansett:'var(--amagansett)', sagharbor:'var(--sagharbor)' };
+  // Rosters shown as first name + last initial only (privacy on a public screen).
+  const ROSTERS={
+    montauk:[
+      {lvl:'Waterline', n:['Felix B.','Rose L.','Jack S.','Sloane T.','Zen O.']},
+      {lvl:'Level 2', n:['Eashan B.','Stefano T.']},
+      {lvl:'Middle School', n:['Enzo C.','Bella R.','Phoebe M.']},
+    ],
+    amagansett:[
+      {lvl:'Lower Level', n:['Ayan B.','Raphael L.','Aston P.','Louisa R.','Mason T.','Tomas T.','Irving Z.']},
+      {lvl:'Level 2', n:['Pax O.','Valentina T.']},
+      {lvl:'Middle School', n:['Mark E.','Caroline R.','Jack H.','Ati R.']},
+    ],
+    sagharbor:[
+      {lvl:'Level 1', n:['Brennan B.','Aakash B.','Cecily C.','Dria E.','London P.','Georgia R.','Gabriel T.','Sofie T.','Zoey Z.','Stash']},
+      {lvl:'Level 2', n:['Thea R.']},
+      {lvl:'Middle School', n:['Henry G.','Emma T.','Oliver H.']},
+      {lvl:'High School', n:['Kaden L.']},
+    ],
+  };
+  const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const rosterCount=k=>(ROSTERS[k]||[]).reduce((s,g)=>s+g.n.length,0);
+  const roman=['I','II','III'];
+  let TEAMS={}; let last={};
+
+  function clockTick(){ const d=new Date();
+    document.getElementById('clock').textContent =
+      d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+'  ·  '+
+      d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+  clockTick(); setInterval(clockTick,1000);
+
+  function ordinal(n){ return ['First','Second','Third'][n]||(n+1)+'th'; }
+
+  function render(totals, recent){
+    const board=document.getElementById('board');
+    const max=Math.max(1,...ORDER.map(k=>totals[k]||0));
+    const top=Math.max(...ORDER.map(k=>totals[k]||0));
+    const leaders=ORDER.filter(k=>(totals[k]||0)===top && top>0);
+    const lead=leaders.length===1?leaders[0]:'';
+    const ranked=ORDER.slice().sort((a,b)=>(totals[b]||0)-(totals[a]||0));
+    const rankOf={}; ranked.forEach((k,i)=>rankOf[k]=i);
+    if(!board.children.length){
+      board.innerHTML=ORDER.map((k,i)=>{ const T=TEAMS[k]||{name:k,lead:''}; const c=COLOR[k];
+        const roster=(ROSTERS[k]||[]).map(g=>`<div class="rgrp"><div class="rlvl">${esc(g.lvl)}</div><div class="rnames">${g.n.map(esc).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</div></div>`).join('');
+        return `<div class="card" id="p-${k}" style="--tc:${c}">
+          <div class="idx">No. ${roman[i]}</div>
+          <div class="tname"><span class="dot"></span>${esc(T.name)}</div>
+          <div class="guide">Guide · ${esc(T.lead)}</div>
+          <div class="scorewrap"><span class="score" id="s-${k}">0</span><span class="plabel">points</span></div>
+          <div class="bar"><span id="b-${k}" style="width:0%"></span></div>
+          <div class="rank" id="r-${k}"></div>
+          <div class="roster"><div class="roster-cap"><span>The Team</span><span>${rosterCount(k)} students</span></div>${roster}</div>
+        </div>`; }).join('');
+    }
+    ORDER.forEach(k=>{
+      const v=totals[k]||0;
+      const s=document.getElementById('s-'+k);
+      if(last[k]!==undefined && v!==last[k]){ s.classList.remove('bump'); void s.offsetWidth; s.classList.add('bump'); }
+      s.textContent=v; last[k]=v;
+      document.getElementById('b-'+k).style.width=Math.round(v/max*100)+'%';
+      document.getElementById('p-'+k).classList.toggle('lead', lead===k);
+      const r=document.getElementById('r-'+k);
+      if(r) r.innerHTML = top>0 ? (rankOf[k]===0 && lead===k ? '<span class="lead-mark">Leading</span>' : ordinal(rankOf[k])+' place') : '';
+    });
+
+    const rows=document.getElementById('rows');
+    if(recent && recent.length){
+      rows.innerHTML=recent.map(r=>{ const T=TEAMS[r.tribe]||{name:r.tribe}; const c=COLOR[r.tribe]||'var(--muted)';
+        const t2=r.created_at?new Date(r.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'';
+        const p=Number(r.points);
+        return `<div class="row" style="--tc:${c}">
+          <span class="rpts">${p>0?'+':''}${p}</span>
+          <span class="rteam"><span class="dot"></span>${esc(T.name)}</span>
+          <span class="rreason">${esc(r.reason||'—')}</span>
+          <span class="rmeta">${esc(r.awarded_by||'')}${t2?` · ${esc(t2)}`:''}</span>
+        </div>`; }).join('');
+    } else rows.innerHTML='<div class="empty">Awaiting the first points…</div>';
+  }
+
+  async function tick(){
+    try{
+      const res=await fetch(FN,{method:'POST',headers:{'Authorization':'Bearer '+ANON,'Content-Type':'application/json'},body:'{}'});
+      const j=await res.json();
+      if(j&&j.ok){ TEAMS=j.teams||{}; render(j.totals||{}, j.recent||[]);
+        document.getElementById('foot').textContent='Live · updates every 5 seconds'; }
+    }catch(e){ document.getElementById('foot').textContent='Reconnecting…'; }
+  }
+  tick(); setInterval(tick, 5000);
+</script>
+</body>
+</html>

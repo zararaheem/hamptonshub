@@ -519,10 +519,8 @@
   .re-panel.leading::after{content:"";position:absolute;inset:-40% -40% auto -40%;height:80%;pointer-events:none;
     background:radial-gradient(closest-side, color-mix(in srgb, var(--tc) 34%, transparent), transparent);opacity:.7;animation:re-sheen 5s ease-in-out infinite}
   @keyframes re-sheen{0%,100%{transform:translateX(-12%)}50%{transform:translateX(12%)}}
-  .re-crown{position:absolute;top:12px;right:14px;font-size:22px;display:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
-  .re-panel.leading .re-crown{display:block;animation:re-pop .55s ease}
-  @keyframes re-pop{0%{transform:scale(.4) rotate(-12deg);opacity:0}60%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0);opacity:1}}
-  .re-emoji{font-size:38px;line-height:1;min-height:46px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  .re-emblem{width:48px;height:48px;margin:0 auto 2px;color:var(--tc);display:flex;align-items:center;justify-content:center}
+  .re-emblem svg{width:100%;height:100%;display:block;filter:drop-shadow(0 3px 8px color-mix(in srgb,var(--tc) 30%, transparent))}
   .re-name{font-size:20px;font-weight:800;letter-spacing:.02em;margin-top:5px;color:#fff}
   .re-lead-by{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
   .re-score{font-size:clamp(46px,10vw,72px);font-weight:900;line-height:1.02;margin-top:8px;text-shadow:0 6px 26px color-mix(in srgb, var(--tc) 38%, transparent)}
@@ -3703,10 +3701,18 @@ function scoreClockTick(){
 // scoped to week 7, so it never overlaps the Helios/Poseidon board.
 const RE_WK=7;
 const RE_TEAMS={
-  montauk:{name:'Team Montauk', lead:'Bethany', emoji:'🌅', color:'#FF8351'},
-  amagansett:{name:'Team Amagansett', lead:'Chauncey', emoji:'🌾', color:'#34C79A'},
-  sagharbor:{name:'Team Sag Harbor', lead:'Asa', emoji:'⛵', color:'#4C8DF6'},
+  montauk:{name:'Team Montauk', lead:'Bethany', color:'#FF8351'},
+  amagansett:{name:'Team Amagansett', lead:'Chauncey', color:'#34C79A'},
+  sagharbor:{name:'Team Sag Harbor', lead:'Asa', color:'#4C8DF6'},
 };
+// Clean line-art emblems per hamlet: Montauk lighthouse, Amagansett windmill,
+// Sag Harbor whale (stroke inherits the team colour via currentColor).
+const RE_EMBLEMS={
+  montauk:`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 41 L19.5 22 H28.5 L30 41"/><path d="M15 41 H33"/><path d="M19.7 28 H28.3 M19.2 34.5 H28.8"/><rect x="20" y="15" width="8" height="7" rx="1"/><path d="M19 15 L24 9.5 L29 15"/><path d="M24 9.5 V6.5"/><path d="M15.5 18.5 L10.5 16.5 M32.5 18.5 L37.5 16.5"/></svg>`,
+  amagansett:`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 41 H27.5 L26.5 25 H21.5 Z"/><path d="M16 41 H32"/><path d="M24 25 V22"/><path d="M20.5 30 H27.5"/><circle cx="24" cy="20" r="1.7"/><path d="M24 20 L15 12 M24 20 L33 12 M24 20 L15 28 M24 20 L33 28"/></svg>`,
+  sagharbor:`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 27 C 5 20.5 12.5 17.5 21 18.5 C 27 19.2 31.5 21 34.5 24 C 34.5 28.5 31 31.5 24.5 32.5 C 14.5 33.8 5 32.5 5 27 Z"/><path d="M34.5 24 C 37.5 20.5 40.5 15.5 44 14 C 42.8 18.2 42.8 20.6 44.6 22.8 C 41.4 22.8 38 25.6 34.8 27.8"/><path d="M12 22.5 C 11 19.5 12 16.5 15 15.5"/><path d="M15 15.5 L13.4 13 M15 15.5 L15 12.4 M15 15.5 L16.9 13.2"/><circle cx="12.5" cy="26.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+};
+const reDot=c=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:7px;vertical-align:middle"></span>`;
 const RE_ORDER=['montauk','amagansett','sagharbor'];
 const RE_ROSTERS={
   montauk:[
@@ -3742,8 +3748,7 @@ function reRender(){
   const lead=leaders.length===1?leaders[0]:''; // glow only a sole leader
   board.innerHTML=RE_ORDER.map(k=>{ const T=RE_TEAMS[k]; const c=T.color; const leading=lead===k;
     return `<div class="re-panel${leading?' leading':''}" style="--tc:${c}">
-      <span class="re-crown">👑</span>
-      <div class="re-emoji">${T.emoji}</div>
+      <div class="re-emblem">${RE_EMBLEMS[k]||''}</div>
       <div class="re-name">${esc(T.name)}</div>
       <div class="re-lead-by">Guide · ${esc(T.lead)}</div>
       <div class="re-score" style="color:${c}">${t[k]}</div>
@@ -3777,7 +3782,7 @@ function reRenderLog(){
     const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     return `<div class="score-logrow">
       <span class="slr-pts" style="color:${T.color}">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
-      <span class="slr-tribe" style="color:${T.color}">${T.emoji} ${esc(T.name)}</span>
+      <span class="slr-tribe" style="color:${T.color}">${reDot(T.color)}${esc(T.name)}</span>
       <span class="slr-reason">${esc(r.reason||'—')}</span>
       <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
       ${admin?`<button class="slr-rm" data-re-del="${escAttr(r.id)}">remove</button>`:''}
@@ -3789,7 +3794,7 @@ function reRenderRosters(){
   box.innerHTML=`<div class="re-tr-grid">`+RE_ORDER.map(k=>{ const T=RE_TEAMS[k]; const groups=RE_ROSTERS[k]||[];
     const count=groups.reduce((s,g)=>s+g.names.length,0);
     return `<div class="re-tr-col" style="border-top-color:${T.color}">
-      <div class="re-tr-head" style="color:${T.color}"><span>${T.emoji} ${esc(T.name)}</span><span class="rt-lead">${count} · ${esc(T.lead)}</span></div>
+      <div class="re-tr-head" style="color:${T.color}"><span>${reDot(T.color)}${esc(T.name)}</span><span class="rt-lead">${count} · ${esc(T.lead)}</span></div>
       ${groups.map(g=>`<div class="re-tr-lvl">${esc(g.lvl)}</div><div class="re-tr-names">${g.names.map(esc).join(' · ')}</div>`).join('')}
     </div>`; }).join('')+`</div>`;
 }
@@ -3797,7 +3802,7 @@ function reRenderAwardUI(){
   const host=document.getElementById('re-award-rows'); if(!host) return;
   host.innerHTML=RE_ORDER.map(k=>{ const T=RE_TEAMS[k];
     return `<div class="re-award-row">
-      <span class="re-award-team" style="color:${T.color}">${T.emoji} ${esc(T.name)}</span>
+      <span class="re-award-team" style="color:${T.color}">${reDot(T.color)}${esc(T.name)}</span>
       <div class="re-award-btns" data-team="${k}">
         <button class="re-award-btn" data-pts="1">+1</button>
         <button class="re-award-btn" data-pts="3">+3</button>
@@ -3815,7 +3820,7 @@ function reOpenPending(team,ptsRaw){
   const other=ptsRaw==='other';
   RE_PENDING={team, pts: other?null:ptsRaw};
   const label=document.getElementById('re-pending-label');
-  label.textContent = other ? `${T.emoji} ${T.name} —` : `${T.emoji} ${T.name} ${(+ptsRaw>0?'+':'')}${ptsRaw}`;
+  label.textContent = other ? `${T.name} —` : `${T.name} ${(+ptsRaw>0?'+':'')}${ptsRaw}`;
   label.style.color=T.color;
   const ppts=document.getElementById('re-pending-pts'); ppts.style.display=other?'inline-block':'none'; ppts.value='';
   const preason=document.getElementById('re-pending-reason'); preason.value=(document.getElementById('re-award-reason').value||'').trim();

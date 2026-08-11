@@ -1418,6 +1418,22 @@
         <div class="eyebrow" style="margin-bottom:10px">Award points</div>
         <input class="cell-input" id="re-award-reason" placeholder="Default reason (optional) — you'll be asked to confirm/edit on each tap" style="width:100%;max-width:520px;margin-bottom:14px">
         <div class="re-award-rows" id="re-award-rows"></div>
+        <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span class="re-award-team" style="min-width:auto;color:var(--muted)">Or by student</span>
+            <input class="cell-input" id="re-student" list="re-student-list" placeholder="Type a student's name…" autocomplete="off" style="flex:1;min-width:200px;max-width:320px">
+            <datalist id="re-student-list"></datalist>
+            <span id="re-student-team" style="font-weight:700;font-size:13px;min-width:130px"></span>
+          </div>
+          <div class="re-award-btns" id="re-student-btns" style="margin-top:10px">
+            <button class="re-award-btn" data-pts="1">+1</button>
+            <button class="re-award-btn" data-pts="3">+3</button>
+            <button class="re-award-btn" data-pts="5">+5</button>
+            <button class="re-award-btn deduct" data-pts="-1">−1</button>
+            <button class="re-award-btn" data-pts="other">Other…</button>
+          </div>
+          <div class="hint" style="color:var(--muted);font-size:12.5px;margin-top:8px">Pick a student and the points go to their team automatically.</div>
+        </div>
         <div id="re-pending" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(6,12,20,.6);align-items:center;justify-content:center;padding:20px">
           <div style="background:#0f1d2c;border:1px solid var(--brass);border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55)">
             <div id="re-pending-label" style="font-weight:800;font-size:18px;margin-bottom:14px"></div>
@@ -3814,8 +3830,21 @@ function reRenderAwardUI(){
   host.querySelectorAll('.re-award-btns').forEach(g=>{ const team=g.dataset.team;
     g.querySelectorAll('.re-award-btn').forEach(b=>b.addEventListener('click',()=>reOpenPending(team,b.dataset.pts))); });
 }
+// Student → team index, built from the rosters (normalised full names).
+const reNorm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const RE_STUDENT_TEAM={};
+RE_ORDER.forEach(k=>{ (RE_ROSTERS[k]||[]).forEach(g=>{ (g.names||[]).forEach(n=>{ RE_STUDENT_TEAM[reNorm(n)]=k; }); }); });
+const RE_STUDENTS=Object.keys(RE_STUDENT_TEAM);
+function reResolveStudentTeam(raw){
+  const n=reNorm(raw); if(!n) return null;
+  if(RE_STUDENT_TEAM[n]) return RE_STUDENT_TEAM[n];
+  // fall back to a unique first-name / partial match
+  const hits=[...new Set(RE_STUDENTS.filter(s=>s===n||s.startsWith(n+' ')||s.split(' ')[0]===n).map(s=>RE_STUDENT_TEAM[s]))];
+  return hits.length===1 ? hits[0] : null;
+}
+
 let RE_PENDING=null;
-function reOpenPending(team,ptsRaw){
+function reOpenPending(team,ptsRaw,defaultReason){
   const T=RE_TEAMS[team]; if(!T) return;
   const other=ptsRaw==='other';
   RE_PENDING={team, pts: other?null:ptsRaw};
@@ -3823,9 +3852,19 @@ function reOpenPending(team,ptsRaw){
   label.textContent = other ? `${T.name} —` : `${T.name} ${(+ptsRaw>0?'+':'')}${ptsRaw}`;
   label.style.color=T.color;
   const ppts=document.getElementById('re-pending-pts'); ppts.style.display=other?'inline-block':'none'; ppts.value='';
-  const preason=document.getElementById('re-pending-reason'); preason.value=(document.getElementById('re-award-reason').value||'').trim();
+  const preason=document.getElementById('re-pending-reason');
+  preason.value=(defaultReason!=null && defaultReason!=='' ? defaultReason : (document.getElementById('re-award-reason').value||'')).trim();
   document.getElementById('re-pending').style.display='flex';
   (other?ppts:preason).focus();
+}
+// Award via a student's name — routes to their team automatically.
+function reStudentAward(ptsRaw){
+  const input=document.getElementById('re-student');
+  const raw=(input&&input.value||'').trim();
+  const msg=document.getElementById('re-award-msg');
+  const team=reResolveStudentTeam(raw);
+  if(!team){ if(msg){ msg.className='gate-msg err'; msg.textContent = raw?`No single team match for “${raw}” — pick a name from the list.`:'Type a student’s name first.'; } return; }
+  reOpenPending(team, ptsRaw, raw);
 }
 function reClosePending(){ RE_PENDING=null; const p=document.getElementById('re-pending'); if(p) p.style.display='none'; }
 function reCommitPending(){
@@ -3835,6 +3874,8 @@ function reCommitPending(){
   if(!parseInt(pts,10)){ ppts.focus(); return; }
   reAward(RE_PENDING.team, pts, document.getElementById('re-pending-reason').value);
   const rf=document.getElementById('re-award-reason'); if(rf) rf.value='';
+  const si=document.getElementById('re-student'); if(si) si.value='';
+  const st=document.getElementById('re-student-team'); if(st) st.textContent='';
   reClosePending();
 }
 async function reAward(team,pts,reasonArg){
@@ -3878,6 +3919,15 @@ function reInit(){
   const sa=document.getElementById('re-showall'); if(sa) sa.addEventListener('click',()=>{ RE_SHOWALL=!RE_SHOWALL; reRenderLog(); });
   const se=document.getElementById('re-export'); if(se) se.addEventListener('click',reExport);
   const fs=document.getElementById('re-fullscreen'); if(fs) fs.addEventListener('click',()=>{ const doc=document,root=doc.documentElement; const isFs=doc.fullscreenElement||doc.webkitFullscreenElement; if(isFs){(doc.exitFullscreen||doc.webkitExitFullscreen||function(){}).call(doc);} else {(root.requestFullscreen||root.webkitRequestFullscreen||function(){}).call(root);} });
+  // Award-by-student: datalist of every student, live team feedback, point buttons.
+  const dl=document.getElementById('re-student-list');
+  if(dl) dl.innerHTML=RE_ORDER.flatMap(k=>(RE_ROSTERS[k]||[]).flatMap(g=>g.names)).sort().map(n=>`<option value="${escAttr(n)}"></option>`).join('');
+  const sInput=document.getElementById('re-student'); const sTeam=document.getElementById('re-student-team');
+  if(sInput&&sTeam) sInput.addEventListener('input',()=>{ const t=reResolveStudentTeam(sInput.value); const v=(sInput.value||'').trim();
+    if(t){ sTeam.textContent='→ '+RE_TEAMS[t].name; sTeam.style.color=RE_TEAMS[t].color; }
+    else { sTeam.textContent=v?'→ no match':''; sTeam.style.color='var(--muted)'; } });
+  const sBtns=document.getElementById('re-student-btns');
+  if(sBtns) sBtns.querySelectorAll('.re-award-btn').forEach(b=>b.addEventListener('click',()=>reStudentAward(b.dataset.pts)));
   reClockTick(); setInterval(reClockTick,1000);
   reRenderRosters(); reRender();
 }

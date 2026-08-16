@@ -846,7 +846,7 @@
       <button class="nav-item cat-games" id="nav-scoreboard" data-tab="scoreboard">Tribe Scoreboard<span class="ext">live</span></button>
       <button class="nav-item cat-games" id="nav-realestate" data-tab="realestate">Real Estate Cup<span class="ext">live</span></button>
       <div class="nav-label">Rostering</div>
-      <button class="nav-item cat-people" data-tab="staffing">Staff Roster</button>
+      <a class="nav-item cat-people" href="https://docs.google.com/spreadsheets/d/1mzAw4g7ywqMP8VJvyu-K6fKuxhcRHi_2wPweAncquYM/edit?usp=sharing" target="_blank" rel="noopener">Staff Roster<span class="ext">↗</span></a>
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
       <button class="nav-item cat-people" data-tab="attendance">Attendance</button>
       <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
@@ -1040,6 +1040,7 @@
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
           <button class="btn" id="att-allp">Mark all present</button>
+          <button class="btn ghost" id="att-busp">🚌 Mark bus riders present</button>
           <button class="btn ghost" id="att-clear">Clear day</button>
           <button class="btn ghost" id="att-export">Export CSV</button>
           <span class="saved-note" id="att-saved"></span>
@@ -2409,7 +2410,7 @@ const CONTENT_DEFAULTS = {
       {k:"Roles still to hire", v:"3", d:"1 nurse + 2 lifeguards", c:"t-coral"},
     ]; })(),
   jumpCards: [
-    {tag:"Staff Roster", title:"Staffing & Housing", desc:"Weekly crew, bed assignments, constraints.", to:"staffing"},
+    {tag:"Staff Roster", title:"Staff Roster & Housing", desc:"Weekly crew, bed assignments, constraints — opens the shared Google Sheet.", to:"https://docs.google.com/spreadsheets/d/1mzAw4g7ywqMP8VJvyu-K6fKuxhcRHi_2wPweAncquYM/edit?usp=sharing"},
     {tag:"Daily", title:"Attendance", desc:"Check students in, export the day's roll.", to:"attendance"},
     {tag:"Daily", title:"Visitors & Tours", desc:"Log the day's scheduled visitors and tours — the security / front-desk view reads it live.", to:"visitors"},
     {tag:"Student Roster", title:"Students", desc:"Add, edit & import the roster per week; mark laptops assigned/ready.", to:"roster"},
@@ -3209,6 +3210,12 @@ function attInit(){
   document.getElementById('att-week').addEventListener('change',()=>refreshAtt());
   document.getElementById('att-allp').addEventListener('click',()=>{
     const t=nowTime(); const d={}; studentsForWeek(curWeek()).forEach(s=>d[s.id]={s:'p', t}); saveAtt(d); renderAtt();
+  });
+  const busp=document.getElementById('att-busp');
+  if(busp) busp.addEventListener('click',()=>{
+    const bus=studentsForWeek(curWeek()).filter(s=>s.bus_rider);
+    if(!bus.length){ alert("No bus riders on this week's roster. Mark bus riders in Dismissal → Manage notes."); return; }
+    const t=nowTime(); const d=Object.assign({}, loadAtt()); bus.forEach(s=>d[s.id]={s:'p', t}); saveAtt(d); renderAtt();
   });
   document.getElementById('att-clear').addEventListener('click',()=>{ saveAtt({}); renderAtt(); });
   document.getElementById('att-export').addEventListener('click',attExport);
@@ -4848,13 +4855,9 @@ function emInit(){
 // Standing staff always added to the parent mailing list as BCC (plus the
 // week's head guide, resolved below).
 const MAILING_STAFF_BCC=[
-  {name:'Manuel Perez Luna', email:'manuel.perezluna@alpha.school'},
-  {name:'Nancy Torvund', email:'nancy.torvund@alpha.school'},
-  {name:'Chris Dundy', email:'christopher.dundy@alpha.school'},
-  {name:'Robbie Forrest', email:'robbie.forrest@alpha.school'},
-  {name:'Alice Lee', email:'alice.lee@alpha.school'},
   {name:'Tasha Arnold', email:'tasha.arnold@alpha.school'},
-  {name:'Julianne Braime', email:'julianne.braime@alpha.school'},
+  {name:'Terrence McMullen', email:'terrence.mcmullen@alpha.school'},
+  {name:'Zara Raheem', email:'zara.raheem@alpha.school'},
 ];
 // Head-guide name → email (used to BCC the selected week's head guide).
 const GUIDE_EMAILS={
@@ -5554,8 +5557,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','realestate','staffing','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',staffing:'Staff Roster',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
+const tabs=['dashboard','scoreboard','realestate','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';

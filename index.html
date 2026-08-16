@@ -2034,6 +2034,20 @@ async function loadEmergency(){
   if(error){ return; }  // non-owners get nothing (RLS) — that's intended
   (data||[]).forEach(r=>{ const {student_id,...rest}=r; EMERGENCY[student_id]=rest; });
 }
+// Family Contacts are CHILD-level, not week-level: the same child has a separate
+// roster row (and emergency record) per enrolled week. Match by first+last (like
+// bus_rider) so an edit applies to every week the child is on.
+function emSiblingIds(id){
+  const me=findStudent(id); const ids=new Set([id]);
+  if(me){ const f=(me.first||'').trim().toLowerCase(), l=(me.last||'').trim().toLowerCase();
+    for(const w in ROSTER_DATA){ (ROSTER_DATA[w]||[]).forEach(x=>{ if(x.id && (x.first||'').trim().toLowerCase()===f && (x.last||'').trim().toLowerCase()===l) ids.add(x.id); }); } }
+  return [...ids];
+}
+async function emSaveField(id, field, value){
+  const ids=emSiblingIds(id); let err=null;
+  for(const sid of ids){ const e=await dbSetEmergency(sid, {[field]: value}); if(e) err=e; }
+  return {count:ids.length, err};
+}
 // Import that updates students already on the week (matched by first+last name)
 // instead of duplicating; new names are added. Emergency fields go to the
 // owner-only student_emergency table (written only if you're the owner).
@@ -4819,7 +4833,14 @@ function renderEmergency(){
     <td>${esc(s.meds||'')}</td>
   </tr>`; }).join('') : `<tr><td colspan="18" class="note-row">No students on the Week ${esc(wk)} roster yet.</td></tr>`;
   tbl.innerHTML=head+`<tbody>${body}</tbody>`;
-  tbl.querySelectorAll('[data-em]').forEach(el=>el.addEventListener('change',async()=>{ await dbSetEmergency(el.dataset.id, {[el.dataset.em]: el.value}); }));
+  tbl.querySelectorAll('[data-em]').forEach(el=>{
+    const mark=(ok,msg)=>{ el.style.outline = ok===false ? '2px solid #d9534f' : (ok ? '2px solid #3fae6b' : 'none'); if(msg) el.title=msg; if(ok!==false) setTimeout(()=>{ el.style.outline='none'; }, 1300); };
+    const save=async()=>{ const {count,err}=await emSaveField(el.dataset.id, el.dataset.em, el.value);
+      mark(!err, err ? ('Not saved — '+(err.message||'try again')) : (count>1?`Saved to all ${count} weeks ✓`:'Saved ✓')); };
+    let t=null;
+    el.addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(save, 700); });   // persists even without leaving the cell
+    el.addEventListener('change',()=>{ clearTimeout(t); save(); });                    // and immediately on blur
+  });
   tbl.querySelectorAll('[data-phone]').forEach(el=>el.addEventListener('input',()=>{ const a=el.parentNode.querySelector('.callbtn'); if(!a) return; const tel=el.value.replace(/[^\d+]/g,''); if(tel){ a.href='tel:'+tel; a.style.display=''; } else a.style.display='none'; }));
   tbl.querySelectorAll('[data-addpu]').forEach(b=>b.addEventListener('click',()=>emAddPickup(b.dataset.addpu)));
   const filled=studs.filter(s=>{ const e=EMERGENCY[s.id]||{}; return (e.emergency_phone||e.guardian_phone||e.secondary_phone); }).length;

@@ -1123,6 +1123,7 @@
         <button class="btn" id="dq-busA" style="display:none">Add Route A</button>
         <button class="btn" id="dq-busB" style="display:none">Add Route B</button>
         <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
+        <button class="btn ghost" id="dq-buslist">🚌 Print bus list</button>
         <button class="btn ghost" id="dq-export">Export CSV</button>
       </div>
 
@@ -3459,6 +3460,40 @@ function dqExport(){
   DQ_ROWS.forEach(r=>rows.push([(r.students||[]).map(s=>s.name).join('; '), r.label||'', r.status, r.queued_at?new Date(r.queued_at).toLocaleTimeString():'', r.dismissed_at?new Date(r.dismissed_at).toLocaleTimeString():'', dqDay()]));
   csvDownload(`dismissal-${dqDay()}.csv`, rows);
 }
+// Printable daily bus check-off — grouped by route, with AM (pickup) and PM
+// (drop-off) tick boxes and a notes column.
+function dqBusList(){
+  const wk=dqWeek();
+  const dateVal=(document.getElementById('dq-date')||{}).value||todayISO();
+  const dateNice=(()=>{ const d=new Date(dateVal+'T12:00:00'); return isNaN(d)?dateVal:d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'}); })();
+  const studs=studentsForWeek(wk).filter(s=>s.bus_rider);
+  if(!studs.length){ alert('No bus riders on the Week '+wk+' roster.'); return; }
+  const g={A:[],B:[],U:[]};
+  studs.forEach(s=>{ const r=(s.bus_route||'').trim().toUpperCase(); (r==='A'?g.A:r==='B'?g.B:g.U).push(s); });
+  const nameOf=s=>((s.preferred||s.first||'')+' '+(s.last||'')).trim();
+  const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
+  const rows=arr=>arr.slice().sort(byName).map((s,i)=>`<tr><td class="n">${i+1}</td><td>${esc(nameOf(s))}</td><td class="c">${esc(s.grade||'')}</td><td class="chk">&#9744;</td><td class="chk">&#9744;</td><td></td></tr>`).join('');
+  const section=(title,arr)=>arr.length?`<h2>${esc(title)} <span class="ct">${arr.length} riders</span></h2>
+    <table><thead><tr><th class="n">#</th><th>Student</th><th class="c">Gr</th><th class="chk">AM</th><th class="chk">PM</th><th>Notes</th></tr></thead><tbody>${rows(arr)}</tbody></table>`:'';
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Bus check-off — Week ${esc(wk)}</title>
+  <style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1f2d3a;margin:24px}
+  h1{font-size:22px;margin:0 0 2px}.sub{color:#5d6b78;font-size:13px;margin-bottom:16px}
+  h2{font-size:16px;margin:20px 0 6px;border-bottom:2px solid #0e2233;padding-bottom:4px}h2 .ct{font-size:12px;color:#5d6b78;font-weight:normal;margin-left:6px}
+  table{border-collapse:collapse;width:100%;margin-bottom:6px}th,td{border:1px solid #c9d2db;padding:7px 9px;font-size:13.5px;text-align:left}
+  th{background:#eef2f6;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#41505e}
+  td.n,th.n{width:30px;text-align:center;color:#8090a0}td.c,th.c{width:34px;text-align:center}
+  td.chk,th.chk{width:50px;text-align:center;font-size:19px;line-height:1}
+  tbody tr:nth-child(even){background:#f7f9fb}
+  .noprint{margin-bottom:14px}.noprint button{font-size:14px;padding:8px 16px;cursor:pointer;border:1px solid #0e2233;background:#0e2233;color:#fff;border-radius:8px}
+  @media print{.noprint{display:none}body{margin:0}h2{page-break-after:avoid}tr{page-break-inside:avoid}}</style></head>
+  <body><div class="noprint"><button onclick="window.print()">Print this list</button></div>
+  <h1>Bus Riders — Daily Check-off · Week ${esc(wk)}</h1>
+  <div class="sub">${esc(dateNice)} &nbsp;·&nbsp; ${studs.length} riders &nbsp;·&nbsp; Route A: ${g.A.length} · Route B: ${g.B.length}${g.U.length?` · Unassigned: ${g.U.length}`:''} &nbsp;·&nbsp; <b>AM</b> = morning pickup, <b>PM</b> = afternoon drop-off</div>
+  ${section('Route A', g.A)}${section('Route B', g.B)}${section('No route assigned', g.U)}
+  </body></html>`;
+  const w=window.open('','_blank'); if(!w){ alert('Pop-up blocked — allow pop-ups for this site to print the bus list.'); return; }
+  w.document.write(html); w.document.close(); w.focus();
+}
 function dqSubscribe(){
   if(!SUPA || DQ_CHAN) return;
   DQ_CHAN = SB.channel('dq-live')
@@ -3510,6 +3545,7 @@ function dismissalInit(){
   document.getElementById('dq-date').addEventListener('change',refreshDismissal);
   document.getElementById('dq-dismissall').addEventListener('click',dqDismissAll);
   document.getElementById('dq-export').addEventListener('click',dqExport);
+  { const bl=document.getElementById('dq-buslist'); if(bl) bl.addEventListener('click',dqBusList); }
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
   const so=document.getElementById('dq-sort'); if(so){ so.value=DQ_SORT; so.addEventListener('change',()=>{ DQ_SORT=so.value; renderDismissal(); }); }

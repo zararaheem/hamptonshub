@@ -563,6 +563,9 @@
   .pick-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 5px;border-radius:8px;border:1px solid currentColor;margin-left:5px;vertical-align:1px}
   .pick-tag.bus{color:var(--brass-bright)} .pick-tag.self{color:var(--teal-bright)}
   .bus-chip{font-family:var(--mono);font-size:10px;color:var(--brass-bright);border:1px solid var(--brass);border-radius:10px;padding:1px 6px;white-space:nowrap;margin-left:6px}
+  .dqn-route{display:flex;gap:4px;margin-top:6px;justify-content:center}
+  .rt-pick{font-family:var(--mono);font-size:11px;font-weight:700;background:var(--navy-2);border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:3px 9px;cursor:pointer}
+  .rt-pick.on{border-color:var(--brass-bright);color:var(--brass-bright);background:rgba(200,146,74,.12)}
   .dq-note{font-size:12px;color:var(--brass-bright);margin-top:3px}
   .dqn-table{width:100%;border-collapse:collapse}
   .dqn-table th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}
@@ -1117,6 +1120,8 @@
       <div id="dq-line"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px;align-items:center">
         <button class="btn" id="dq-busall" style="display:none">Add bus riders</button>
+        <button class="btn" id="dq-busA" style="display:none">Add Route A</button>
+        <button class="btn" id="dq-busB" style="display:none">Add Route B</button>
         <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
         <button class="btn ghost" id="dq-export">Export CSV</button>
       </div>
@@ -1944,7 +1949,7 @@ function seedLocalRoster(){
 async function hydrateRoster(){
   if(SUPA){
     const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,swag_notes,tribe,withdrawn,sort_order')
+      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,bus_route,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,swag_notes,tribe,withdrawn,sort_order')
       .order('week').order('sort_order');
     ROSTER_DATA = {};
     if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
@@ -2136,6 +2141,9 @@ async function dbSetBusForChild(s, val){
   } else { persistLocalRoster(); }
   return null;
 }
+// Bus ROUTE is per-week (a child can be on a different route each week), unlike
+// bus_rider which applies to every enrolled week. So this updates just this row.
+async function dbSetBusRoute(id, route){ return await dbUpdateStudent(id, {bus_route: (route||'').trim()||null}); }
 async function dbSetSwagForChild(s, val){
   const f=s.first, l=s.last;
   for(const w in ROSTER_DATA){ ROSTER_DATA[w].forEach(x=>{ if(x.first===f && x.last===l) x.swag_received=val; }); }
@@ -3062,7 +3070,7 @@ function renderAtt(){
     return `<div class="student-block" data-id="${escAttr(s.id)}">
       <div class="student-row">
         <div class="avatar">${esc(init)}</div>
-        <div><div class="nm">${esc(goesByName(s))}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}${healthChips(s)}</div></div>
+        <div><div class="nm">${esc(goesByName(s))}${s.bus_rider?` <span class="bus-chip">Bus${s.bus_route?' '+esc(s.bus_route):''}</span>`:''}${healthChips(s)}</div></div>
         <button class="health-toggle ${flagCls}" data-act="htoggle">${flag?'⚠ health':'＋ health'}</button>
         ${showPermit?`<label class="permit-box ${permit[s.id]?'on':''}" title="Permit slip collected"><input type="checkbox" data-act="permit" ${permit[s.id]?'checked':''}><span>Permit</span></label>`:''}
         <div class="seg">
@@ -3115,7 +3123,7 @@ function renderAtt(){
       tgl.classList.toggle('flag-note',flag&&!(hasAllergy||hasMed));
       tgl.textContent=flag?'⚠ health':'＋ health';
       const nm=block.querySelector('.nm');
-      nm.innerHTML=`${esc(goesByName(s))}`+(s.bus_rider?' <span class="bus-chip">Bus</span>':'')+healthChips(s);
+      nm.innerHTML=`${esc(goesByName(s))}`+(s.bus_rider?` <span class="bus-chip">Bus${s.bus_route?' '+esc(s.bus_route):''}</span>`:'')+healthChips(s);
       flashSaved(); renderHealthSummary();
     });
   });
@@ -3342,11 +3350,20 @@ function renderDismissal(){
   // "Add bus riders" — bus kids still here (not absent) and not already queued, sent out as one car
   const busEligible=studs.filter(s=>s.bus_rider && !isAbsent(s) && !dqStudentInQueue(s.id));
   const busBtn=document.getElementById('dq-busall');
+  const routed=busEligible.filter(s=>(s.bus_route||'').trim());
   if(busBtn){
-    if(busEligible.length){ busBtn.style.display=''; busBtn.textContent=`Add bus riders (${busEligible.length})`;
+    if(busEligible.length){ busBtn.style.display='';
+      // When routes are in use, label the catch-all "all"; otherwise plain "bus riders".
+      busBtn.textContent = routed.length ? `Add all bus (${busEligible.length})` : `Add bus riders (${busEligible.length})`;
       busBtn.onclick=()=>dqAddStudents(busEligible.map(s=>s.id), 'Bus'); }
     else { busBtn.style.display='none'; busBtn.onclick=null; }
   }
+  // Per-route buttons appear only when someone eligible is on that route.
+  [['dq-busA','A'],['dq-busB','B']].forEach(([bid,route])=>{ const b=document.getElementById(bid); if(!b) return;
+    const kids=busEligible.filter(s=>(s.bus_route||'').trim()===route);
+    if(kids.length){ b.style.display=''; b.textContent=`Add Route ${route} (${kids.length})`; b.onclick=()=>dqAddStudents(kids.map(s=>s.id), 'Bus '+route); }
+    else { b.style.display='none'; b.onclick=null; }
+  });
   // the line (FIFO, #1 at top)
   const line=document.getElementById('dq-line');
   line.innerHTML = waiting.length ? waiting.map((r,i)=>`
@@ -3381,7 +3398,7 @@ function renderDismissal(){
   if(sq) avail=avail.filter(s=>((s.first||'')+' '+(s.last||'')+' '+(s.preferred||'')).toLowerCase().includes(sq));
   const absentHint=absentHidden?`<span class="note-row" style="flex-basis:100%;grid-column:1/-1">${absentHidden} marked absent today — hidden from the line</span>`:'';
   picker.innerHTML = (avail.length ? avail.map(s=>{ const note=(s.dismissal||'').trim(); const sel=DQ_MULTI&&DQ_SEL.has(s.id);
-    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${s.bus_rider?' busrider':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.bus_rider?' <span class="pick-tag bus">bus</span>':''}${s.self_dismiss?' <span class="pick-tag self">self</span>':''}</button>`; }).join('')
+    return `<button class="dq-pick ${s.self_dismiss?'selfdis':''}${s.bus_rider?' busrider':''}${sel?' on':''}" data-pick="${escAttr(s.id)}"${note?` title="${escAttr(note)}"`:''}>${esc(dqName(s))}${s.bus_rider?` <span class="pick-tag bus">bus${s.bus_route?' '+esc(s.bus_route):''}</span>`:''}${s.self_dismiss?' <span class="pick-tag self">self</span>':''}</button>`; }).join('')
     : `<span class="note-row">${sq?'No students match — clear the search.':(absentHidden?'Everyone else is in the line, dismissed, or absent.':'Everyone is in the line or dismissed.')}</span>`) + absentHint;
   picker.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.pick;
@@ -3411,15 +3428,27 @@ function renderDqNotes(){
     studs.map(s=>`<tr data-id="${escAttr(s.id)}">
       <td class="role-cell" style="white-space:nowrap">${esc(dqName(s))}</td>
       <td style="text-align:center"><div class="dqn-m">Self-dismiss</div><input type="checkbox" class="big-check" data-dqn="self" ${s.self_dismiss?'checked':''}></td>
-      <td style="text-align:center"><div class="dqn-m">Bus rider</div><input type="checkbox" class="big-check" data-dqn="bus" ${s.bus_rider?'checked':''}></td>
+      <td style="text-align:center"><div class="dqn-m">Bus rider</div><input type="checkbox" class="big-check" data-dqn="bus" ${s.bus_rider?'checked':''}>
+        <div class="dqn-route" data-routewrap ${s.bus_rider?'':'style="display:none"'}>
+          <button class="rt-pick${s.bus_route==='A'?' on':''}" data-route="A">A</button>
+          <button class="rt-pick${s.bus_route==='B'?' on':''}" data-route="B">B</button>
+          <button class="rt-pick${!s.bus_route?' on':''}" data-route="">—</button>
+        </div></td>
       <td><div class="dqn-m">Pickup / dismissal note</div><input class="cell-input" data-dqn="note" value="${escAttr(s.dismissal||'')}" placeholder="e.g. walks home, bikes, aftercare, only release to mom"></td>
     </tr>`).join('')}</tbody></table>
-    <p class="lc-desc" style="margin:10px 0 0"><b>Bus rider</b> applies to every week this child is enrolled. Use the <b>Add bus riders</b> button on the line to send them all out together.</p>`;
+    <p class="lc-desc" style="margin:10px 0 0"><b>Bus rider</b> applies to every week this child is enrolled. <b>Route (A / B)</b> is per week. Use the <b>Add Route A / Route B</b> buttons on the line to send each route out together.</p>`;
   box.querySelectorAll('[data-dqn=self]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{self_dismiss:el.checked}); renderDismissal();
   }));
   box.querySelectorAll('[data-dqn=bus]').forEach(el=>el.addEventListener('change',async()=>{
-    const id=el.closest('tr').dataset.id; const s=findStudent(id); if(s) await dbSetBusForChild(s, el.checked); renderDismissal();
+    const id=el.closest('tr').dataset.id; const s=findStudent(id); if(s) await dbSetBusForChild(s, el.checked);
+    const w=el.closest('td').querySelector('[data-routewrap]'); if(w) w.style.display=el.checked?'':'none';
+    renderDismissal();
+  }));
+  box.querySelectorAll('.rt-pick').forEach(el=>el.addEventListener('click',async()=>{
+    const id=el.closest('tr').dataset.id; await dbSetBusRoute(id, el.dataset.route);
+    el.parentNode.querySelectorAll('.rt-pick').forEach(b=>b.classList.toggle('on', b===el));
+    renderDismissal();
   }));
   box.querySelectorAll('[data-dqn=note]').forEach(el=>el.addEventListener('change',async()=>{
     const id=el.closest('tr').dataset.id; await dbUpdateStudent(id,{dismissal:el.value.trim()}); renderDismissal();
@@ -4814,7 +4843,7 @@ function renderEmergency(){
     return `<div class="phone-cell"><input class="cell-input" data-em="${f}" data-id="${escAttr(id)}" data-phone inputmode="tel" value="${escAttr(val||'')}"><a class="callbtn" href="tel:${escAttr(tel)}" title="Call"${tel?'':' style="display:none"'}>Call</a></div>`; };
   const body=studs.length? studs.map((s,i)=>{ const e=EMERGENCY[s.id]||{}; return `<tr>
     <td class="role-cell">${i+1}</td>
-    <td style="white-space:nowrap"><b>${esc(s.last||'')}</b>${s.first?', '+esc(s.first):''}${s.bus_rider?' <span class="bus-chip">Bus</span>':''}</td>
+    <td style="white-space:nowrap"><b>${esc(s.last||'')}</b>${s.first?', '+esc(s.first):''}${s.bus_rider?` <span class="bus-chip">Bus${s.bus_route?' '+esc(s.bus_route):''}</span>`:''}</td>
     <td>${esc(s.grade||'')}</td>
     <td>${inp(s.id,'dob',e.dob)}</td>
     <td>${inp(s.id,'guardian',e.guardian)}</td>

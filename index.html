@@ -1125,6 +1125,7 @@
         <button class="btn ghost" id="dq-dismissall">Dismiss all in line</button>
         <button class="btn ghost" id="dq-buslist">🚌 Print bus list (day)</button>
         <button class="btn ghost" id="dq-buslistwk">🚌 Print bus list (full week)</button>
+        <button class="btn ghost" id="dq-presentlist">🖨 Print all present (excluding bus)</button>
         <button class="btn ghost" id="dq-export">Export CSV</button>
       </div>
 
@@ -3507,6 +3508,37 @@ function dqBusList(dates){
   const w=window.open('','_blank'); if(!w){ alert('Pop-up blocked — allow pop-ups for this site to print the bus list.'); return; }
   w.document.write(html); w.document.close(); w.focus();
 }
+// Printable pickup check-off for everyone marked here today (Present or Late)
+// who is NOT a bus rider — the carpool/parent-pickup list.
+function dqPresentList(){
+  const wk=dqWeek();
+  const dateVal=dqDay()||todayISO();
+  const dateNice=(()=>{ const d=new Date(dateVal+'T12:00:00'); return isNaN(d)?dateVal:d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'}); })();
+  const att=(typeof stateGet==='function' && stateGet(dqAttKey()))||{};
+  const present=studentsForWeek(wk).filter(s=>!s.bus_rider).filter(s=>{ const v=attStat(att[s.id]); return v==='p'||v==='l'; });
+  if(!present.length){ alert('No non-bus students are marked Present or Late for '+dateNice+' yet — take attendance first.'); return; }
+  const nameOf=s=>((s.preferred||s.first||'')+' '+(s.last||'')).trim();
+  const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
+  const rows=present.slice().sort(byName).map((s,i)=>{ const st=attStat(att[s.id]);
+    return `<tr><td class="n">${i+1}</td><td>${esc(nameOf(s))}</td><td class="c">${esc(s.grade||'')}</td><td class="c">${st==='l'?'Late':'Present'}</td><td class="chk">&#9744;</td><td>${esc(s.dismissal||'')}</td></tr>`; }).join('');
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Pickup list — Week ${esc(wk)}</title>
+  <style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1f2d3a;margin:24px}
+  h1{font-size:22px;margin:0 0 2px}.sub{color:#5d6b78;font-size:13px;margin-bottom:16px}
+  table{border-collapse:collapse;width:100%}th,td{border:1px solid #c9d2db;padding:7px 9px;font-size:13.5px;text-align:left}
+  th{background:#eef2f6;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#41505e}
+  td.n,th.n{width:30px;text-align:center;color:#8090a0}td.c,th.c{width:60px;text-align:center}
+  td.chk,th.chk{width:66px;text-align:center;font-size:19px;line-height:1}
+  tbody tr:nth-child(even){background:#f7f9fb}
+  .noprint{margin-bottom:14px}.noprint button{font-size:14px;padding:8px 16px;cursor:pointer;border:1px solid #0e2233;background:#0e2233;color:#fff;border-radius:8px}
+  @media print{.noprint{display:none}body{margin:0}tr{page-break-inside:avoid}}</style></head>
+  <body><div class="noprint"><button onclick="window.print()">Print this list</button></div>
+  <h1>Pickup — Present, non-bus · Week ${esc(wk)}</h1>
+  <div class="sub"><b>${esc(dateNice)}</b> &nbsp;·&nbsp; ${present.length} students &nbsp;·&nbsp; everyone here today except bus riders &nbsp;·&nbsp; tick <b>Picked up</b> at dismissal</div>
+  <table><thead><tr><th class="n">#</th><th>Student</th><th class="c">Gr</th><th class="c">Status</th><th class="chk">Picked&nbsp;up</th><th>Pickup / notes</th></tr></thead><tbody>${rows}</tbody></table>
+  </body></html>`;
+  const w=window.open('','_blank'); if(!w){ alert('Pop-up blocked — allow pop-ups for this site to print the list.'); return; }
+  w.document.write(html); w.document.close(); w.focus();
+}
 function dqSubscribe(){
   if(!SUPA || DQ_CHAN) return;
   DQ_CHAN = SB.channel('dq-live')
@@ -3560,6 +3592,7 @@ function dismissalInit(){
   document.getElementById('dq-export').addEventListener('click',dqExport);
   { const bl=document.getElementById('dq-buslist'); if(bl) bl.addEventListener('click',()=>dqBusList()); }
   { const bw=document.getElementById('dq-buslistwk'); if(bw) bw.addEventListener('click',()=>dqBusList(weekDates(dqWeek()))); }
+  { const pl=document.getElementById('dq-presentlist'); if(pl) pl.addEventListener('click',dqPresentList); }
   document.getElementById('dq-refresh').addEventListener('click',refreshDismissal);
   const ds=document.getElementById('dq-search'); if(ds) ds.addEventListener('input',renderDismissal);
   const so=document.getElementById('dq-sort'); if(so){ so.value=DQ_SORT; so.addEventListener('change',()=>{ DQ_SORT=so.value; renderDismissal(); }); }

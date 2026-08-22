@@ -855,6 +855,7 @@
       <button class="nav-item cat-people" data-tab="dismissal">Dismissal</button>
       <button class="nav-item cat-people" data-tab="visitors">Visitors &amp; Tours</button>
       <button class="nav-item cat-people contacts-only" data-tab="emergency">Family Contacts</button>
+      <button class="nav-item cat-people contacts-only" data-tab="waivers">Waivers</button>
       <button class="nav-item cat-people" data-tab="medical">Medical &amp; Immunizations</button>
       <div class="nav-label">Logistics</div>
       <button class="nav-item cat-logistics" data-tab="tech">Tech Onboarding</button>
@@ -1577,6 +1578,20 @@
       <div class="section-title" style="margin-top:26px"><span class="num">🎬</span>Trailer films &amp; access codes</div>
       <p class="page-lead" style="margin-top:0">Upload each trailer's <b>video</b> and <b>download</b> links, and paste the students' <b>last names</b> (one per line) — each becomes a code <code>lastname-trailerN</code> that the family enters on the review page to watch. Nothing is visible to parents until you tick <b>Published</b>. Links stay private until a valid code is entered.</p>
       <div id="sc-films"></div>
+    </section>
+
+    <!-- ===== WAIVERS ===== -->
+    <section class="view" id="view-waivers" hidden>
+      <div class="eyebrow contacts-only">Families · Signed waivers</div>
+      <h1 class="page-title">Waivers</h1>
+      <p class="page-lead">Participation waivers signed by families on the family-guide waiver page. Pick a week to see who has signed and the details they submitted (every signature confirms the acknowledgment).</p>
+      <div class="filters" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+        <div class="field" style="max-width:220px"><label for="wv-week">Week</label><select id="wv-week"></select></div>
+        <button class="btn ghost" id="wv-refresh">Refresh</button>
+        <button class="btn ghost" id="wv-csv">Download CSV</button>
+        <div class="att-stats" id="wv-stats" style="margin-left:auto"></div>
+      </div>
+      <div class="tablewrap"><table id="wv-table"></table></div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -5464,6 +5479,50 @@ async function loadShowcaseAdmin(){
   renderShowcaseAdmin();
   loadShowcaseFilms();
 }
+
+// ===== Waivers (read-only view of parent-signed participation waivers) =====
+let WV_ROWS=[], WV_INIT=false;
+async function loadWaivers(){
+  const tbl=document.getElementById('wv-table'); if(!tbl) return;
+  const sel=document.getElementById('wv-week');
+  if(!WV_INIT){
+    WV_INIT=true;
+    if(sel){ fillWeekSelect(sel); sel.addEventListener('change', loadWaivers); }
+    const rf=document.getElementById('wv-refresh'); if(rf) rf.onclick=loadWaivers;
+    const cs=document.getElementById('wv-csv'); if(cs) cs.onclick=wvCsv;
+  }
+  const stats=document.getElementById('wv-stats');
+  if(!SUPA){ if(stats) stats.textContent=''; tbl.innerHTML='<tbody><tr><td class="note-row">Connect Supabase to view signed waivers.</td></tr></tbody>'; return; }
+  const wk = sel ? sel.value : String(WEEKS[NOW].n);
+  tbl.innerHTML='<tbody><tr><td class="note-row">Loading…</td></tr></tbody>';
+  const { data, error } = await SB.from('waiver_signatures').select('*').eq('week', wk).order('signed_at',{ascending:false});
+  WV_ROWS = error ? [] : (data||[]);
+  if(error){ tbl.innerHTML=`<tbody><tr><td class="note-row">Could not load waivers — ${esc(error.message||'')}</td></tr></tbody>`; if(stats) stats.textContent=''; return; }
+  renderWaivers();
+}
+function wvDateTime(s){ if(!s) return ''; try{ return new Date(s).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return String(s); } }
+function renderWaivers(){
+  const tbl=document.getElementById('wv-table'); if(!tbl) return;
+  const stats=document.getElementById('wv-stats'); const rows=WV_ROWS;
+  if(stats) stats.textContent = rows.length ? `${rows.length} signature${rows.length===1?'':'s'}` : 'No signatures yet';
+  const head=`<thead><tr><th>Signed</th><th>Participant(s)</th><th>Parent / guardian</th><th>Email</th><th>Phone</th><th title="Every submission confirms the acknowledgment before it can be sent">Acknowledged</th><th>Emergency contact</th></tr></thead>`;
+  const body = rows.length ? rows.map(r=>`<tr>
+    <td style="white-space:nowrap">${esc(wvDateTime(r.signed_at))}</td>
+    <td>${esc(r.participant_names||'')}</td>
+    <td>${esc(r.parent_name||'')}</td>
+    <td><a href="mailto:${escAttr(r.parent_email||'')}">${esc(r.parent_email||'')}</a></td>
+    <td style="white-space:nowrap">${esc(r.parent_phone||'')}</td>
+    <td>${r.agreed?'✓ Yes':'<span style="color:var(--coral)">✗ No</span>'}</td>
+    <td>${r.emergency_same?'Same as parent/guardian':esc(r.emergency_details||'—')}</td>
+  </tr>`).join('') : `<tr><td colspan="7" class="note-row">No waivers signed for this week yet.</td></tr>`;
+  tbl.innerHTML = head+`<tbody>${body}</tbody>`;
+}
+function wvCsv(){
+  const wk = (document.getElementById('wv-week')||{}).value || '';
+  const rows=[["Signed at","Participant(s)","Parent/guardian","Email","Phone","Acknowledged","Emergency same as parent","Emergency contact details"]];
+  WV_ROWS.forEach(r=>rows.push([r.signed_at||'', r.participant_names||'', r.parent_name||'', r.parent_email||'', r.parent_phone||'', r.agreed?'Yes':'No', r.emergency_same?'Yes':'No', r.emergency_same?'':(r.emergency_details||'')]));
+  csvDownload(`waivers-week${wk}.csv`, rows);
+}
 const SC_TRAILERS=[
   {key:'trailer1',label:'Trailer 1 · Team 1'},
   {key:'trailer2',label:'Trailer 2 · Team 2'},
@@ -5690,12 +5749,12 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','realestate','attendance','roster','dismissal','medical','visitors','emergency','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
+const tabs=['dashboard','scoreboard','realestate','attendance','roster','dismissal','medical','visitors','emergency','waivers','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',waivers:'Waivers',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
-  if(t==='emergency' && !document.body.classList.contains('can-contacts')) t='dashboard';
+  if((t==='emergency'||t==='waivers') && !document.body.classList.contains('can-contacts')) t='dashboard';
   tabs.forEach(x=>{ document.getElementById('view-'+x).hidden = (x!==t); });
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
   if(t==='guide') lazyEmbed('guide-embed','https://alpha-odyssey-guide-hub.vercel.app/');
@@ -5703,6 +5762,7 @@ function showTab(t){
   if(t==='resources') lazyEmbed('resources-embed','https://alpha-session0.lovable.app/resources');
   if(t==='famguide') loadFamGuide();
   if(t==='showcase') loadShowcaseAdmin();
+  if(t==='waivers') loadWaivers();
   if(t==='slack') loadSlack();
   if(t==='roster' && typeof refreshRoster==='function') refreshRoster();
   if(t==='dismissal' && typeof refreshDismissal==='function') refreshDismissal();

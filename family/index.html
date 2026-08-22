@@ -303,7 +303,9 @@
         <div class="qa"><h3>What to bring for water days?</h3>${SEC('swim_bring', `<p>A swimsuit and optional flip-flops to change into. Towels are provided.</p>`)}</div>
       </div>`;
 
+      const wvQA=(w.waiver_pdf||'').trim() ? `<div class="qa"><h3>${esc(w.waiver_title||'Participation waiver')}</h3><p>Please take a moment to review and sign this week's participation waiver before Monday — it covers the inherent risks of the week's hands-on activities. <a href="./waiver/${LOADED_CODE?`?code=${encodeURIComponent(LOADED_CODE)}`:''}">Sign the ${esc(w.waiver_title||'waiver')}</a>.</p></div>` : '';
       h+=`<div class="sec-head"><h2>Health &amp; Safety</h2></div><div class="card">
+        ${wvQA}
         <div class="qa"><h3>Ticks &amp; mosquitoes</h3>${SEC('ticks', `<p>We take tick and mosquito prevention seriously and have several measures in place. Our grounds have been treated with an eco-friendly spray before the program, with repeated sprays throughout the summer as needed. We keep the grass short and ensure there is no standing water, which is a key mosquito breeding source. We have planted a variety of plants around the center that naturally deter both ticks and mosquitoes.</p><p>During the day, we provide long socks to all students to help keep ticks away during outdoor activities. Families are encouraged to apply a preferred insect repellent before drop-off. We also keep a station of kid-safe repellents on-site that children can apply with your permission or an adult's support.</p>`)}</div>
         <div class="qa"><h3>Ninja-warrior course safety</h3><p>The course is supervised throughout, and we have an on-site First Aid Professional Rescuer/nurse. As a precaution, we share the CDC's HEADS UP concussion resources:</p>
           <ul>

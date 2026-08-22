@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="format-detection" content="telephone=no" />
+<title>Alpha Summer · East Hampton — Waiver</title>
+<meta name="description" content="Review and sign this week's participation waiver for Alpha Summer in the Hamptons." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0e2233; --panel:#fff; --line:#e6e0d4; --ink:#1f2d3a; --muted:#5d6b78;
+    --brass:#b07a2c; --teal:#1f7a73; --teal-bright:#2aa39a; --sand:#f6f1e7; --shadow:0 8px 30px rgba(20,40,60,.10);
+    --display:'Fraunces',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--sand);line-height:1.55}
+  a{color:var(--brass)}
+  .hero{background:linear-gradient(160deg,#0e2233,#143b4a);color:#fdf8ee;padding:40px 22px 34px;text-align:center}
+  .hero .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7fd4cc;margin-bottom:10px}
+  .hero h1{font-family:var(--display);font-weight:600;font-size:32px;margin:0 0 8px;line-height:1.1}
+  .hero .wk{display:inline-block;margin-top:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:5px 14px;border-radius:999px;font-size:13px;letter-spacing:.04em}
+  .wrap{max-width:760px;margin:0 auto;padding:26px 20px 70px}
+  .gate{max-width:460px;margin:50px auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:var(--shadow);text-align:center}
+  .gate h2{font-family:var(--display);font-weight:600;font-size:22px;color:var(--navy);margin:0 0 6px}
+  .gate p{color:var(--muted);font-size:14px;margin:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 26px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .card h2{font-family:var(--display);font-weight:600;font-size:24px;color:var(--navy);margin:2px 0 10px}
+  .card p{margin:0 0 10px;font-size:15.5px;color:#33414e}
+  .card ul{margin:6px 0 10px;padding-left:20px}
+  .card li{font-size:15.5px;color:#33414e;margin:3px 0}
+  .note{background:#fcefcf;border:1px solid #e6c375;border-left:4px solid #c8924a;border-radius:10px;padding:12px 16px;font-size:15px;line-height:1.5;color:#4a3410;margin:0 0 16px}
+  .pdf-link{display:inline-block;margin:6px 0 4px;font-weight:600}
+  .waiver-frame{width:100%;height:520px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:8px 0 4px}
+  /* Signature form */
+  .waiver-sign{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}
+  .wv-h{font-family:var(--display);font-weight:600;font-size:20px;color:var(--navy);margin:0 0 10px}
+  .wv-check{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:#33414e;line-height:1.5;margin-bottom:6px}
+  .wv-check input{margin-top:3px;flex:none;width:17px;height:17px}
+  .wv-l{display:block;font-size:14px;font-weight:600;color:var(--navy);margin:12px 0 0}
+  .wv-l input,.wv-l textarea,.wv-l select{display:block;width:100%;margin-top:5px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-weight:400;font-size:15px;background:#fffdf9;color:var(--ink)}
+  .wv-l input:focus,.wv-l textarea:focus,.wv-l select:focus{outline:none;border-color:var(--teal-bright)}
+  .wv-l textarea{resize:vertical}
+  .wv-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:520px){ .wv-row{grid-template-columns:1fr} }
+  .wv-hint{display:block;font-weight:400;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .req{color:#c0392b}
+  .wv-btn{margin-top:16px;padding:12px 22px;border:0;border-radius:10px;background:var(--brass);color:#fff;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+  .wv-btn:disabled{opacity:.6;cursor:default}
+  .wv-msg{font-size:14px;margin-top:10px}
+  .wv-msg.err{color:#b3402f} .wv-msg.ok{color:var(--teal)}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
+  .back{display:inline-block;margin-bottom:14px;font-size:14px;text-decoration:none}
+  @media(max-width:520px){ .hero h1{font-size:26px} .card{padding:16px 18px} }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Alpha Summer · East Hampton Experience · 2026</div>
+    <h1>Participation Waiver</h1>
+    <div id="hero-wk"></div>
+  </header>
+
+  <main class="wrap">
+    <div id="loading" class="gate"><p style="margin:0">Loading the waiver…</p></div>
+    <div id="nowaiver" class="gate" hidden>
+      <h2>No waiver to sign</h2>
+      <p id="nowaiver-msg">There's no waiver for this week. If you reached this page from your family guide link, please check back closer to your week.</p>
+    </div>
+    <div id="content" hidden></div>
+  </main>
+
+  <div class="foot">Alpha Summer · Jewish Center of East Hampton · Questions? Reach out to your campus team.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL='https://qwmetffzspobjamwwhca.supabase.co';
+    const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3bWV0ZmZ6c3BvYmphbXd3aGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMDU1MTcsImV4cCI6MjA5NzY4MTUxN30.ES56s2HLTm1hxvYZL6arlPsGnYlaiLcBvj5buRaWyHs';
+    const sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const autolink = s => s
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '<a href="mailto:$1">$1</a>');
+    const fmt = raw => String(raw).trim().split(/\n{2,}/).map(b=>{
+      const lines=b.split('\n');
+      if(lines.length>1 && lines.every(l=>/^\s*[-•]\s+/.test(l)))
+        return '<ul>'+lines.map(l=>'<li>'+autolink(esc(l.replace(/^\s*[-•]\s+/,'')))+'</li>').join('')+'</ul>';
+      return '<p>'+autolink(esc(b)).replace(/\n/g,'<br>')+'</p>';
+    }).join('');
+
+    function render(w){
+      const wTitle=w.waiver_title||'Participation Waiver';
+      const theme=(w.theme||'').trim();
+      document.getElementById('hero-wk').innerHTML =
+        `<span class="wk">Week ${esc(w.week)} · ${esc(w.dates||'')}${theme?` · ${esc(theme)}`:''}</span>`;
+      document.title = wTitle+' — Week '+w.week;
+      const backHref = LOADED_CODE ? `../?code=${encodeURIComponent(LOADED_CODE)}` : '../';
+      const c=document.getElementById('content');
+      c.innerHTML = `
+        <a class="back" href="${backHref}">‹ Back to the family guide</a>
+        ${(w.custom_note||'').trim()?`<div class="note">${esc(w.custom_note)}</div>`:''}
+        <div class="card">
+          <h2>${esc(wTitle)}</h2>
+          ${(w.waiver_intro||'').trim()?fmt(w.waiver_intro):''}
+          <a class="pdf-link" href="${esc(w.waiver_pdf)}" target="_blank" rel="noopener">Open the full waiver (PDF) ↗</a>
+          <iframe class="waiver-frame" src="${esc(w.waiver_pdf)}" title="${esc(wTitle)}" loading="lazy"></iframe>
+          <div class="waiver-sign">
+            <div class="wv-h">Sign the waiver</div>
+            <div id="wv-done" class="note" hidden></div>
+            <div id="wv-form">
+              <label class="wv-check"><input type="checkbox" id="wv-agree"> I acknowledge I have reviewed the document and authorize the team to review allergy and any important medical information provided in enrollment forms.</label>
+              <label class="wv-l">Participant name(s) <span class="req">*</span><span class="wv-hint">Add multiple names if more than one student is joining.</span>
+                <textarea id="wv-participants" rows="2" placeholder="e.g. Jane Smith, John Smith"></textarea></label>
+              <div class="wv-row">
+                <label class="wv-l">Parent / guardian name <span class="req">*</span><input id="wv-parent" autocomplete="name"></label>
+                <label class="wv-l">Parent / guardian email <span class="req">*</span><input id="wv-email" type="email" inputmode="email" autocomplete="email"></label>
+              </div>
+              <div class="wv-row">
+                <label class="wv-l">Parent / guardian phone <span class="req">*</span><input id="wv-phone" type="tel" inputmode="tel" autocomplete="tel"></label>
+                <label class="wv-l">Is the emergency contact the same as the parent/guardian? <span class="req">*</span>
+                  <select id="wv-emsame"><option value="">Select…</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+              </div>
+              <label class="wv-l" id="wv-emdetails-wrap" style="display:none">If different, please share the emergency contact details
+                <textarea id="wv-emdetails" rows="2" placeholder="Name, relationship, phone"></textarea></label>
+              <button class="wv-btn" id="wv-submit">Sign &amp; submit</button>
+              <div class="wv-msg" id="wv-msg"></div>
+            </div>
+          </div>`;
+      document.getElementById('loading').hidden=true;
+      c.hidden=false;
+      wireForm(w);
+    }
+
+    function wireForm(w){
+      const form=document.getElementById('wv-form'); if(!form) return;
+      const doneKey='waiver_signed_w'+w.week;
+      const doneBox=document.getElementById('wv-done');
+      const setMsg=(t,err)=>{ const m=document.getElementById('wv-msg'); if(m){ m.className='wv-msg '+(err?'err':'ok'); m.textContent=t; } };
+      const showSigned=name=>{ if(doneBox){ doneBox.hidden=false; doneBox.innerHTML='✓ Thank you'+(name?', '+esc(name):'')+' — your waiver has been submitted. You can close this page.'; } form.style.display='none'; };
+      try{ const prev=localStorage.getItem(doneKey); if(prev) showSigned(prev); }catch(e){}
+      const emsame=document.getElementById('wv-emsame'), emwrap=document.getElementById('wv-emdetails-wrap');
+      if(emsame&&emwrap) emsame.addEventListener('change',()=>{ emwrap.style.display=emsame.value==='no'?'block':'none'; });
+      const btn=document.getElementById('wv-submit');
+      if(btn) btn.addEventListener('click',async()=>{
+        const v=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+        const agree=document.getElementById('wv-agree').checked;
+        const participants=v('wv-participants'), parent=v('wv-parent'), email=v('wv-email'), phone=v('wv-phone'), emsameV=v('wv-emsame'), emdetails=v('wv-emdetails');
+        if(!agree){ setMsg('Please tick the acknowledgment box to sign.',true); return; }
+        if(!participants||!parent||!email||!phone||!emsameV){ setMsg('Please complete all required fields (*).',true); return; }
+        if(!/.+@.+\..+/.test(email)){ setMsg('Please enter a valid email address.',true); return; }
+        if(emsameV==='no' && !emdetails){ setMsg('Please add the emergency contact details.',true); return; }
+        btn.disabled=true; setMsg('Submitting…',false);
+        let res;
+        try{ res=await sb.from('waiver_signatures').insert({ week:w.week, participant_names:participants, parent_name:parent, parent_email:email, parent_phone:phone, agreed:true, emergency_same: emsameV==='yes', emergency_details: emsameV==='no'?emdetails:null, user_agent: navigator.userAgent }); }
+        catch(e){ res={error:e}; }
+        btn.disabled=false;
+        if(res&&res.error){ setMsg('Could not submit — please try again.',true); return; }
+        try{ localStorage.setItem(doneKey, parent); }catch(e){}
+        showSigned(parent);
+      });
+    }
+
+    let LOADED_CODE='';
+    async function load(code){
+      LOADED_CODE=code||'';
+      let res;
+      try{ res=await sb.functions.invoke('family-guide', { body:{ code: code||'' } }); }
+      catch(e){ document.getElementById('loading').hidden=true; document.getElementById('nowaiver').hidden=false;
+        document.getElementById('nowaiver-msg').textContent='We couldn’t load the waiver right now — please refresh in a moment.'; return; }
+      const payload=res && res.data;
+      const w=payload && payload.ok && payload.week;
+      if(!w || !(w.waiver_pdf||'').trim()){
+        document.getElementById('loading').hidden=true; document.getElementById('nowaiver').hidden=false; return;
+      }
+      render(w);
+    }
+    (function(){
+      const code=new URLSearchParams(location.search).get('code');
+      load(code);
+    })();
+  </script>
+</body>
+</html>

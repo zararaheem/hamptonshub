@@ -5490,6 +5490,14 @@ async function loadWaivers(){
     if(sel){ fillWeekSelect(sel); sel.addEventListener('change', loadWaivers); }
     const rf=document.getElementById('wv-refresh'); if(rf) rf.onclick=loadWaivers;
     const cs=document.getElementById('wv-csv'); if(cs) cs.onclick=wvCsv;
+    // Open on the most recent week that actually has signatures, so the tab
+    // isn't blank when the current week has none yet.
+    if(SUPA && sel){
+      try{ const { data } = await SB.from('waiver_signatures').select('week');
+        const weeks=(data||[]).map(r=>+r.week).filter(n=>!isNaN(n));
+        if(weeks.length) sel.value=String(Math.max(...weeks));
+      }catch(e){}
+    }
   }
   const stats=document.getElementById('wv-stats');
   if(!SUPA){ if(stats) stats.textContent=''; tbl.innerHTML='<tbody><tr><td class="note-row">Connect Supabase to view signed waivers.</td></tr></tbody>'; return; }

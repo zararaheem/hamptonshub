@@ -98,6 +98,10 @@
         `<span class="wk">Week ${esc(w.week)} · ${esc(w.dates||'')}${theme?` · ${esc(theme)}`:''}</span>`;
       document.title = wTitle+' — Week '+w.week;
       const backHref = LOADED_CODE ? `../?code=${encodeURIComponent(LOADED_CODE)}` : '../';
+      // waiver_pdf is stored relative to the guide root (e.g. "assets/..."); this
+      // page lives at /waiver/, so resolve relative paths up one level.
+      const rawPdf=(w.waiver_pdf||'').trim();
+      const pdfUrl=/^(https?:|\/)/.test(rawPdf) ? rawPdf : '../'+rawPdf;
       const c=document.getElementById('content');
       c.innerHTML = `
         <a class="back" href="${backHref}">‹ Back to the family guide</a>
@@ -105,8 +109,8 @@
         <div class="card">
           <h2>${esc(wTitle)}</h2>
           ${(w.waiver_intro||'').trim()?fmt(w.waiver_intro):''}
-          <a class="pdf-link" href="${esc(w.waiver_pdf)}" target="_blank" rel="noopener">Open the full waiver (PDF) ↗</a>
-          <iframe class="waiver-frame" src="${esc(w.waiver_pdf)}" title="${esc(wTitle)}" loading="lazy"></iframe>
+          <a class="pdf-link" href="${esc(pdfUrl)}" target="_blank" rel="noopener">Open the full waiver (PDF) ↗</a>
+          <iframe class="waiver-frame" src="${esc(pdfUrl)}" title="${esc(wTitle)}" loading="lazy"></iframe>
           <div class="waiver-sign">
             <div class="wv-h">Sign the waiver</div>
             <div id="wv-done" class="note" hidden></div>

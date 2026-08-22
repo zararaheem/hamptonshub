@@ -52,6 +52,7 @@
   .wv-btn:disabled{opacity:.6;cursor:default}
   .wv-msg{font-size:14px;margin-top:10px}
   .wv-msg.err{color:#b3402f} .wv-msg.ok{color:var(--teal)}
+  .wv-link{display:inline-block;margin-top:8px;background:none;border:0;padding:0;color:var(--brass);font:inherit;font-weight:600;font-size:14px;text-decoration:underline;cursor:pointer}
   .foot{text-align:center;color:var(--muted);font-size:13px;padding:0 20px 50px}
   .back{display:inline-block;margin-bottom:14px;font-size:14px;text-decoration:none}
   @media(max-width:520px){ .hero h1{font-size:26px} .card{padding:16px 18px} }
@@ -143,7 +144,16 @@
       const doneKey='waiver_signed_w'+w.week;
       const doneBox=document.getElementById('wv-done');
       const setMsg=(t,err)=>{ const m=document.getElementById('wv-msg'); if(m){ m.className='wv-msg '+(err?'err':'ok'); m.textContent=t; } };
-      const showSigned=name=>{ if(doneBox){ doneBox.hidden=false; doneBox.innerHTML='✓ Thank you'+(name?', '+esc(name):'')+' — your waiver has been submitted. You can close this page.'; } form.style.display='none'; };
+      const resetForm=()=>{ ['wv-participants','wv-parent','wv-email','wv-phone','wv-emdetails'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+        const ag=document.getElementById('wv-agree'); if(ag) ag.checked=false;
+        const es=document.getElementById('wv-emsame'); if(es) es.value='';
+        const ew=document.getElementById('wv-emdetails-wrap'); if(ew) ew.style.display='none';
+        setMsg('',false); };
+      const showSigned=name=>{ if(doneBox){ doneBox.hidden=false;
+          doneBox.innerHTML='✓ Thank you'+(name?', '+esc(name):'')+' — your waiver has been submitted. You can close this page.<br><button type="button" id="wv-again" class="wv-link">Sign again / sign for another child</button>'; }
+        form.style.display='none';
+        const again=document.getElementById('wv-again');
+        if(again) again.addEventListener('click',()=>{ try{ localStorage.removeItem(doneKey); }catch(e){} resetForm(); if(doneBox) doneBox.hidden=true; form.style.display=''; document.getElementById('wv-agree').focus(); }); };
       try{ const prev=localStorage.getItem(doneKey); if(prev) showSigned(prev); }catch(e){}
       const emsame=document.getElementById('wv-emsame'), emwrap=document.getElementById('wv-emdetails-wrap');
       if(emsame&&emwrap) emsame.addEventListener('change',()=>{ emwrap.style.display=emsame.value==='no'?'block':'none'; });

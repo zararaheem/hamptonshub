@@ -512,6 +512,9 @@
   /* Real Estate Cup (week 7 · 3 named teams) */
   .re-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   @media(max-width:720px){ .re-board{grid-template-columns:1fr} }
+  .og-board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  @media(max-width:900px){ .og-board{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:520px){ .og-board{grid-template-columns:1fr} }
   .re-panel{border-radius:20px;padding:26px 16px 20px;text-align:center;border:1.5px solid var(--tc,#888);position:relative;overflow:hidden;
     background:linear-gradient(180deg, color-mix(in srgb, var(--tc) 20%, transparent), color-mix(in srgb, var(--tc) 4%, rgba(10,20,40,.25)));
     box-shadow:0 14px 40px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);transition:transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .5s}
@@ -848,6 +851,7 @@
       <div class="nav-label" id="nav-games-label">Camp Games</div>
       <button class="nav-item cat-games" id="nav-scoreboard" data-tab="scoreboard">Tribe Scoreboard<span class="ext">live</span></button>
       <button class="nav-item cat-games" id="nav-realestate" data-tab="realestate">Real Estate Cup<span class="ext">live</span></button>
+      <button class="nav-item cat-games" id="nav-odyssey" data-tab="odyssey">Odyssey Games<span class="ext">live</span></button>
       <div class="nav-label">Rostering</div>
       <a class="nav-item cat-people" href="https://docs.google.com/spreadsheets/d/1mzAw4g7ywqMP8VJvyu-K6fKuxhcRHi_2wPweAncquYM/edit?usp=sharing" target="_blank" rel="noopener">Staff Roster<span class="ext">↗</span></a>
       <button class="nav-item cat-people" data-tab="roster">Student Roster</button>
@@ -1470,6 +1474,49 @@
         </div>
       </div>
       <div id="re-log" style="margin-top:8px"></div>
+    </section>
+
+    <!-- ===== ODYSSEY GAMES (week 9 · 4 teams) ===== -->
+    <section class="view" id="view-odyssey" hidden>
+      <div class="eyebrow" id="og-clock">—</div>
+      <h1 class="page-title">Odyssey Games · <span id="og-week">Week 9</span></h1>
+      <p class="page-lead">Trojan Horse × Olympics · Monday 8/25 — four teams, live running totals. <b>Athena</b>, <b>Apollo</b>, <b>Artemis</b> &amp; <b>Hephaestus</b> update the moment points are awarded.</p>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin:-4px 0 4px">
+        <button class="btn ghost" id="og-fullscreen" title="Fill the whole screen — great for projecting">⛶ Fullscreen</button>
+        <a class="btn ghost" href="odyssey/" target="_blank" rel="noopener" title="Full-screen live board for projecting on a TV/screen">📺 Open live board ↗</a>
+      </div>
+      <div id="og-board" class="og-board"></div>
+
+      <div id="og-summary" class="callout" style="margin-top:16px;display:none"></div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="eyebrow" style="margin-bottom:10px">Award points</div>
+        <input class="cell-input" id="og-award-reason" placeholder="Default reason (optional) — e.g. Relay race, Tug of war. You'll confirm/edit on each tap" style="width:100%;max-width:520px;margin-bottom:14px">
+        <div class="re-award-rows" id="og-award-rows"></div>
+        <div id="og-pending" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(6,12,20,.6);align-items:center;justify-content:center;padding:20px">
+          <div style="background:#0f1d2c;border:1px solid var(--brass);border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55)">
+            <div id="og-pending-label" style="font-weight:800;font-size:18px;margin-bottom:14px"></div>
+            <input class="cell-input" id="og-pending-pts" type="number" inputmode="numeric" placeholder="Points (– to deduct)" style="width:100%;margin-bottom:10px;display:none">
+            <input class="cell-input" id="og-pending-reason" placeholder="Quick reason (optional) — e.g. Won the relay" style="width:100%;margin-bottom:16px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn ghost" id="og-pending-cancel">Cancel</button>
+              <button class="btn" id="og-pending-go">Add points</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px"><span class="gate-msg" id="og-award-msg"></span></div>
+        <p class="lc-desc" style="margin:10px 0 0;color:var(--muted)">Tap a team's button, add a quick reason, then <b>Add points</b>. “Other…” lets you enter any amount (a negative number corrects a mistake). Admins can remove any entry in the feed below.</p>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:26px 0 0;gap:10px;flex-wrap:wrap">
+        <div class="eyebrow" style="margin:0">Points earned · <span id="og-log-count">live</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="og-showall" style="padding:6px 12px;display:none">Show full list</button>
+          <button class="btn ghost" id="og-export" style="padding:6px 12px">Export CSV</button>
+        </div>
+      </div>
+      <div id="og-log" style="margin-top:8px"></div>
     </section>
 
     <!-- ===== ACCESS MANAGEMENT ===== -->
@@ -4081,6 +4128,160 @@ function reInit(){
 }
 async function reRefresh(){ reInit(); await reFetch(); reRender(); reRenderRosters(); reSubscribe(); }
 
+/* =================== ODYSSEY GAMES (week 9 · 4 teams) =================== */
+// Self-contained live scoreboard for the Odyssey Games (Trojan Horse × Olympics,
+// Mon 8/25). Reuses tribe_awards with team keys scoped to week 9, so it never
+// overlaps the Helios/Poseidon or Real Estate Cup boards. Running totals per team.
+const OG_WK=9;
+const OG_TEAMS={
+  athena:{name:'Athena', emoji:'🦉', color:'#6C8CD5'},
+  apollo:{name:'Apollo', emoji:'☀️', color:'#E6A817'},
+  artemis:{name:'Artemis', emoji:'🏹', color:'#2FA98C'},
+  hephaestus:{name:'Hephaestus', emoji:'🔨', color:'#E4572E'},
+};
+const OG_ORDER=['athena','apollo','artemis','hephaestus'];
+let OG_ROWS=[]; let OG_CHAN=null; let OG_SHOWALL=false; let OG_INIT=false;
+async function ogFetch(){
+  if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').eq('week',OG_WK).order('created_at',{ascending:false}); OG_ROWS=(!error&&data)?data.filter(r=>OG_TEAMS[r.tribe]):[]; }
+  else { OG_ROWS=(store.get('tribe_awards')||[]).filter(r=>OG_TEAMS[r.tribe] && (r.week==null||r.week===OG_WK)); }
+}
+function ogTotals(){ const t={}; OG_ORDER.forEach(k=>t[k]=0); OG_ROWS.forEach(r=>{ if(t[r.tribe]!=null) t[r.tribe]+=(+r.points||0); }); return t; }
+function ogRender(){
+  const board=document.getElementById('og-board'); if(!board) return;
+  const t=ogTotals();
+  const max=Math.max(1,...OG_ORDER.map(k=>t[k]));
+  const top=Math.max(...OG_ORDER.map(k=>t[k]));
+  const leaders=OG_ORDER.filter(k=>t[k]===top && top>0);
+  const lead=leaders.length===1?leaders[0]:'';
+  board.innerHTML=OG_ORDER.map(k=>{ const T=OG_TEAMS[k]; const c=T.color; const leading=lead===k;
+    return `<div class="re-panel${leading?' leading':''}" style="--tc:${c}">
+      <div class="re-emblem" style="font-size:34px">${T.emoji}</div>
+      <div class="re-name">${esc(T.name)}</div>
+      <div class="re-score" style="color:${c}">${t[k]}</div>
+      <div class="re-pts">points</div>
+      ${leading?`<div class="re-badge" style="background:${c}">LEADING</div>`:'<div style="height:24px"></div>'}
+      <div class="re-bar"><span style="width:${Math.round(t[k]/max*100)}%;background:${c}"></span></div>
+    </div>`; }).join('');
+  ogRenderSummary(t);
+  ogRenderLog();
+}
+function ogRenderSummary(t){
+  const el=document.getElementById('og-summary'); if(!el) return;
+  if(!OG_ROWS.length){ el.style.display='none'; return; }
+  const sorted=OG_ORDER.slice().sort((a,b)=>t[b]-t[a]);
+  const top=t[sorted[0]], second=t[sorted[1]];
+  const total=OG_ORDER.reduce((s,k)=>s+t[k],0);
+  const leaders=OG_ORDER.filter(k=>t[k]===top);
+  const leadTxt = leaders.length>1 ? `${leaders.map(k=>OG_TEAMS[k].name).join(' & ')} tied at ${top}` : `${OG_TEAMS[sorted[0]].name} leads by ${top-second}`;
+  el.style.display=''; el.innerHTML=`<b>${esc(leadTxt)}</b> · ${total} point${total===1?'':'s'} in play across ${OG_ROWS.length} award${OG_ROWS.length===1?'':'s'}.`;
+}
+function ogRenderLog(){
+  const el=document.getElementById('og-log'); if(!el) return;
+  const cnt=document.getElementById('og-log-count');
+  if(cnt) cnt.textContent = OG_ROWS.length?`${OG_ROWS.length} entr${OG_ROWS.length===1?'y':'ies'} · Week ${OG_WK}`:'live';
+  const toggle=document.getElementById('og-showall');
+  if(toggle){ toggle.style.display=OG_ROWS.length>50?'':'none'; toggle.textContent=OG_SHOWALL?'Show recent':'Show full list'; }
+  if(!OG_ROWS.length){ el.innerHTML=`<div class="callout">No points awarded yet. Use the buttons above to start the Games.</div>`; return; }
+  const admin=isAdmin();
+  const shown=OG_SHOWALL?OG_ROWS:OG_ROWS.slice(0,50);
+  el.innerHTML=shown.map(r=>{ const T=OG_TEAMS[r.tribe]||{name:r.tribe,color:'#8ea4ba'};
+    const when=r.created_at?new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div class="score-logrow">
+      <span class="slr-pts" style="color:${T.color}">${(+r.points>0?'+':'')}${esc(String(r.points))}</span>
+      <span class="slr-tribe" style="color:${T.color}">${reDot(T.color)}${esc(T.name)}</span>
+      <span class="slr-reason">${esc(r.reason||'—')}</span>
+      <span class="slr-meta">${esc(whoShort(r.awarded_by))}${when?` · ${esc(when)}`:''}</span>
+      ${admin?`<button class="slr-rm" data-og-del="${escAttr(r.id)}">remove</button>`:''}
+    </div>`; }).join('') + (!OG_SHOWALL && OG_ROWS.length>50?`<div class="lc-desc" style="margin-top:8px;color:var(--muted)">Showing the latest 50 of ${OG_ROWS.length} — tap <b>Show full list</b>, or <b>Export CSV</b>.</div>`:'');
+  el.querySelectorAll('[data-og-del]').forEach(b=>b.addEventListener('click',()=>ogRemove(b.dataset.ogDel)));
+}
+function ogRenderAwardUI(){
+  const host=document.getElementById('og-award-rows'); if(!host) return;
+  host.innerHTML=OG_ORDER.map(k=>{ const T=OG_TEAMS[k];
+    return `<div class="re-award-row">
+      <span class="re-award-team" style="color:${T.color}">${reDot(T.color)}${esc(T.name)}</span>
+      <div class="re-award-btns" data-team="${k}">
+        <button class="re-award-btn" data-pts="1">+1</button>
+        <button class="re-award-btn" data-pts="3">+3</button>
+        <button class="re-award-btn" data-pts="5">+5</button>
+        <button class="re-award-btn" data-pts="10">+10</button>
+        <button class="re-award-btn deduct" data-pts="-1">−1</button>
+        <button class="re-award-btn" data-pts="other">Other…</button>
+      </div>
+    </div>`; }).join('');
+  host.querySelectorAll('.re-award-btns').forEach(g=>{ const team=g.dataset.team;
+    g.querySelectorAll('.re-award-btn').forEach(b=>b.addEventListener('click',()=>ogOpenPending(team,b.dataset.pts))); });
+}
+let OG_PENDING=null;
+function ogOpenPending(team,ptsRaw){
+  const T=OG_TEAMS[team]; if(!T) return;
+  const other=ptsRaw==='other';
+  OG_PENDING={team, pts: other?null:ptsRaw};
+  const label=document.getElementById('og-pending-label');
+  label.textContent = other ? `${T.name} —` : `${T.name} ${(+ptsRaw>0?'+':'')}${ptsRaw}`;
+  label.style.color=T.color;
+  const ppts=document.getElementById('og-pending-pts'); ppts.style.display=other?'inline-block':'none'; ppts.value='';
+  const preason=document.getElementById('og-pending-reason');
+  preason.value=(document.getElementById('og-award-reason').value||'').trim();
+  document.getElementById('og-pending').style.display='flex';
+  (other?ppts:preason).focus();
+}
+function ogClosePending(){ OG_PENDING=null; const p=document.getElementById('og-pending'); if(p) p.style.display='none'; }
+function ogCommitPending(){
+  if(!OG_PENDING) return;
+  const ppts=document.getElementById('og-pending-pts');
+  const pts=OG_PENDING.pts!=null?OG_PENDING.pts:ppts.value;
+  if(!parseInt(pts,10)){ ppts.focus(); return; }
+  ogAward(OG_PENDING.team, pts, document.getElementById('og-pending-reason').value);
+  const rf=document.getElementById('og-award-reason'); if(rf) rf.value='';
+  ogClosePending();
+}
+async function ogAward(team,pts,reasonArg){
+  pts=parseInt(pts,10); if(!pts || !OG_TEAMS[team]) return;
+  const reason=(reasonArg!==undefined?reasonArg:(document.getElementById('og-award-reason').value||'')).trim();
+  const by=(SESSION&&SESSION.email)||'';
+  const rec={tribe:team, points:pts, reason, awarded_by:by, week:OG_WK};
+  const msg=document.getElementById('og-award-msg');
+  if(SUPA){ const {error}=await SB.from('tribe_awards').insert(rec); if(error){ if(msg){msg.className='gate-msg err';msg.textContent='Could not award — try again.';} return; } }
+  else { rec.id='loc-'+Date.now(); rec.created_at=new Date().toISOString(); const all=(store.get('tribe_awards')||[]); all.unshift(rec); store.set('tribe_awards',all); }
+  if(msg){ msg.className='gate-msg ok'; msg.textContent=`${pts>0?'+':''}${pts} to ${OG_TEAMS[team].name}${reason?` — ${reason}`:''} ✓`; }
+  await ogFetch(); ogRender();
+}
+async function ogRemove(id){
+  if(!confirm('Remove this award from the tally?')) return;
+  if(SUPA){ await SB.from('tribe_awards').delete().eq('id',id); }
+  else { const all=(store.get('tribe_awards')||[]).filter(x=>x.id!==id); store.set('tribe_awards',all); }
+  await ogFetch(); ogRender();
+}
+function ogSubscribe(){
+  if(!SUPA || OG_CHAN) return;
+  OG_CHAN=SB.channel('odyssey-live').on('postgres_changes',{event:'*',schema:'public',table:'tribe_awards'},async()=>{ await ogFetch(); ogRender(); }).subscribe();
+}
+function ogExport(){
+  if(!OG_ROWS.length) return;
+  const cell=v=>{ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const lines=[['When','Team','Points','Reason','Awarded by'].join(',')].concat(
+    OG_ROWS.map(r=>[ r.created_at?new Date(r.created_at).toLocaleString():'', OG_TEAMS[r.tribe]?OG_TEAMS[r.tribe].name:r.tribe, r.points, r.reason||'', r.awarded_by||'' ].map(cell).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`odyssey-games-week${OG_WK}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function ogClockTick(){ const el=document.getElementById('og-clock'); if(!el) return; const d=new Date(); el.textContent=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function ogInit(){
+  if(OG_INIT) return; OG_INIT=true;
+  ogRenderAwardUI();
+  const go=document.getElementById('og-pending-go'); if(go) go.addEventListener('click',ogCommitPending);
+  const cancel=document.getElementById('og-pending-cancel'); if(cancel) cancel.addEventListener('click',ogClosePending);
+  const pbar=document.getElementById('og-pending'); if(pbar) pbar.addEventListener('click',e=>{ if(e.target===pbar) ogClosePending(); });
+  ['og-pending-reason','og-pending-pts'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') ogCommitPending(); if(e.key==='Escape') ogClosePending(); }); });
+  const sa=document.getElementById('og-showall'); if(sa) sa.addEventListener('click',()=>{ OG_SHOWALL=!OG_SHOWALL; ogRenderLog(); });
+  const se=document.getElementById('og-export'); if(se) se.addEventListener('click',ogExport);
+  const fs=document.getElementById('og-fullscreen'); if(fs) fs.addEventListener('click',()=>{ const doc=document,root=doc.documentElement; const isFs=doc.fullscreenElement||doc.webkitFullscreenElement; if(isFs){(doc.exitFullscreen||doc.webkitExitFullscreen||function(){}).call(doc);} else {(root.requestFullscreen||root.webkitRequestFullscreen||function(){}).call(root);} });
+  ogClockTick(); setInterval(ogClockTick,1000);
+  ogRender();
+}
+async function ogRefresh(){ ogInit(); await ogFetch(); ogRender(); ogSubscribe(); }
+
 /* =================== REFERENCES =================== */
 function renderRefs(){
   document.getElementById('refs').innerHTML = CHECKLISTS.map(c=>`
@@ -5757,8 +5958,8 @@ async function fhDelShout(id){
 }
 
 /* =================== TAB NAV =================== */
-const tabs=['dashboard','scoreboard','realestate','attendance','roster','dismissal','medical','visitors','emergency','waivers','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
-const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',waivers:'Waivers',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
+const tabs=['dashboard','scoreboard','realestate','odyssey','attendance','roster','dismissal','medical','visitors','emergency','waivers','tech','supplies','planning','inventory','events','guide','resources','slack','famguide','showcase','reports','access'];
+const TAB_LABELS={dashboard:'Dashboard',scoreboard:'Tribe Scoreboard',realestate:'Real Estate Cup',odyssey:'Odyssey Games',attendance:'Attendance',roster:'Student Roster',dismissal:'Dismissal',visitors:'Visitors & Tours',emergency:'Family Contacts',waivers:'Waivers',tech:'Tech Onboarding',supplies:'Supplies & Packing',events:'Events Team',guide:'Guide Hub',resources:'Resources',slack:'Weekly Slack',famguide:'Family Guide',showcase:'Showcase Reviews',access:'Access'};
 function showTab(t){
   if(!t) return;   // external-link nav items (e.g. Accountability Hub) have no tab
   if((t==='access'||t==='slack') && !document.body.classList.contains('is-admin')) t='dashboard';
@@ -5781,6 +5982,7 @@ function showTab(t){
   if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='realestate' && typeof reRefresh==='function') reRefresh();
+  if(t==='odyssey' && typeof ogRefresh==='function') ogRefresh();
   if(t==='emergency') loadEmergency().then(()=>renderEmergency());
   if(t==='attendance' && SUPA){ Promise.all([refreshStateKey(attKey()), refreshStateKey(permitKey())]).then(renderAtt); }
   if(t==='tech' && SUPA){ refreshStateKey(techKey()).then(renderTech); }

@@ -4140,6 +4140,13 @@ const OG_TEAMS={
   hephaestus:{name:'Hephaestus', emoji:'🔨', color:'#E4572E'},
 };
 const OG_ORDER=['athena','apollo','artemis','hephaestus'];
+// Classical coin-medallion emblems (beaded ring + each god's attribute), stroke inherits team colour.
+const OG_EMBLEMS={
+  athena:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="30"/><circle cx="32" cy="32" r="26.5" stroke-width="1" stroke-dasharray="0.4 3.4"/><path d="M32 20c-6.6 0-10.2 5-10.2 11.6 0 6.6 4.3 11.2 10.2 11.2s10.2-4.6 10.2-11.2C42.2 25 38.6 20 32 20Z"/><path d="M24 22.5 27.4 26.8M40 22.5 36.6 26.8"/><circle cx="27.7" cy="30.2" r="3.3"/><circle cx="36.3" cy="30.2" r="3.3"/><circle cx="27.7" cy="30.2" r="1" fill="currentColor" stroke="none"/><circle cx="36.3" cy="30.2" r="1" fill="currentColor" stroke="none"/><path d="M32 33.2 30.3 35.6 32 36.9 33.7 35.6Z"/><path d="M25.5 38.4c2.1 1.9 3.9 2.6 6.5 2.6s4.4-.7 6.5-2.6"/><path d="M20 44.5c2.4-1.3 4.4-1.2 6 .2M22.8 43.2c-.5-1.3-.2-2.4.8-3.3M24.8 45.1c.2-1.3 1-2.1 2.2-2.5"/></svg>`,
+  apollo:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="30"/><circle cx="32" cy="32" r="26.5" stroke-width="1" stroke-dasharray="0.4 3.4"/><path d="M32 12.5V16M22 15 23.6 18M42 15 40.4 18M15.5 22 18.4 23.8M48.5 22 45.6 23.8"/><path d="M24.5 26C19.5 30 18.7 39 22 47.5"/><path d="M39.5 26c5 4 5.8 13 2.5 21.5"/><path d="M24.2 26.2c3-2.3 9.6-2.3 15.6 0"/><path d="M21.5 47.5H42.5"/><path d="M28 28V46M32 27.4V46.6M36 28V46"/></svg>`,
+  artemis:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="30"/><circle cx="32" cy="32" r="26.5" stroke-width="1" stroke-dasharray="0.4 3.4"/><path d="M25 15C36 23 36 41 25 49"/><path d="M25 15V49"/><path d="M17 32H45"/><path d="M45 32 40 28.5M45 32 40 35.5"/><path d="M17 32 21 29M17 32 21 35"/><path d="M43 16c-3.4 1-5.8 4.2-5.8 8 0 3.8 2.4 7 5.8 8-1.2.4-2.5.6-3.8.6-4.7 0-8.6-3.9-8.6-8.6S36.3 15.4 41 15.4c.7 0 1.4.1 2 .3Z" stroke-width="1.2"/></svg>`,
+  hephaestus:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="30"/><circle cx="32" cy="32" r="26.5" stroke-width="1" stroke-dasharray="0.4 3.4"/><path d="M18.5 18.5 25.5 25.5" stroke-width="4.4"/><path d="M24 24 40 40" stroke-width="1.8"/><path d="M45.5 19 41 23.5M45.5 24 41 23.5"/><path d="M42.5 22 26 39"/><path d="M39 22.5 24.5 37"/><path d="M27 46c-1.5-2 .5-3.5-.5-5.5 2 1 3 3 2.4 5M32 47c-2-2.4.6-4.6-.6-7.2 2.6 1.4 3.8 4.2 2.8 7M37 46c-1.4-1.9.5-3.4-.5-5.3 1.9 1 2.9 2.9 2.3 4.9"/></svg>`,
+};
 let OG_ROWS=[]; let OG_CHAN=null; let OG_SHOWALL=false; let OG_INIT=false;
 async function ogFetch(){
   if(SUPA){ const {data,error}=await SB.from('tribe_awards').select('*').eq('week',OG_WK).order('created_at',{ascending:false}); OG_ROWS=(!error&&data)?data.filter(r=>OG_TEAMS[r.tribe]):[]; }
@@ -4155,7 +4162,7 @@ function ogRender(){
   const lead=leaders.length===1?leaders[0]:'';
   board.innerHTML=OG_ORDER.map(k=>{ const T=OG_TEAMS[k]; const c=T.color; const leading=lead===k;
     return `<div class="re-panel${leading?' leading':''}" style="--tc:${c}">
-      <div class="re-emblem" style="font-size:34px">${T.emoji}</div>
+      <div class="re-emblem">${OG_EMBLEMS[k]||''}</div>
       <div class="re-name">${esc(T.name)}</div>
       <div class="re-score" style="color:${c}">${t[k]}</div>
       <div class="re-pts">points</div>

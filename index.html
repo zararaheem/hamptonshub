@@ -3553,18 +3553,24 @@ function dqBusList(dates){
   const studs=studentsForWeek(wk).filter(s=>s.bus_rider);
   if(!studs.length){ alert('No bus riders on the Week '+wk+' roster.'); return; }
   const days=(Array.isArray(dates)&&dates.length)?dates:[ (document.getElementById('dq-date')||{}).value||todayISO() ];
-  const g={A:[],B:[],U:[]};
-  studs.forEach(s=>{ const r=(s.bus_route||'').trim().toUpperCase(); (r==='A'?g.A:r==='B'?g.B:g.U).push(s); });
+  const groups={};
+  studs.forEach(s=>{ const r=(s.bus_route||'').trim(); (groups[r]=groups[r]||[]).push(s); });
+  const PREF=['South','Northwest','Northeast','A','B'];
+  const routeKeys=Object.keys(groups).filter(k=>k).sort((a,b)=>{ const ia=PREF.indexOf(a),ib=PREF.indexOf(b); if(ia<0&&ib<0) return a.localeCompare(b); if(ia<0) return 1; if(ib<0) return -1; return ia-ib; });
+  const unassigned=groups['']||[];
+  const routeLabel=k=>/^[A-Za-z]$/.test(k)?('Route '+k):k;
   const nameOf=s=>((s.preferred||s.first||'')+' '+(s.last||'')).trim();
   const byName=(a,b)=>(a.last||'').localeCompare(b.last||'')||(a.first||'').localeCompare(b.first||'');
   const dayLabel=iso=>{ const d=new Date(iso+'T12:00:00'); return isNaN(d)?iso:d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'}); };
   const rows=arr=>arr.slice().sort(byName).map((s,i)=>`<tr><td class="n">${i+1}</td><td>${esc(nameOf(s))}</td><td class="c">${esc(s.grade||'')}</td><td class="chk">&#9744;</td><td class="chk">&#9744;</td><td></td></tr>`).join('');
   const section=(title,arr)=>arr.length?`<h2>${esc(title)} <span class="ct">${arr.length} riders</span></h2>
     <table><thead><tr><th class="n">#</th><th>Student</th><th class="c">Gr</th><th class="chk">AM</th><th class="chk">PM</th><th>Notes</th></tr></thead><tbody>${rows(arr)}</tbody></table>`:'';
+  const countStr=routeKeys.map(k=>`${routeLabel(k)}: ${groups[k].length}`).concat(unassigned.length?[`Unassigned: ${unassigned.length}`]:[]).join(' · ');
   const sheet=(iso,first)=>`<section class="day"${first?'':' style="page-break-before:always"'}>
     <h1>Bus Riders — Daily Check-off · Week ${esc(wk)}</h1>
-    <div class="sub"><b>${esc(dayLabel(iso))}</b> &nbsp;·&nbsp; ${studs.length} riders &nbsp;·&nbsp; Route A: ${g.A.length} · Route B: ${g.B.length}${g.U.length?` · Unassigned: ${g.U.length}`:''} &nbsp;·&nbsp; <b>AM</b> = morning pickup, <b>PM</b> = afternoon drop-off</div>
-    ${section('Route A', g.A)}${section('Route B', g.B)}${section('No route assigned', g.U)}
+    <div class="sub"><b>${esc(dayLabel(iso))}</b> &nbsp;·&nbsp; ${studs.length} riders &nbsp;·&nbsp; ${esc(countStr)} &nbsp;·&nbsp; <b>AM</b> = morning pickup, <b>PM</b> = afternoon drop-off</div>
+    ${routeKeys.map(k=>section(routeLabel(k), groups[k])).join('')}
+    ${section('No route assigned', unassigned)}
   </section>`;
   const html=`<!doctype html><html><head><meta charset="utf-8"><title>Bus check-off — Week ${esc(wk)}${days.length>1?' (full week)':''}</title>
   <style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1f2d3a;margin:24px}

@@ -2026,12 +2026,19 @@ function seedLocalRoster(){
 }
 async function hydrateRoster(){
   if(SUPA){
-    const { data, error } = await SB.from('students')
-      .select('id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,bus_route,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,swag_notes,tribe,og_team,withdrawn,sort_order')
-      .order('week').order('sort_order');
+    const cols='id,week,first,last,preferred,grade,laptop_assigned,laptop_ready,allergies,meds,notes,media_consent,dismissal,self_dismiss,bus_rider,bus_route,shirt_size,birthday,immunizations,consent_treat,doctor_name,doctor_phone,hospital,medical_conditions,registration_url,forms_status,swag_received,swag_notes,tribe,og_team,withdrawn,sort_order';
     ROSTER_DATA = {};
-    if(!error && data){ data.forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); }); }
-    else if(error){ console.warn('roster load failed:', error); }
+    // Page through all rows — a single request is capped (~1000), which would
+    // silently drop the latest weeks once enrollment across weeks exceeds it.
+    const PAGE=1000; let from=0;
+    while(true){
+      const { data, error } = await SB.from('students').select(cols)
+        .order('week').order('sort_order').range(from, from+PAGE-1);
+      if(error){ console.warn('roster load failed:', error); break; }
+      (data||[]).forEach(r=>{ (ROSTER_DATA[r.week]=ROSTER_DATA[r.week]||[]).push(r); });
+      if(!data || data.length<PAGE) break;
+      from+=PAGE;
+    }
   } else {
     ROSTER_DATA = store.get(rosterLocalKey()) || seedLocalRoster();
   }

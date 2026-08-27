@@ -132,7 +132,8 @@
     const board=document.getElementById('board');
     const max=Math.max(1,...ORDER.map(k=>totals[k]||0));
     const top=Math.max(...ORDER.map(k=>totals[k]||0));
-    const lead = ORDER.filter(k=>(totals[k]||0)===top && top>0).length===1 ? ORDER.find(k=>(totals[k]||0)===top) : '';
+    // Every team sharing the top score is a leader (so a tie for 1st highlights both).
+    const isLeader = k => top>0 && (totals[k]||0)===top;
     // Sorted high→low; ORDER index breaks ties so positions stay stable.
     const ranked=ORDER.slice().sort((a,b)=>(totals[b]||0)-(totals[a]||0) || ORDER.indexOf(a)-ORDER.indexOf(b));
     if(!board.children.length){
@@ -147,7 +148,7 @@
     ranked.forEach((k,slot)=>{
       const row=document.getElementById('p-'+k);
       row.style.top=(slot*(ROWH+GAP))+'px';
-      row.classList.toggle('leader', lead===k);
+      row.classList.toggle('leader', isLeader(k));
       // dense rank — tied teams share a number and the next team gets the very
       // next number (e.g. 1, 2, 2, 3); blank until someone scores.
       const rnum=1+new Set(ORDER.filter(j=>(totals[j]||0)>(totals[k]||0)).map(j=>totals[j]||0)).size;

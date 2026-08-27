@@ -181,7 +181,7 @@
 
   async function loadRoster(){
     try{
-      const res=await fetch(REST_ROSTER+'&_='+Date.now(),{cache:'no-store',headers:{'apikey':ANON,'Authorization':'Bearer '+ANON}});
+      const res=await fetch(REST_ROSTER,{cache:'no-store',headers:{'apikey':ANON,'Authorization':'Bearer '+ANON}});
       const rows=await res.json();
       if(Array.isArray(rows)){ const g={}; ORDER.forEach(k=>g[k]=[]);
         rows.forEach(r=>{ if(g[r.og_team]) g[r.og_team].push(r.name); }); ROSTER=g; }
@@ -190,7 +190,7 @@
   async function tick(){
     try{
       if(!ROSTER) await loadRoster();
-      const res=await fetch(REST+'&_='+Date.now(),{cache:'no-store',headers:{'apikey':ANON,'Authorization':'Bearer '+ANON}});
+      const res=await fetch(REST,{cache:'no-store',headers:{'apikey':ANON,'Authorization':'Bearer '+ANON}});
       const rows=await res.json();
       if(Array.isArray(rows)){
         const totals={}; ORDER.forEach(k=>totals[k]=0);

@@ -1761,7 +1761,7 @@ const WEEKS = [
   {n:6, theme:"Shadow & Screen",       range:"Aug 3 – Aug 7",  start:"2026-08-03", end:"2026-08-07", kids:7,  flag:""},
   {n:7, theme:"Serhant Real Estate",   range:"Aug 10 – Aug 14",start:"2026-08-10", end:"2026-08-14", kids:11, flag:"Serhant brokerage"},
   {n:8, theme:"Songwriting & Concert", range:"Aug 17 – Aug 21",start:"2026-08-17", end:"2026-08-21", kids:20, flag:"Songwriter TBD"},
-  {n:9, theme:"Maker's Workshop",      range:"Aug 24 – Aug 28",start:"2026-08-24", end:"2026-08-28", kids:37, flag:""},
+  {n:9, theme:"The Trojan Horse Build", range:"Aug 24 – Aug 28",start:"2026-08-24", end:"2026-08-28", kids:67, flag:""},
 ];
 const guidesNeeded = k => Math.ceil(k/6);
 
@@ -6073,7 +6073,7 @@ function showTab(t){
   if(t==='planning' && typeof renderPlanning==='function'){ if(SUPA) hydrateRoster().then(renderPlanning); else renderPlanning(); }
   if(t==='inventory' && typeof renderInventory==='function'){ if(SUPA) invLoad().then(renderInventory); else renderInventory(); }
   if(t==='reports' && typeof renderReports==='function'){ if(SUPA) hydrateRoster().then(repLoad).then(renderReports); else renderReports(); }
-  if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA) refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`).then(renderWeekSummary); else renderWeekSummary(); }
+  if(t==='dashboard' && typeof renderWeekSummary==='function'){ if(SUPA){ (ROSTER_DATA[WEEKS[NOW].n]&&ROSTER_DATA[WEEKS[NOW].n].length?Promise.resolve():hydrateRoster()).then(()=>refreshStateKey(`att:w${WEEKS[NOW].n}:${todayISO()}`)).then(renderWeekSummary); } else renderWeekSummary(); }
   if(t==='scoreboard' && typeof refreshScore==='function') refreshScore();
   if(t==='realestate' && typeof reRefresh==='function') reRefresh();
   if(t==='odyssey' && typeof ogRefresh==='function') ogRefresh();

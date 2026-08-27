@@ -38,8 +38,8 @@
   .lb-row{position:absolute;left:0;right:0;top:0;height:96px;display:flex;align-items:center;gap:20px;padding:0 26px;
     background:linear-gradient(90deg, color-mix(in srgb,var(--tc) 20%, var(--panel)), var(--panel) 72%);
     border:1px solid color-mix(in srgb,var(--tc) 34%, var(--hair));border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.30);
-    transition:top .8s cubic-bezier(.2,.85,.25,1), box-shadow .6s, border-color .6s}
-  .lb-row.leader{border-color:color-mix(in srgb,var(--tc) 72%,var(--hair));box-shadow:0 18px 52px color-mix(in srgb,var(--tc) 42%,transparent)}
+    transform-origin:center;transition:top .8s cubic-bezier(.2,.85,.25,1), transform .6s cubic-bezier(.2,.85,.25,1), box-shadow .6s, border-color .6s}
+  .lb-row.leader{transform:scale(1.045);z-index:2;border-color:color-mix(in srgb,var(--tc) 72%,var(--hair));box-shadow:0 22px 58px color-mix(in srgb,var(--tc) 46%,transparent)}
   .lb-rank{font-family:var(--display);font-weight:300;font-size:34px;color:var(--tc);width:40px;text-align:center;flex:none;font-variant-numeric:tabular-nums}
   .lb-emblem{width:56px;height:56px;color:var(--tc);flex:none}
   .lb-emblem svg{width:100%;height:100%;display:block;filter:drop-shadow(0 3px 8px color-mix(in srgb,var(--tc) 30%,transparent))}
@@ -148,8 +148,9 @@
       const row=document.getElementById('p-'+k);
       row.style.top=(slot*(ROWH+GAP))+'px';
       row.classList.toggle('leader', lead===k);
-      // competition rank — tied teams share a number; blank until someone scores.
-      const rnum=1+ORDER.filter(j=>(totals[j]||0)>(totals[k]||0)).length;
+      // dense rank — tied teams share a number and the next team gets the very
+      // next number (e.g. 1, 2, 2, 3); blank until someone scores.
+      const rnum=1+new Set(ORDER.filter(j=>(totals[j]||0)>(totals[k]||0)).map(j=>totals[j]||0)).size;
       document.getElementById('rk-'+k).textContent = top>0 ? rnum : '';
       const v=totals[k]||0; const s=document.getElementById('s-'+k);
       if(last[k]!==undefined && v!==last[k]){ s.classList.remove('bump'); void s.offsetWidth; s.classList.add('bump'); }

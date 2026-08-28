@@ -47,7 +47,6 @@
   .sg-hint{display:block;font-weight:400;font-size:12.5px;color:var(--muted);margin-top:2px}
   .req{color:#c0392b}
   .sg-sub{font-family:var(--display);font-weight:600;font-size:16px;color:var(--navy);margin:20px 0 2px}
-  #sg-minor-block{display:none}
   .sg-btn{margin-top:18px;padding:12px 22px;border:0;border-radius:10px;background:var(--brass);color:#fff;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
   .sg-btn:disabled{opacity:.6;cursor:default}
   .sg-msg{font-size:14px;margin-top:10px}
@@ -89,31 +88,19 @@
         <div id="sg-form">
           <label class="sg-check"><input type="checkbox" id="sg-agree"> <span>I acknowledge that I have read this Release prior to signing it and that I understand its contents. <span class="req">*</span></span></label>
 
-          <label class="sg-l" style="max-width:220px">Date <span class="req">*</span><input id="sg-date" type="date"></label>
-
-          <div class="sg-sub">Participant</div>
-          <div class="sg-row">
-            <label class="sg-l">Name (please print) <span class="req">*</span><input id="sg-name" autocomplete="name"></label>
-            <label class="sg-l">Signature <span class="req">*</span><span class="sg-hint">Type your full name to sign.</span><input id="sg-sig" class="sig" autocomplete="off"></label>
-          </div>
-          <div class="sg-row">
-            <label class="sg-l">Email address <span class="req">*</span><input id="sg-email" type="email" inputmode="email" autocomplete="email"></label>
-            <label class="sg-l">Telephone number<input id="sg-phone" type="tel" inputmode="tel" autocomplete="tel"></label>
-          </div>
+          <label class="sg-l">Participant name (please print) <span class="req">*</span><span class="sg-hint">The person appearing in the interview / film.</span><input id="sg-name" autocomplete="name"></label>
 
           <label class="sg-l" style="max-width:320px">Is the participant a minor (under 18)? <span class="req">*</span>
             <select id="sg-minor"><option value="">Select…</option><option value="yes">Yes</option><option value="no">No</option></select></label>
 
-          <div id="sg-minor-block">
-            <div class="sg-sub">Parent / Legal Guardian</div>
-            <div class="sg-row">
-              <label class="sg-l">Name (please print) <span class="req">*</span><input id="sg-gname" autocomplete="name"></label>
-              <label class="sg-l">Signature <span class="req">*</span><span class="sg-hint">Type full name to sign.</span><input id="sg-gsig" class="sig" autocomplete="off"></label>
-            </div>
-            <div class="sg-row">
-              <label class="sg-l">Email address <span class="req">*</span><input id="sg-gemail" type="email" inputmode="email" autocomplete="email"></label>
-              <label class="sg-l">Telephone number<input id="sg-gphone" type="tel" inputmode="tel" autocomplete="tel"></label>
-            </div>
+          <div class="sg-sub" id="sg-signer-h">Signed by</div>
+          <div class="sg-row">
+            <label class="sg-l">Signature <span class="req">*</span><span class="sg-hint">Type full name to sign.</span><input id="sg-sig" class="sig" autocomplete="off"></label>
+            <label class="sg-l">Email address <span class="req">*</span><input id="sg-email" type="email" inputmode="email" autocomplete="email"></label>
+          </div>
+          <div class="sg-row">
+            <label class="sg-l">Telephone number<input id="sg-phone" type="tel" inputmode="tel" autocomplete="tel"></label>
+            <label class="sg-l" style="max-width:220px">Date <span class="req">*</span><input id="sg-date" type="date"></label>
           </div>
 
           <button class="sg-btn" id="sg-submit">Sign &amp; submit</button>
@@ -141,13 +128,22 @@
 
     const form=document.getElementById('sg-form');
     const doneBox=document.getElementById('sg-done');
-    const minorSel=document.getElementById('sg-minor'), minorBlock=document.getElementById('sg-minor-block');
-    minorSel.addEventListener('change',()=>{ minorBlock.style.display = minorSel.value==='yes' ? 'block' : 'none'; });
+    const minorSel=document.getElementById('sg-minor'), signerH=document.getElementById('sg-signer-h');
+    // The signature/email/phone belong to whoever signs: the parent/guardian for a
+    // minor, otherwise the participant. Relabel the section to match the answer.
+    function updateSignerLabel(){
+      signerH.textContent = minorSel.value==='yes' ? 'Signed by parent / legal guardian'
+                          : minorSel.value==='no'  ? 'Signed by participant'
+                          : 'Signed by';
+    }
+    minorSel.addEventListener('change', updateSignerLabel);
 
     function resetForm(){
-      ['sg-name','sg-sig','sg-email','sg-phone','sg-gname','sg-gsig','sg-gemail','sg-gphone'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      ['sg-name','sg-sig','sg-email','sg-phone'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
       document.getElementById('sg-agree').checked=false;
-      minorSel.value=''; minorBlock.style.display='none';
+      minorSel.value=''; updateSignerLabel();
+      const d=new Date(), p=n=>String(n).padStart(2,'0');
+      const dt=document.getElementById('sg-date'); if(dt) dt.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
       setMsg('',false);
     }
     function showSigned(name){
@@ -161,40 +157,36 @@
 
     document.getElementById('sg-submit').addEventListener('click',async()=>{
       const agree=document.getElementById('sg-agree').checked;
-      const date=v('sg-date'), name=v('sg-name'), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
-      const minor=v('sg-minor');
-      const gname=v('sg-gname'), gsig=v('sg-gsig'), gemail=v('sg-gemail'), gphone=v('sg-gphone');
+      const date=v('sg-date'), name=v('sg-name'), minor=v('sg-minor'), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
       if(!agree){ setMsg('Please tick the acknowledgment box to sign.',true); return; }
-      if(!date || !name || !sig || !email || !minor){ setMsg('Please complete all required fields (*).',true); return; }
+      if(!name || !minor || !sig || !email || !date){ setMsg('Please complete all required fields (*).',true); return; }
       if(!/.+@.+\..+/.test(email)){ setMsg('Please enter a valid email address.',true); return; }
       const isMinor = minor==='yes';
-      if(isMinor && (!gname || !gsig || !gemail)){ setMsg('For a minor, the parent/guardian name, signature and email are required.',true); return; }
-      if(isMinor && !/.+@.+\..+/.test(gemail)){ setMsg('Please enter a valid parent/guardian email.',true); return; }
 
       const btn=document.getElementById('sg-submit');
       btn.disabled=true; setMsg('Submitting…',false);
+      // For a minor the signer is the parent/guardian; otherwise the participant
+      // signs for themselves. Store the signature fields under the matching role.
       let res;
       try{
         res=await sb.from('media_release_signatures').insert({
           release_date: date,
           participant_name: name,
-          participant_signature: sig,
-          participant_email: email,
-          participant_phone: phone || null,
           is_minor: isMinor,
-          guardian_name: isMinor ? gname : null,
-          guardian_signature: isMinor ? gsig : null,
-          guardian_email: isMinor ? gemail : null,
-          guardian_phone: isMinor ? (gphone || null) : null,
+          participant_signature: isMinor ? null : sig,
+          participant_email: isMinor ? null : email,
+          participant_phone: isMinor ? null : (phone || null),
+          guardian_signature: isMinor ? sig : null,
+          guardian_email: isMinor ? email : null,
+          guardian_phone: isMinor ? (phone || null) : null,
           agreed: true,
           user_agent: navigator.userAgent
         });
       }catch(e){ res={error:e}; }
       btn.disabled=false;
       if(res && res.error){ setMsg('Could not submit — please try again.',true); return; }
-      const who = isMinor ? gname : name;
-      try{ localStorage.setItem(DONE_KEY, who); }catch(e){}
-      showSigned(who);
+      try{ localStorage.setItem(DONE_KEY, name); }catch(e){}
+      showSigned(name);
     });
   </script>
 </body>

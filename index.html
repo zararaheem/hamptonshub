@@ -5880,7 +5880,7 @@ function renderReleases(){
     <td>${s.email?`<a href="mailto:${escAttr(s.email)}">${esc(s.email)}</a>`:''}</td>
     <td style="white-space:nowrap">${esc(s.phone||'')}</td>
     <td style="white-space:nowrap">${esc(r.release_date||'')}</td>
-    <td>${r.agreed?'✓ Yes':'<span style="color:var(--coral)">✗ No</span>'}</td>
+    <td>${!filmOk?'<span style="color:var(--muted)">— (opt-out)</span>':(r.agreed?'✓ Yes':'<span style="color:var(--coral)">✗ No</span>')}</td>
   </tr>`; }).join('') : `<tr><td colspan="10" class="note-row">No documentary releases signed yet.</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
 }

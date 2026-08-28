@@ -47,6 +47,10 @@
   .sg-hint{display:block;font-weight:400;font-size:12.5px;color:var(--muted);margin-top:2px}
   .req{color:#c0392b}
   .sg-sub{font-family:var(--display);font-weight:600;font-size:16px;color:var(--navy);margin:20px 0 2px}
+  .sg-radio{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:#33414e;line-height:1.5;margin:8px 0;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:#fffdf9;cursor:pointer}
+  .sg-radio input{margin-top:2px;flex:none;width:17px;height:17px}
+  .sg-radio:has(input:checked){border-color:var(--teal-bright);background:#f2faf8}
+  .sg-optout{background:#fcefcf;border:1px solid #e6c375;border-left:4px solid #c8924a;border-radius:10px;padding:10px 14px;font-size:14px;line-height:1.5;color:#4a3410;margin:2px 0 4px}
   .sg-btn{margin-top:18px;padding:12px 22px;border:0;border-radius:10px;background:var(--brass);color:#fff;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
   .sg-btn:disabled{opacity:.6;cursor:default}
   .sg-msg{font-size:14px;margin-top:10px}
@@ -94,6 +98,11 @@
 
           <label class="sg-l" style="max-width:320px">Is the participant a minor (under 18)? <span class="req">*</span>
             <select id="sg-minor"><option value="">Select…</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+
+          <div class="sg-sub">Filming permission <span class="req">*</span></div>
+          <label class="sg-radio"><input type="radio" name="sg-consent" value="yes"> <span>Yes — I grant permission for my child to appear in the documentary, as described in the release above.</span></label>
+          <label class="sg-radio"><input type="radio" name="sg-consent" value="no"> <span>No — we do <strong>not</strong> want our student filmed.</span></label>
+          <div class="sg-optout" id="sg-optout-note" hidden>Thank you — we’ll record this so the film team excludes your child. Please still sign below to confirm your request.</div>
 
           <div class="sg-sub" id="sg-signer-h">Signed by</div>
           <div class="sg-row">
@@ -153,6 +162,12 @@
     document.getElementById('sg-addname').addEventListener('click', addNameField);
     const collectNames=()=>Array.from(document.querySelectorAll('.sg-name')).map(i=>i.value.trim()).filter(Boolean);
 
+    // Filming permission — show the opt-out note when "No" is chosen.
+    const consentInputs=()=>Array.from(document.querySelectorAll('input[name="sg-consent"]'));
+    const consentVal=()=>{ const c=consentInputs().find(i=>i.checked); return c?c.value:''; };
+    const optoutNote=document.getElementById('sg-optout-note');
+    consentInputs().forEach(i=>i.addEventListener('change',()=>{ if(optoutNote) optoutNote.hidden = consentVal()!=='no'; }));
+
     function resetForm(){
       // Drop any extra child rows, keeping the first.
       const extra=namesWrap.querySelectorAll('label.sg-l'); extra.forEach((l,i)=>{ if(i>0) l.remove(); });
@@ -160,13 +175,17 @@
       ['sg-sig','sg-email','sg-phone'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
       document.getElementById('sg-agree').checked=false;
       minorSel.value=''; updateSignerLabel();
+      consentInputs().forEach(i=>i.checked=false); if(optoutNote) optoutNote.hidden=true;
       const d=new Date(), p=n=>String(n).padStart(2,'0');
       const dt=document.getElementById('sg-date'); if(dt) dt.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
       setMsg('',false);
     }
-    function showSigned(name){
+    function showSigned(name, optOut){
       doneBox.hidden=false;
-      doneBox.innerHTML='✓ Thank you'+(name?', '+esc(name):'')+' — your release has been submitted. You can close this page.<br><button type="button" id="sg-again" class="sg-link">Sign again / sign for another person</button>';
+      const msg = optOut
+        ? '✓ Thank you'+(name?', '+esc(name):'')+' — we’ve recorded that your child should <strong>not</strong> be filmed, and the team will exclude them. You can close this page.'
+        : '✓ Thank you'+(name?', '+esc(name):'')+' — your release has been submitted. You can close this page.';
+      doneBox.innerHTML=msg+'<br><button type="button" id="sg-again" class="sg-link">Sign again / sign for another person</button>';
       form.style.display='none';
       const again=document.getElementById('sg-again');
       if(again) again.addEventListener('click',()=>{ try{ localStorage.removeItem(DONE_KEY); }catch(e){} resetForm(); doneBox.hidden=true; form.style.display=''; document.getElementById('sg-agree').focus(); });
@@ -176,11 +195,19 @@
     document.getElementById('sg-submit').addEventListener('click',async()=>{
       const agree=document.getElementById('sg-agree').checked;
       const names=collectNames(), name=names.join(', ');
-      const date=v('sg-date'), minor=v('sg-minor'), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
+      const date=v('sg-date'), minor=v('sg-minor'), consent=consentVal(), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
       if(!agree){ setMsg('Please tick the acknowledgment box to sign.',true); return; }
-      if(!names.length || !minor || !sig || !email || !date){ setMsg('Please complete all required fields (*).',true); return; }
+      if(!names.length || !minor || !consent || !sig || !email || !date){ setMsg('Please complete all required fields (*), including the filming permission choice.',true); return; }
       if(!/.+@.+\..+/.test(email)){ setMsg('Please enter a valid email address.',true); return; }
-      const isMinor = minor==='yes';
+      const isMinor = minor==='yes', filmingConsent = consent==='yes';
+
+      // Opting out is a deliberate choice — confirm before recording it.
+      if(!filmingConsent){
+        const who = names.length>1 ? 'your children' : (names[0]||'your child');
+        if(!window.confirm('Are you sure? You are indicating that '+who+' should NOT be filmed for the documentary. We will record this and the film team will exclude '+(names.length>1?'them':'your child')+'.')){
+          setMsg('No problem — your choice was not submitted. You can change the filming option above.',false); return;
+        }
+      }
 
       const btn=document.getElementById('sg-submit');
       btn.disabled=true; setMsg('Submitting…',false);
@@ -192,6 +219,7 @@
           release_date: date,
           participant_name: name,
           is_minor: isMinor,
+          filming_consent: filmingConsent,
           participant_signature: isMinor ? null : sig,
           participant_email: isMinor ? null : email,
           participant_phone: isMinor ? null : (phone || null),
@@ -205,7 +233,7 @@
       btn.disabled=false;
       if(res && res.error){ setMsg('Could not submit — please try again.',true); return; }
       try{ localStorage.setItem(DONE_KEY, names[0]); }catch(e){}
-      showSigned(names[0]);
+      showSigned(names[0], !filmingConsent);
     });
   </script>
 </body>

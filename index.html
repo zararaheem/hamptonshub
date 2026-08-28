@@ -5869,10 +5869,11 @@ function renderReleases(){
   const tbl=document.getElementById('dr-table'); if(!tbl) return;
   const stats=document.getElementById('dr-stats'); const rows=DR_ROWS;
   if(stats) stats.textContent = rows.length ? `${rows.length} signature${rows.length===1?'':'s'}` : 'No signatures yet';
-  const head=`<thead><tr><th>Signed</th><th>Participant(s)</th><th>Minor?</th><th>Signed by</th><th>Signature</th><th>Email</th><th>Phone</th><th>Form date</th><th title="Every submission confirms the acknowledgment before it can be sent">Acknowledged</th></tr></thead>`;
-  const body = rows.length ? rows.map(r=>{ const s=drSigner(r); return `<tr>
+  const head=`<thead><tr><th>Signed</th><th>Participant(s)</th><th>Filming</th><th>Minor?</th><th>Signed by</th><th>Signature</th><th>Email</th><th>Phone</th><th>Form date</th><th title="Every submission confirms the acknowledgment before it can be sent">Acknowledged</th></tr></thead>`;
+  const body = rows.length ? rows.map(r=>{ const s=drSigner(r); const filmOk=r.filming_consent!==false; return `<tr>
     <td style="white-space:nowrap">${esc(wvDateTime(r.signed_at))}</td>
     <td>${esc(r.participant_name||'')}</td>
+    <td style="white-space:nowrap">${filmOk?'✓ Consented':'<strong style="color:var(--coral)">✗ Do NOT film</strong>'}</td>
     <td>${r.is_minor?'Yes':'No'}</td>
     <td>${esc(s.role)}</td>
     <td>${esc(s.sig||'')}</td>
@@ -5880,12 +5881,12 @@ function renderReleases(){
     <td style="white-space:nowrap">${esc(s.phone||'')}</td>
     <td style="white-space:nowrap">${esc(r.release_date||'')}</td>
     <td>${r.agreed?'✓ Yes':'<span style="color:var(--coral)">✗ No</span>'}</td>
-  </tr>`; }).join('') : `<tr><td colspan="9" class="note-row">No documentary releases signed yet.</td></tr>`;
+  </tr>`; }).join('') : `<tr><td colspan="10" class="note-row">No documentary releases signed yet.</td></tr>`;
   tbl.innerHTML = head+`<tbody>${body}</tbody>`;
 }
 function drCsv(){
-  const rows=[["Signed at","Participant(s)","Minor","Signed by","Signature","Email","Phone","Form date","Acknowledged"]];
-  DR_ROWS.forEach(r=>{ const s=drSigner(r); rows.push([r.signed_at||'', r.participant_name||'', r.is_minor?'Yes':'No', s.role, s.sig||'', s.email||'', s.phone||'', r.release_date||'', r.agreed?'Yes':'No']); });
+  const rows=[["Signed at","Participant(s)","Filming","Minor","Signed by","Signature","Email","Phone","Form date","Acknowledged"]];
+  DR_ROWS.forEach(r=>{ const s=drSigner(r); rows.push([r.signed_at||'', r.participant_name||'', r.filming_consent!==false?'Consented':'Do NOT film', r.is_minor?'Yes':'No', s.role, s.sig||'', s.email||'', s.phone||'', r.release_date||'', r.agreed?'Yes':'No']); });
   csvDownload('documentary-releases.csv', rows);
 }
 // Toggle between the Fluo waiver and the Documentary release inside the tab.

@@ -66,7 +66,6 @@
 
   <main class="wrap">
     <a class="back" href="../">‹ Back to the family guide</a>
-    <div class="note">This release lets the filmmakers include an interview and likeness in the documentary. If the participant is under 18, a parent or legal guardian must sign. Please read the full release below before signing.</div>
 
     <div class="card">
       <h2>Release</h2>
@@ -88,7 +87,10 @@
         <div id="sg-form">
           <label class="sg-check"><input type="checkbox" id="sg-agree"> <span>I acknowledge that I have read this Release prior to signing it and that I understand its contents. <span class="req">*</span></span></label>
 
-          <label class="sg-l">Participant name (please print) <span class="req">*</span><span class="sg-hint">The person appearing in the interview / film.</span><input id="sg-name" autocomplete="name"></label>
+          <div id="sg-names">
+            <label class="sg-l">Participant name (please print) <span class="req">*</span><span class="sg-hint">The child appearing in the interview / film.</span><input class="sg-name" autocomplete="off"></label>
+          </div>
+          <button type="button" class="sg-link" id="sg-addname">+ Add another child</button>
 
           <label class="sg-l" style="max-width:320px">Is the participant a minor (under 18)? <span class="req">*</span>
             <select id="sg-minor"><option value="">Select…</option><option value="yes">Yes</option><option value="no">No</option></select></label>
@@ -138,8 +140,24 @@
     }
     minorSel.addEventListener('change', updateSignerLabel);
 
+    // Families with more than one enrolled child can add a name field per child;
+    // the parent/guardian signs once to cover all of them.
+    const namesWrap=document.getElementById('sg-names');
+    function addNameField(){
+      const l=document.createElement('label');
+      l.className='sg-l';
+      l.innerHTML='Additional child’s name<input class="sg-name" autocomplete="off" placeholder="Enter their name">';
+      namesWrap.appendChild(l);
+      l.querySelector('input').focus();
+    }
+    document.getElementById('sg-addname').addEventListener('click', addNameField);
+    const collectNames=()=>Array.from(document.querySelectorAll('.sg-name')).map(i=>i.value.trim()).filter(Boolean);
+
     function resetForm(){
-      ['sg-name','sg-sig','sg-email','sg-phone'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      // Drop any extra child rows, keeping the first.
+      const extra=namesWrap.querySelectorAll('label.sg-l'); extra.forEach((l,i)=>{ if(i>0) l.remove(); });
+      namesWrap.querySelectorAll('.sg-name').forEach(i=>i.value='');
+      ['sg-sig','sg-email','sg-phone'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
       document.getElementById('sg-agree').checked=false;
       minorSel.value=''; updateSignerLabel();
       const d=new Date(), p=n=>String(n).padStart(2,'0');
@@ -157,9 +175,10 @@
 
     document.getElementById('sg-submit').addEventListener('click',async()=>{
       const agree=document.getElementById('sg-agree').checked;
-      const date=v('sg-date'), name=v('sg-name'), minor=v('sg-minor'), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
+      const names=collectNames(), name=names.join(', ');
+      const date=v('sg-date'), minor=v('sg-minor'), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
       if(!agree){ setMsg('Please tick the acknowledgment box to sign.',true); return; }
-      if(!name || !minor || !sig || !email || !date){ setMsg('Please complete all required fields (*).',true); return; }
+      if(!names.length || !minor || !sig || !email || !date){ setMsg('Please complete all required fields (*).',true); return; }
       if(!/.+@.+\..+/.test(email)){ setMsg('Please enter a valid email address.',true); return; }
       const isMinor = minor==='yes';
 
@@ -185,8 +204,8 @@
       }catch(e){ res={error:e}; }
       btn.disabled=false;
       if(res && res.error){ setMsg('Could not submit — please try again.',true); return; }
-      try{ localStorage.setItem(DONE_KEY, name); }catch(e){}
-      showSigned(name);
+      try{ localStorage.setItem(DONE_KEY, names[0]); }catch(e){}
+      showSigned(names[0]);
     });
   </script>
 </body>

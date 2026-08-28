@@ -89,7 +89,7 @@
         <div class="sg-h">Sign the release</div>
         <div id="sg-done" class="note" hidden></div>
         <div id="sg-form">
-          <label class="sg-check"><input type="checkbox" id="sg-agree"> <span>I acknowledge that I have read this Release prior to signing it and that I understand its contents. <span class="req">*</span></span></label>
+          <label class="sg-check" id="sg-ack-row"><input type="checkbox" id="sg-agree"> <span>I acknowledge that I have read this Release prior to signing it and that I understand its contents. <span class="req">*</span></span></label>
 
           <div id="sg-names">
             <label class="sg-l">Participant name (please print) <span class="req">*</span><span class="sg-hint">The child appearing in the interview / film.</span><input class="sg-name" autocomplete="off"></label>
@@ -102,16 +102,18 @@
           <div class="sg-sub">Filming permission <span class="req">*</span></div>
           <label class="sg-radio"><input type="radio" name="sg-consent" value="yes"> <span>Yes — I grant permission for my child to appear in the documentary, as described in the release above.</span></label>
           <label class="sg-radio"><input type="radio" name="sg-consent" value="no"> <span>No — we do <strong>not</strong> want our student filmed.</span></label>
-          <div class="sg-optout" id="sg-optout-note" hidden>Thank you — we’ll record this so the film team excludes your child. Please still sign below to confirm your request.</div>
+          <div class="sg-optout" id="sg-optout-note" hidden>No problem — we’ll record this so the film team excludes your child. No signature is needed; just submit below.</div>
 
-          <div class="sg-sub" id="sg-signer-h">Signed by</div>
-          <div class="sg-row">
-            <label class="sg-l">Signature <span class="req">*</span><span class="sg-hint">Type full name to sign.</span><input id="sg-sig" class="sig" autocomplete="off"></label>
-            <label class="sg-l">Email address <span class="req">*</span><input id="sg-email" type="email" inputmode="email" autocomplete="email"></label>
-          </div>
-          <div class="sg-row">
-            <label class="sg-l">Telephone number<input id="sg-phone" type="tel" inputmode="tel" autocomplete="tel"></label>
-            <label class="sg-l" style="max-width:220px">Date <span class="req">*</span><input id="sg-date" type="date"></label>
+          <div id="sg-signer-block">
+            <div class="sg-sub" id="sg-signer-h">Signed by</div>
+            <div class="sg-row">
+              <label class="sg-l">Signature <span class="req">*</span><span class="sg-hint">Type full name to sign.</span><input id="sg-sig" class="sig" autocomplete="off"></label>
+              <label class="sg-l">Email address <span class="req">*</span><input id="sg-email" type="email" inputmode="email" autocomplete="email"></label>
+            </div>
+            <div class="sg-row">
+              <label class="sg-l">Telephone number<input id="sg-phone" type="tel" inputmode="tel" autocomplete="tel"></label>
+              <label class="sg-l" style="max-width:220px">Date <span class="req">*</span><input id="sg-date" type="date"></label>
+            </div>
           </div>
 
           <button class="sg-btn" id="sg-submit">Sign &amp; submit</button>
@@ -162,11 +164,19 @@
     document.getElementById('sg-addname').addEventListener('click', addNameField);
     const collectNames=()=>Array.from(document.querySelectorAll('.sg-name')).map(i=>i.value.trim()).filter(Boolean);
 
-    // Filming permission — show the opt-out note when "No" is chosen.
+    // Filming permission — an opt-out needs no signature, so hide the
+    // acknowledgment + signer fields (and show the note) when "No" is chosen.
     const consentInputs=()=>Array.from(document.querySelectorAll('input[name="sg-consent"]'));
     const consentVal=()=>{ const c=consentInputs().find(i=>i.checked); return c?c.value:''; };
     const optoutNote=document.getElementById('sg-optout-note');
-    consentInputs().forEach(i=>i.addEventListener('change',()=>{ if(optoutNote) optoutNote.hidden = consentVal()!=='no'; }));
+    const ackRow=document.getElementById('sg-ack-row'), signerBlock=document.getElementById('sg-signer-block');
+    function updateConsentUI(){
+      const optOut = consentVal()==='no';
+      if(optoutNote) optoutNote.hidden = !optOut;
+      if(ackRow) ackRow.hidden = optOut;
+      if(signerBlock) signerBlock.hidden = optOut;
+    }
+    consentInputs().forEach(i=>i.addEventListener('change', updateConsentUI));
 
     function resetForm(){
       // Drop any extra child rows, keeping the first.
@@ -175,7 +185,7 @@
       ['sg-sig','sg-email','sg-phone'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
       document.getElementById('sg-agree').checked=false;
       minorSel.value=''; updateSignerLabel();
-      consentInputs().forEach(i=>i.checked=false); if(optoutNote) optoutNote.hidden=true;
+      consentInputs().forEach(i=>i.checked=false); updateConsentUI();
       const d=new Date(), p=n=>String(n).padStart(2,'0');
       const dt=document.getElementById('sg-date'); if(dt) dt.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
       setMsg('',false);
@@ -193,40 +203,46 @@
     try{ const prev=localStorage.getItem(DONE_KEY); if(prev) showSigned(prev); }catch(e){}
 
     document.getElementById('sg-submit').addEventListener('click',async()=>{
-      const agree=document.getElementById('sg-agree').checked;
       const names=collectNames(), name=names.join(', ');
-      const date=v('sg-date'), minor=v('sg-minor'), consent=consentVal(), sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone');
-      if(!agree){ setMsg('Please tick the acknowledgment box to sign.',true); return; }
-      if(!names.length || !minor || !consent || !sig || !email || !date){ setMsg('Please complete all required fields (*), including the filming permission choice.',true); return; }
-      if(!/.+@.+\..+/.test(email)){ setMsg('Please enter a valid email address.',true); return; }
-      const isMinor = minor==='yes', filmingConsent = consent==='yes';
+      const consent=consentVal();
+      if(!names.length){ setMsg('Please enter the participant name.',true); return; }
+      if(!consent){ setMsg('Please choose the filming permission option.',true); return; }
+      const isMinor = document.getElementById('sg-minor').value==='yes', filmingConsent = consent==='yes';
 
-      // Opting out is a deliberate choice — confirm before recording it.
+      // Opting out is a deliberate choice — no signature required, just confirm it.
       if(!filmingConsent){
         const who = names.length>1 ? 'your children' : (names[0]||'your child');
         if(!window.confirm('Are you sure? You are indicating that '+who+' should NOT be filmed for the documentary. We will record this and the film team will exclude '+(names.length>1?'them':'your child')+'.')){
           setMsg('No problem — your choice was not submitted. You can change the filming option above.',false); return;
         }
+      } else {
+        // Granting permission requires the acknowledgment + a signature.
+        const agree=document.getElementById('sg-agree').checked;
+        const minor=v('sg-minor'), sig=v('sg-sig'), email=v('sg-email'), date=v('sg-date');
+        if(!agree){ setMsg('Please tick the acknowledgment box to sign.',true); return; }
+        if(!minor || !sig || !email || !date){ setMsg('Please complete all required fields (*).',true); return; }
+        if(!/.+@.+\..+/.test(email)){ setMsg('Please enter a valid email address.',true); return; }
       }
 
+      const sig=v('sg-sig'), email=v('sg-email'), phone=v('sg-phone'), date=v('sg-date');
       const btn=document.getElementById('sg-submit');
       btn.disabled=true; setMsg('Submitting…',false);
       // For a minor the signer is the parent/guardian; otherwise the participant
-      // signs for themselves. Store the signature fields under the matching role.
+      // signs for themselves. Opt-outs carry no signature.
       let res;
       try{
         res=await sb.from('media_release_signatures').insert({
-          release_date: date,
+          release_date: filmingConsent ? date : null,
           participant_name: name,
           is_minor: isMinor,
           filming_consent: filmingConsent,
-          participant_signature: isMinor ? null : sig,
-          participant_email: isMinor ? null : email,
-          participant_phone: isMinor ? null : (phone || null),
-          guardian_signature: isMinor ? sig : null,
-          guardian_email: isMinor ? email : null,
-          guardian_phone: isMinor ? (phone || null) : null,
-          agreed: true,
+          participant_signature: (filmingConsent && !isMinor) ? sig : null,
+          participant_email: (filmingConsent && !isMinor) ? email : null,
+          participant_phone: (filmingConsent && !isMinor) ? (phone || null) : null,
+          guardian_signature: (filmingConsent && isMinor) ? sig : null,
+          guardian_email: (filmingConsent && isMinor) ? email : null,
+          guardian_phone: (filmingConsent && isMinor) ? (phone || null) : null,
+          agreed: filmingConsent,
           user_agent: navigator.userAgent
         });
       }catch(e){ res={error:e}; }

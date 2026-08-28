@@ -1642,16 +1642,33 @@
 
     <!-- ===== WAIVERS ===== -->
     <section class="view" id="view-waivers" hidden>
-      <div class="eyebrow contacts-only">Families · Signed waivers</div>
+      <div class="eyebrow contacts-only">Families · Signed forms</div>
       <h1 class="page-title">Waivers</h1>
-      <p class="page-lead">Participation waivers signed by families on the family-guide waiver page. Pick a week to see who has signed and the details they submitted (every signature confirms the acknowledgment).</p>
-      <div class="filters" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
-        <div class="field" style="max-width:220px"><label for="wv-week">Week</label><select id="wv-week"></select></div>
-        <button class="btn ghost" id="wv-refresh">Refresh</button>
-        <button class="btn ghost" id="wv-csv">Download CSV</button>
-        <div class="att-stats" id="wv-stats" style="margin-left:auto"></div>
+      <p class="page-lead">Forms signed by families on the family-guide site. Toggle between the <b>Fluo</b> participation waiver and the <b>Documentary</b> media release to see who has signed and the details they submitted (every signature confirms the acknowledgment).</p>
+
+      <div class="seg" id="wv-seg" style="display:inline-flex;width:auto;background:var(--navy-2);margin:2px 0 18px">
+        <button data-wvv="fluo" class="on">Fluo</button>
+        <button data-wvv="doc">Documentary</button>
       </div>
-      <div class="tablewrap"><table id="wv-table"></table></div>
+
+      <div id="wv-fluo">
+        <div class="filters" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+          <div class="field" style="max-width:220px"><label for="wv-week">Week</label><select id="wv-week"></select></div>
+          <button class="btn ghost" id="wv-refresh">Refresh</button>
+          <button class="btn ghost" id="wv-csv">Download CSV</button>
+          <div class="att-stats" id="wv-stats" style="margin-left:auto"></div>
+        </div>
+        <div class="tablewrap"><table id="wv-table"></table></div>
+      </div>
+
+      <div id="wv-doc" hidden>
+        <div class="filters" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+          <button class="btn ghost" id="dr-refresh">Refresh</button>
+          <button class="btn ghost" id="dr-csv">Download CSV</button>
+          <div class="att-stats" id="dr-stats" style="margin-left:auto"></div>
+        </div>
+        <div class="tablewrap"><table id="dr-table"></table></div>
+      </div>
     </section>
 
     <!-- ===== GUIDE HUB ===== -->
@@ -5826,6 +5843,62 @@ function wvCsv(){
   WV_ROWS.forEach(r=>rows.push([r.signed_at||'', r.participant_names||'', r.parent_name||'', r.parent_email||'', r.parent_phone||'', r.agreed?'Yes':'No', r.emergency_same?'Yes':'No', r.emergency_same?'':(r.emergency_details||'')]));
   csvDownload(`waivers-week${wk}.csv`, rows);
 }
+
+// ----- Documentary media release (media_release_signatures) -----
+// The signer is the parent/guardian for a minor, otherwise the participant;
+// pull the signature/email/phone from whichever role is filled.
+let DR_ROWS=[], DR_INIT=false;
+function drSigner(r){ return r.is_minor
+  ? { role:'Parent / guardian', sig:r.guardian_signature, email:r.guardian_email, phone:r.guardian_phone }
+  : { role:'Participant',       sig:r.participant_signature, email:r.participant_email, phone:r.participant_phone }; }
+async function loadReleases(){
+  const tbl=document.getElementById('dr-table'); if(!tbl) return;
+  if(!DR_INIT){ DR_INIT=true;
+    const rf=document.getElementById('dr-refresh'); if(rf) rf.onclick=loadReleases;
+    const cs=document.getElementById('dr-csv'); if(cs) cs.onclick=drCsv;
+  }
+  const stats=document.getElementById('dr-stats');
+  if(!SUPA){ if(stats) stats.textContent=''; tbl.innerHTML='<tbody><tr><td class="note-row">Connect Supabase to view signed releases.</td></tr></tbody>'; return; }
+  tbl.innerHTML='<tbody><tr><td class="note-row">Loading…</td></tr></tbody>';
+  const { data, error } = await SB.from('media_release_signatures').select('*').order('signed_at',{ascending:false});
+  DR_ROWS = error ? [] : (data||[]);
+  if(error){ tbl.innerHTML=`<tbody><tr><td class="note-row">Could not load releases — ${esc(error.message||'')}</td></tr></tbody>`; if(stats) stats.textContent=''; return; }
+  renderReleases();
+}
+function renderReleases(){
+  const tbl=document.getElementById('dr-table'); if(!tbl) return;
+  const stats=document.getElementById('dr-stats'); const rows=DR_ROWS;
+  if(stats) stats.textContent = rows.length ? `${rows.length} signature${rows.length===1?'':'s'}` : 'No signatures yet';
+  const head=`<thead><tr><th>Signed</th><th>Participant(s)</th><th>Minor?</th><th>Signed by</th><th>Signature</th><th>Email</th><th>Phone</th><th>Form date</th><th title="Every submission confirms the acknowledgment before it can be sent">Acknowledged</th></tr></thead>`;
+  const body = rows.length ? rows.map(r=>{ const s=drSigner(r); return `<tr>
+    <td style="white-space:nowrap">${esc(wvDateTime(r.signed_at))}</td>
+    <td>${esc(r.participant_name||'')}</td>
+    <td>${r.is_minor?'Yes':'No'}</td>
+    <td>${esc(s.role)}</td>
+    <td>${esc(s.sig||'')}</td>
+    <td>${s.email?`<a href="mailto:${escAttr(s.email)}">${esc(s.email)}</a>`:''}</td>
+    <td style="white-space:nowrap">${esc(s.phone||'')}</td>
+    <td style="white-space:nowrap">${esc(r.release_date||'')}</td>
+    <td>${r.agreed?'✓ Yes':'<span style="color:var(--coral)">✗ No</span>'}</td>
+  </tr>`; }).join('') : `<tr><td colspan="9" class="note-row">No documentary releases signed yet.</td></tr>`;
+  tbl.innerHTML = head+`<tbody>${body}</tbody>`;
+}
+function drCsv(){
+  const rows=[["Signed at","Participant(s)","Minor","Signed by","Signature","Email","Phone","Form date","Acknowledged"]];
+  DR_ROWS.forEach(r=>{ const s=drSigner(r); rows.push([r.signed_at||'', r.participant_name||'', r.is_minor?'Yes':'No', s.role, s.sig||'', s.email||'', s.phone||'', r.release_date||'', r.agreed?'Yes':'No']); });
+  csvDownload('documentary-releases.csv', rows);
+}
+// Toggle between the Fluo waiver and the Documentary release inside the tab.
+function setWaiverView(v){
+  const isDoc = v==='doc';
+  const fluo=document.getElementById('wv-fluo'), doc=document.getElementById('wv-doc'), seg=document.getElementById('wv-seg');
+  if(fluo) fluo.hidden=isDoc; if(doc) doc.hidden=!isDoc;
+  if(seg) seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.wvv===v));
+  if(isDoc) loadReleases();
+}
+(function(){ const seg=document.getElementById('wv-seg'); if(!seg) return;
+  seg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setWaiverView(b.dataset.wvv); });
+})();
 const SC_TRAILERS=[
   {key:'trailer1',label:'Trailer 1 · Team 1'},
   {key:'trailer2',label:'Trailer 2 · Team 2'},

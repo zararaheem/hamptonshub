@@ -1665,6 +1665,7 @@
         <div class="filters" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
           <button class="btn ghost" id="dr-refresh">Refresh</button>
           <button class="btn ghost" id="dr-csv">Download CSV</button>
+          <button class="btn ghost" id="dr-pdf">Download PDF</button>
           <div class="att-stats" id="dr-stats" style="margin-left:auto"></div>
         </div>
         <div class="tablewrap"><table id="dr-table"></table></div>
@@ -5856,6 +5857,7 @@ async function loadReleases(){
   if(!DR_INIT){ DR_INIT=true;
     const rf=document.getElementById('dr-refresh'); if(rf) rf.onclick=loadReleases;
     const cs=document.getElementById('dr-csv'); if(cs) cs.onclick=drCsv;
+    const pf=document.getElementById('dr-pdf'); if(pf) pf.onclick=drPdf;
   }
   const stats=document.getElementById('dr-stats');
   if(!SUPA){ if(stats) stats.textContent=''; tbl.innerHTML='<tbody><tr><td class="note-row">Connect Supabase to view signed releases.</td></tr></tbody>'; return; }
@@ -5888,6 +5890,81 @@ function drCsv(){
   const rows=[["Signed at","Participant(s)","Filming","Minor","Signed by","Signature","Email","Phone","Form date","Acknowledged"]];
   DR_ROWS.forEach(r=>{ const s=drSigner(r); rows.push([r.signed_at||'', r.participant_name||'', r.filming_consent!==false?'Consented':'Do NOT film', r.is_minor?'Yes':'No', s.role, s.sig||'', s.email||'', s.phone||'', r.release_date||'', r.agreed?'Yes':'No']); });
   csvDownload('documentary-releases.csv', rows);
+}
+// One-click PDF: a dated signature packet (cover + summary + one page per signed release).
+// Opens a print-ready window; the member saves it as PDF. Uses the already-loaded DR_ROWS.
+function drPdf(){
+  const list = DR_ROWS || [];
+  if(!list.length){ alert('No signed releases to export yet. Hit Refresh first.'); return; }
+  const kids = r => String(r.participant_name||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const totalKids = list.reduce((n,r)=>n+Math.max(1,kids(r).length),0);
+  const consented = list.filter(r=>r.filming_consent!==false).length;
+  const optout = list.length - consented;
+  const genAt = new Date().toLocaleString('en-US');
+  const fmtET = s => { if(!s) return '—'; try{ return new Date(s).toLocaleString('en-US',{timeZone:'America/New_York',year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit'})+' ET'; }catch(e){ return String(s); } };
+  const fmtISO = s => { if(!s) return '—'; try{ return new Date(s).toISOString(); }catch(e){ return String(s); } };
+  const summary = list.map((r,i)=>{ const s=drSigner(r); const ok=r.filming_consent!==false;
+    return `<tr><td>${i+1}</td><td>${esc(r.participant_name||'')}</td><td>${esc(s.sig||'')}</td><td style="white-space:nowrap">${esc(fmtET(r.signed_at))}</td><td>${ok?'YES':'<b style="color:#c0392b">NO</b>'}</td></tr>`; }).join('');
+  const records = list.map((r,i)=>{ const s=drSigner(r); const ok=r.filming_consent!==false;
+    const kidItems = kids(r).map(k=>`<li>${esc(k)}</li>`).join('') || '<li>—</li>';
+    return `<section class="rec">
+      <div class="meta">Alpha Odyssey · Documentary / Media Filming Release</div>
+      <h2>Signed release — #${i+1} of ${list.length}</h2><div class="rule"></div>
+      <div class="badge ${ok?'ok':'no'}">${ok?'FILMING CONSENT: YES':'DO NOT FILM — OPTED OUT'}</div>
+      <div class="grid">
+        <div><div class="lbl">Child(ren) covered</div><ul>${kidItems}</ul></div>
+        <div><div class="lbl">Signer role</div><div>${esc(s.role)}</div>
+          <div class="lbl mt">Release acknowledged</div><div>${r.agreed?'Yes':'No'}</div>
+          <div class="lbl mt">Minor</div><div>${r.is_minor?'Yes':'No'}</div></div>
+        <div><div class="lbl">Signer email</div><div class="mono">${esc(s.email||'—')}</div></div>
+        <div><div class="lbl">Signer phone</div><div class="mono">${esc(s.phone||'—')}</div></div>
+        <div><div class="lbl">Signed (Eastern)</div><div>${esc(fmtET(r.signed_at))}</div></div>
+        <div><div class="lbl">Signed (UTC / ISO)</div><div class="mono">${esc(fmtISO(r.signed_at))}</div></div>
+        <div><div class="lbl">Form release date</div><div>${esc(r.release_date||'—')}</div></div>
+        <div><div class="lbl">Record ID</div><div class="mono">${esc(r.id||'')}</div></div>
+      </div>
+      <div class="sig"><div class="lbl">Electronically signed by (${esc(s.role)})</div><div class="name">${esc(s.sig||'')}</div></div>
+    </section>`; }).join('');
+  const doc = `<!doctype html><html><head><meta charset="utf-8"><title>Documentary Media Release — Signatures</title><style>
+    @page{size:Letter;margin:.8in}*{box-sizing:border-box}
+    body{font-family:Georgia,'Times New Roman',serif;color:#12212b;line-height:1.5;margin:0;padding:18px}
+    .mono{font-family:Menlo,Consolas,monospace;font-size:11px}
+    h1{font-size:22px;margin:0 0 2px}h2{font-size:16px;margin:0}
+    .meta{font-size:10px;letter-spacing:.08em;color:#5a7079;text-transform:uppercase}
+    .rule{height:3px;background:#0B2330;margin:8px 0 14px;border-radius:2px}
+    .count{display:flex;gap:14px;margin:16px 0;flex-wrap:wrap}
+    .cbox{border:1px solid #cdd8dd;border-radius:10px;padding:10px 16px;min-width:110px}
+    .cbox .k{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#5a7079}
+    .cbox .v{font-size:26px;font-weight:bold;color:#0B2330}
+    table{border-collapse:collapse;width:100%;font-size:11px;margin-top:8px}
+    th{background:#0B2330;color:#fff;text-align:left;padding:6px 8px}td{padding:5px 8px;border-bottom:1px solid #e0e7ea}
+    .rec{page-break-before:always}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 26px;font-size:13px;margin:12px 0}
+    .lbl{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#5a7079;margin-bottom:1px}.mt{margin-top:9px}
+    ul{margin:3px 0 0 16px;padding:0}
+    .badge{display:inline-block;font-family:Arial;font-weight:bold;font-size:11px;padding:3px 10px;border-radius:12px;color:#fff}
+    .badge.ok{background:#1f7a4d}.badge.no{background:#c0392b}
+    .sig{margin-top:18px;border-top:1px solid #0B2330;padding-top:8px}
+    .sig .name{font-size:22px;font-family:'Snell Roundhand','Brush Script MT',cursive;color:#0B2330}
+    .foot{margin-top:22px;font-size:9px;color:#8097a1}
+    @media print{.noprint{display:none}}
+  </style></head><body onload="setTimeout(function(){window.print();},250)">
+    <button class="noprint" onclick="window.print()" style="float:right;padding:8px 14px;cursor:pointer">Print / Save as PDF</button>
+    <div class="meta">Alpha Odyssey — Hamptons</div>
+    <h1>Documentary / Media Filming Release — Signature Record</h1><div class="rule"></div>
+    <div class="count">
+      <div class="cbox"><div class="k">Signed releases</div><div class="v">${list.length}</div></div>
+      <div class="cbox"><div class="k">Children covered</div><div class="v">${totalKids}</div></div>
+      <div class="cbox"><div class="k">Consented</div><div class="v">${consented}</div></div>
+      <div class="cbox"><div class="k">Opted out</div><div class="v">${optout}</div></div>
+    </div>
+    <table><tr><th>#</th><th>Participant(s)</th><th>Signed by</th><th>Signed (ET)</th><th>Film?</th></tr>${summary}</table>
+    <div class="foot">Generated ${esc(genAt)} from the hub signature database (media_release_signatures). Contains personal data of minors and guardians — share only with authorized recipients.</div>
+    ${records}
+  </body></html>`;
+  const w = window.open('', '_blank');
+  if(!w){ alert('Pop-up blocked — allow pop-ups for this site, then click Download PDF again.'); return; }
+  w.document.open(); w.document.write(doc); w.document.close();
 }
 // Toggle between the Fluo waiver and the Documentary release inside the tab.
 function setWaiverView(v){
